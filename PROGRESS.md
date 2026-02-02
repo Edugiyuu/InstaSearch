@@ -13,6 +13,7 @@ Criar uma aplicação para analisar perfis de referência do Instagram, estudar 
 - [x] SETUP.md com guia de instalação
 - [x] API.md com documentação de endpoints
 - [x] API_ROUTES.md com lista de rotas
+- [x] INSTAGRAM_AUTH.md com guia de autenticação OAuth
 
 ### 2. Frontend (100%)
 - [x] **Estrutura:** Vite + React 18 + TypeScript
@@ -24,7 +25,10 @@ Criar uma aplicação para analisar perfis de referência do Instagram, estudar 
   - Analysis (visualizar análises)
   - Content (conteúdo gerado)
   - Calendar (agenda de postagens)
-  - Settings (configurações)
+  - Settings (configurações + conexão Instagram)
+- [x] **Hooks Customizados:**
+  - useProfiles, useAnalysis, useContent, usePosts, useDashboard
+  - useInstagram (gerenciar conexão OAuth)
 - [x] **Estilos:** CSS puro com variáveis (sem Tailwind)
 - [x] **Status:** Rodando em http://localhost:5173
 
@@ -37,6 +41,7 @@ Criar uma aplicação para analisar perfis de referência do Instagram, estudar 
   - ContentStorage.ts (conteúdo gerado)
   - PostStorage.ts (postagens)
   - UserStorage.ts (usuários)
+  - InstagramAccountStorage.ts (contas conectadas)
 - [x] **Testes:** 10/10 testes passando
 - [x] **Armazenamento:** JSON em data/ directory
 
@@ -53,6 +58,7 @@ Criar uma aplicação para analisar perfis de referência do Instagram, estudar 
   - contentController.ts (7 endpoints)
   - postController.ts (7 endpoints)
   - dashboardController.ts (2 endpoints)
+  - instagramAuthController.ts (5 endpoints)
 - [x] **Rotas Funcionando:**
   - Health check: /api/health
   - Dashboard: /api/dashboard/overview
@@ -60,30 +66,44 @@ Criar uma aplicação para analisar perfis de referência do Instagram, estudar 
   - Analysis: /api/analysis (GET, POST)
   - Content: /api/content (GET, POST, PUT, DELETE)
   - Posts: /api/posts (GET, POST, PUT, DELETE)
+  - Instagram: /api/instagram/* (OAuth + gerenciamento)
 - [x] **Status:** Rodando em http://localhost:3000
 
-### 5. Models & Types (100%)
+### 5. Instagram OAuth Authentication (100%)
+- [x] **Service de Autenticação:**
+  - Geração de URL de autorização
+  - Exchange de código por token
+  - Renovação automática de tokens
+  - Busca de dados do perfil
+- [x] **Endpoints:**
+  - GET /api/instagram/auth-url (gerar URL OAuth)
+  - GET /api/instagram/callback (receber callback)
+  - GET /api/instagram/account (buscar conta conectada)
+  - DELETE /api/instagram/account (desconectar)
+  - POST /api/instagram/account/refresh (atualizar dados)
+- [x] **Frontend:**
+  - Hook useInstagram completo
+  - Interface na página Settings
+  - Display de perfil com avatar e métricas
+  - Botões de conectar/desconectar/atualizar
+- [x] **Documentação:** INSTAGRAM_AUTH.md
+
+### 6. Models & Types (100%)
 - [x] TypeScript interfaces completas para:
   - Profile, Reel, Analysis, Content, Post, User
+  - InstagramAccount (nova)
 - [x] ID Generator com prefixos (nanoid)
 
 ## 🚧 Em Andamento
 
-### **FASE ATUAL: Conectar Frontend ao Backend**
-**Início:** 30 de Janeiro de 2026
+### **FASE ATUAL: Serviços de IA e Instagram**
+**Início:** 1 de Fevereiro de 2026
 
-#### Tarefas:
-- [x] Criar serviço HTTP no frontend (api.ts)
-- [x] Criar types/interfaces compartilhados
-- [x] Criar hooks customizados (useProfiles, useAnalysis, useContent, usePosts, useDashboard)
-- [x] Atualizar Dashboard para mostrar dados reais
-- [x] Implementar página Profiles com CRUD funcional
-- [x] Atualizar página Content com dados reais
-- [x] Atualizar página Calendar com dados reais
-- [x] Adicionar loading states e error handling
-- [ ] Implementar página Analysis completa
-- [ ] Validação de formulários
-- [ ] Testar integração completa
+#### Próximos Passos:
+- [ ] Implementar AIService para análise de perfis
+- [ ] Criar Instagram Scraper Service
+- [ ] Integrar geração de conteúdo com IA
+- [ ] Implementar sistema de publicação automática
 
 ## 📝 Pendente
 
@@ -170,11 +190,12 @@ InstaSearch/
 
 ## 📊 Estatísticas
 
-- **Total de Arquivos Criados:** ~40 arquivos
-- **Linhas de Código:** ~2500+ linhas
-- **Endpoints da API:** 27 rotas
+- **Total de Arquivos Criados:** ~50 arquivos
+- **Linhas de Código:** ~4000+ linhas
+- **Endpoints da API:** 32 rotas
 - **Componentes React:** 9 componentes
-- **Storage Classes:** 7 classes
+- **Storage Classes:** 8 classes
+- **Hooks Customizados:** 6 hooks
 
 ## 🎯 Próxima Sessão
 

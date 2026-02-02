@@ -1,12 +1,16 @@
 import express, { Request, Response } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import apiRoutes from './routes/api.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { logger } from './utils/logger.js'
 
-// Load environment variables
+// Load environment variables FIRST before any other imports
 dotenv.config()
+
+console.log('ENV LOADED:', {
+  CLIENT_ID: process.env.INSTAGRAM_CLIENT_ID,
+  HAS_SECRET: !!process.env.INSTAGRAM_CLIENT_SECRET
+})
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -22,7 +26,8 @@ app.use((req: Request, res: Response, next) => {
   next()
 })
 
-// Routes
+// Import routes AFTER env is loaded
+const { default: apiRoutes } = await import('./routes/api.js')
 app.use('/api', apiRoutes)
 
 // Root route
