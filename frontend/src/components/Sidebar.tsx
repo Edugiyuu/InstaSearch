@@ -10,6 +10,11 @@ function Sidebar() {
           <span className="sidebar-text">Dashboard</span>
         </NavLink>
         
+        <NavLink to="/my-profile" className="sidebar-link">
+          <span className="sidebar-icon">📱</span>
+          <span className="sidebar-text">Meu Perfil</span>
+        </NavLink>
+        
         <NavLink to="/profiles" className="sidebar-link">
           <span className="sidebar-icon">👥</span>
           <span className="sidebar-text">Perfis</span>

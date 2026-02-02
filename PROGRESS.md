@@ -1,6 +1,6 @@
 # 📋 InstaSearch - Progresso do Projeto
 
-**Última Atualização:** 30 de Janeiro de 2026
+**Última Atualização:** 2 de Fevereiro de 2026
 
 ## 🎯 Objetivo do Projeto
 Criar uma aplicação para analisar perfis de referência do Instagram, estudar seus reels, e usar IA para gerar conteúdo baseado nas análises.
@@ -13,7 +13,10 @@ Criar uma aplicação para analisar perfis de referência do Instagram, estudar 
 - [x] SETUP.md com guia de instalação
 - [x] API.md com documentação de endpoints
 - [x] API_ROUTES.md com lista de rotas
-- [x] INSTAGRAM_AUTH.md com guia de autenticação OAuth
+- [x] docs/INSTAGRAM_AUTH.md com guia de autenticação OAuth
+- [x] docs/INSTAGRAM_QUICKSTART.md com guia rápido de conexão
+- [x] docs/GERAR_TOKEN_INSTAGRAM.md com passo a passo para gerar token
+- [x] docs/FIX_INSTAGRAM_ERROR.md com troubleshooting
 
 ### 2. Frontend (100%)
 - [x] **Estrutura:** Vite + React 18 + TypeScript
@@ -58,7 +61,9 @@ Criar uma aplicação para analisar perfis de referência do Instagram, estudar 
   - contentController.ts (7 endpoints)
   - postController.ts (7 endpoints)
   - dashboardController.ts (2 endpoints)
-  - instagramAuthController.ts (5 endpoints)
+  - instagramAuthController.ts (5 endpoints OAuth)
+  - instagramTokenController.ts (1 endpoint - conexão manual)
+  - instagramDataController.ts (8 endpoints - Graph API)
 - [x] **Rotas Funcionando:**
   - Health check: /api/health
   - Dashboard: /api/dashboard/overview
@@ -66,7 +71,8 @@ Criar uma aplicação para analisar perfis de referência do Instagram, estudar 
   - Analysis: /api/analysis (GET, POST)
   - Content: /api/content (GET, POST, PUT, DELETE)
   - Posts: /api/posts (GET, POST, PUT, DELETE)
-  - Instagram: /api/instagram/* (OAuth + gerenciamento)
+  - Instagram Auth: /api/instagram/* (OAuth + gerenciamento)
+  - Instagram Data: /api/instagram/data/* (Graph API - 8 rotas)
 - [x] **Status:** Rodando em http://localhost:3000
 
 ### 5. Instagram OAuth Authentication (100%)
@@ -75,59 +81,117 @@ Criar uma aplicação para analisar perfis de referência do Instagram, estudar 
   - Exchange de código por token
   - Renovação automática de tokens
   - Busca de dados do perfil
+  - Conexão via token manual (nova funcionalidade)
 - [x] **Endpoints:**
   - GET /api/instagram/auth-url (gerar URL OAuth)
   - GET /api/instagram/callback (receber callback)
+  - POST /api/instagram/connect-token (conectar com token manual)
   - GET /api/instagram/account (buscar conta conectada)
   - DELETE /api/instagram/account (desconectar)
   - POST /api/instagram/account/refresh (atualizar dados)
 - [x] **Frontend:**
   - Hook useInstagram completo
-  - Interface na página Settings
+  - Interface na página Settings com modal
   - Display de perfil com avatar e métricas
   - Botões de conectar/desconectar/atualizar
-- [x] **Documentação:** INSTAGRAM_AUTH.md
+  - Modal para input de token manual
+- [x] **Documentação:** 
+  - docs/INSTAGRAM_AUTH.md (guia completo OAuth)
+  - docs/INSTAGRAM_QUICKSTART.md (guia rápido)
+  - docs/GERAR_TOKEN_INSTAGRAM.md (gerar token)
+  - docs/FIX_INSTAGRAM_ERROR.md (troubleshooting)
 
-### 6. Models & Types (100%)
+### 6. Instagram Graph Service (100%)
+- [x] **Service de Dados:**
+  - InstagramGraphService completo usando Facebook Graph API v18.0
+  - Buscar dados do perfil (seguidores, posts, etc.)
+  - Buscar lista de posts/reels
+  - Buscar métricas de cada post (likes, comments, views)
+  - Buscar informações detalhadas de reels
+  - Buscar comentários e hashtags
+  - Buscar insights da conta (opcional)
+- [x] **Endpoints da Graph API:**
+  - GET /api/instagram/data/profile (dados do perfil)
+  - GET /api/instagram/data/media (lista de posts/reels)
+  - GET /api/instagram/data/reels (apenas reels)
+  - GET /api/instagram/data/media/:id (detalhes de um post)
+  - GET /api/instagram/data/media/:id/insights (métricas)
+  - GET /api/instagram/data/media/:id/comments (comentários)
+  - GET /api/instagram/data/media/:id/hashtags (hashtags)
+  - GET /api/instagram/data/insights (insights da conta)
+- [x] **Controller:**
+  - instagramDataController.ts com 8 endpoints
+- [x] **Correções Implementadas:**
+  - Migração de graph.instagram.com para graph.facebook.com/v18.0
+  - Uso correto do accountId nas requisições
+  - Tratamento de insights como dados opcionais
+
+### 7. Models & Types (100%)
 - [x] TypeScript interfaces completas para:
   - Profile, Reel, Analysis, Content, Post, User
   - InstagramAccount (nova)
 - [x] ID Generator com prefixos (nanoid)
 
+### 8. Página "Meu Perfil" (100%)
+- [x] **Hook useMyInstagram:**
+  - Buscar perfil Preparado para IA**
+**Concluído em:** 2 de Fevereiro de 2026
+
+Infraestrutura completa para iniciar integração com IA:
+- ✅ Conexão Instagram funcionando
+- ✅ Busca de posts/reels implementada
+- ✅ Visualização de dados na página "Meu Perfil"
+- ✅ APIs prontas para alimentar serviços de IA
+  - Buscar apenas reels
+  - Buscar insights da conta (opcional)
+  - Buscar insights de posts individuais
+  - Tratamento de erros robusto
+- [x] **Página MyProfile.tsx:**
+  - Card de perfil com avatar, nome, bio, website
+  - Estatísticas (posts, seguidores, seguindo)
+  - Card de insights (quando disponível)
+  - Abas para filtrar: Todas Postagens / Reels
+  - Grid responsivo de posts com thumbnails
+  - Exibição de métricas (likes, comentários)
+  - Links para ver posts no Instagram
+  - Botão de atualizar dados
+- [x] **Estilos MyProfile.css:**
+  - Design moderno e responsivo
+  - Grid adaptável para diferentes telas
+  - Animações e efeitos hover
+  - Badges de tipo de mídia
+- [x] **Integração:**
+  - Rota /my-profile no App.tsx
+  - Link "📱 Meu Perfil" no Sidebar
+  - Funcionamento completo com API do Instagram
+
 ## 🚧 Em Andamento
 
-### **FASE ATUAL: Serviços de IA e Instagram**
-**Início:** 1 de Fevereiro de 2026
+### **FASE ATUAL: Serviços de IA**
+**Início:** 2 de Fevereiro de 2026
 
 #### Próximos Passos:
 - [ ] Implementar AIService para análise de perfis
-- [ ] Criar Instagram Scraper Service
-- [ ] Integrar geração de conteúdo com IA
-- [ ] Implementar sistema de publicação automática
-
-## 📝 Pendente
-
-### 3. Serviço de IA (OpenAI)
+- [ 9. Serviço de IA (OpenAI)
 - [ ] AIService.ts para análise de perfis
 - [ ] Análise de padrões em reels
 - [ ] Geração de insights
 - [ ] Geração de sugestões de conteúdo
 - [ ] Geração de captions e hashtags
 
-### 4. Instagram Service
-- [ ] Scraper para dados públicos
-- [ ] Integração com Graph API
-- [ ] Coletar métricas de reels
-- [ ] Extrair hashtags e temas
-- [ ] Rate limiting e retry logic
+### 10 AIService.ts para análise de perfis
+- [ ] Análise de padrões em reels
+- [ ] Geração de insights
+- [ ] Geração de sugestões de conteúdo
+- [ ] Geração de captions e hashtags
 
-### 5. Publishing Service
+### 91 Publishing Service
 - [ ] Sistema de fila com node-cron
 - [ ] Publicação automática no Instagram
 - [ ] Webhook para atualizar métricas
 - [ ] Notificações de status
 
-### 6. Melhorias Futuras
+### 10. Melhorias Futuras
 - [ ] Autenticação de usuários (JWT)
 - [ ] Middleware de autenticação
 - [ ] Testes automatizados (Jest/Vitest)
@@ -141,17 +205,19 @@ InstaSearch/
 ├── frontend/                    ✅ COMPLETO
 │   ├── src/
 │   │   ├── components/         (Layout, Navbar, Sidebar)
-│   │   ├── pages/              (6 páginas)
+│   │   ├── hooks/              (7 hooks customizados)
+│   │   ├── pages/              (7 páginas + MyProfile)
 │   │   ├── styles/             (CSS)
 │   │   └── App.tsx
 │   └── package.json
 │
 ├── backend/                     ✅ COMPLETO
-│   ├── src/
-│   │   ├── controllers/        (5 controllers)
+│   ├── src/8 controllers)
 │   │   ├── middleware/         (errorHandler)
 │   │   ├── models/             (TypeScript types)
 │   │   ├── routes/             (api.ts)
+│   │   ├── services/           (Instagram Auth & Graph)
+│   │   ├── services/storage/   (8pi.ts)
 │   │   ├── services/storage/   (7 storage classes)
 │   │   ├── utils/              (logger, idGenerator)
 │   │   └── index.ts
@@ -162,7 +228,11 @@ InstaSearch/
 └── docs/                        ✅ COMPLETO
     ├── ARCHITECTURE.md
     ├── SETUP.md
-    └── API.md
+    ├── API.md
+    ├── INSTAGRAM_AUTH.md
+    ├── INSTAGRAM_QUICKSTART.md
+    ├── GERAR_TOKEN_INSTAGRAM.md
+    └── FIX_INSTAGRAM_ERROR.md
 ```
 
 ## 🔧 Tech Stack
@@ -188,34 +258,67 @@ InstaSearch/
 - Sem banco de dados
 - Sem Docker/MongoDB
 
-## 📊 Estatísticas
-
-- **Total de Arquivos Criados:** ~50 arquivos
-- **Linhas de Código:** ~4000+ linhas
-- **Endpoints da API:** 32 rotas
+## 📊 Estatísticas62 arquivos
+- **Linhas de Código:** ~6200+ linhas
+- **Endpoints da API:** 41 rotas
 - **Componentes React:** 9 componentes
+- **Páginas:** 7 páginas (Dashboard, Profiles, Analysis, Content, Calendar, Settings, MyProfile)
+- **Storage Classes:** 8 classes
+- **Hooks Customizados:** 7componentes
 - **Storage Classes:** 8 classes
 - **Hooks Customizados:** 6 hooks
+- **Documentação:** 7 arquivos markdown
 
 ## 🎯 Próxima Sessão
 
-**Foco:** Integração Frontend + Backend
+**Foco:** Serviço de IA para Análise de Perfis
 **Arquivos a Criar:**
-1. `frontend/src/services/api.ts` - Cliente HTTP
-2. `frontend/src/hooks/useProfiles.ts` - Hook para perfis
-3. `frontend/src/hooks/useAnalysis.ts` - Hook para análises
-4. `frontend/src/hooks/useContent.ts` - Hook para conteúdo
+1. `backend/src/services/aiService.ts` - Service para OpenAI
+2. Integrar análise de reels com IA
+3. Geração de insights e sugestões
+4. Geração de captions e hashtags
 
-**Objetivo:** Ter uma aplicação full-stack funcional onde é possível:
-- Ver dashboard com estatísticas reais
-- Adicionar/remover perfis do Instagram
-- Ver lista de análises
-- Ver conteúdo gerado
-- Visualizar calendário de postagens
+**Objetivo:** Implementar a camada de IA para:
+- Analisar padrões em reels
+- Gerar insights sobre perfis de referência
+- Sugerir temas de conteúdo
+- Gerar captions e hashtags automaticamente
+## 📝 Últimas Atualizações (2 de Fevereiro de 2026)
+
+### ✅ Implementado:
+1. **Nova Página "Meu Perfil":**
+   - Visualização completa do perfil conectado
+   - Grid de posts e reels com filtros
+   - Card de insights (quando disponível)
+   - Interface responsiva e moderna
+
+2. **Correções na API do Instagram:**
+   - Migração para Facebook Graph API v18.0
+   - Correção no uso do accountId
+   - Insights tratados como opcionais
+
+3. **Hook useMyInstagram:**
+   - Gerenciamento de estado robusto
+   - Tratamento de erros melhorado
+   - Suporte a Promise.allSettled
+
+4. **Arquivos Criados/Modificados:**
+   - `frontend/src/hooks/useMyInstagram.ts`
+   - `frontend/src/pages/MyProfile.tsx`
+   - `frontend/src/pages/MyProfile.css`
+   - `backend/src/services/instagramGraphService.ts`
+   - `backend/src/controllers/instagramDataController.ts`
+   - `backend/src/controllers/instagramAuthController.ts`
+   - `backend/src/services/instagramAuthService.ts`
 
 ---
 
 **Notas:**
+- Backend rodando em http://localhost:3000
+- Frontend rodando em http://localhost:5173
+- Proxy configurado no Vite para /api -> http://localhost:3000
+- Instagram conectado e funcionando via token manual
+- Página "Meu Perfil" exibindo posts e reels corretamente
 - Backend rodando em http://localhost:3000
 - Frontend rodando em http://localhost:5173
 - Proxy configurado no Vite para /api -> http://localhost:3000

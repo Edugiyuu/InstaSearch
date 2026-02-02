@@ -69,15 +69,29 @@ Isso acontece porque o token gerado não está vinculado corretamente ao Instagr
    - Clique em "Submit"
    - Se retornar seus dados, o token está correto!
 
-### Passo 3: Copiar e Usar o Token
+### Passo 3: Usar o Token na Interface
 
 **Se o teste funcionou:**
 
 1. Copie o **Access Token** que aparece no topo
-2. Cole no arquivo `backend/add-token.js`
-3. **TAMBÉM ADICIONE o Instagram Business Account ID** no script
+2. Abra http://localhost:5173 no navegador
+3. Vá em **Settings** (⚙️)
+4. Clique em **"🔑 Conectar com Token"**
+5. Cole o token no campo de texto
+6. Clique em **"Conectar"**
+7. Pronto! O sistema irá:
+   - Validar o token
+   - Buscar suas páginas do Facebook
+   - Encontrar sua conta Instagram Business
+   - Conectar automaticamente
 
-Vou atualizar o script agora para usar o Instagram Business Account ID correto!
+**Alternativa - Via Terminal:**
+
+Se preferir usar o terminal, execute:
+```bash
+node backend/add-token.js
+```
+E cole o token quando solicitado.
 
 ---
 

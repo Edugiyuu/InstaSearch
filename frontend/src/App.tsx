@@ -6,6 +6,7 @@ import Analysis from './pages/Analysis'
 import Content from '../src/pages/Content'
 import Calendar from './pages/Calendar'
 import Settings from './pages/Settings'
+import MyProfile from './pages/MyProfile'
 import './styles/App.css'
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/my-profile" element={<MyProfile />} />
           <Route path="/profiles" element={<Profiles />} />
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/content" element={<Content />} />

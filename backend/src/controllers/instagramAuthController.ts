@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import axios from 'axios'
 import { InstagramAuthService } from '../services/instagramAuthService.js'
 import { logger } from '../utils/logger.js'
 
@@ -142,16 +143,28 @@ export const refreshAccountData = async (req: Request, res: Response) => {
       })
     }
 
-    // Ensure token is valid and refresh if needed
-    const validToken = await instagramAuthService.ensureValidToken(account)
+    // Buscar dados atualizados usando o accountId
+    const response = await axios.get(`https://graph.facebook.com/v18.0/${account.accountId}`, {
+      params: {
+        fields: 'id,username,name,profile_picture_url,followers_count,follows_count,media_count',
+        access_token: account.accessToken
+      }
+    })
 
-    // Get updated profile info
-    await instagramAuthService.getProfile(validToken)
+    // Atualizar perfil na conta
+    account.profile = {
+      name: response.data.name || response.data.username,
+      profilePictureUrl: response.data.profile_picture_url,
+      followersCount: response.data.followers_count,
+      followsCount: response.data.follows_count,
+      mediaCount: response.data.media_count
+    }
+    account.lastRefreshed = new Date().toISOString()
 
-    // Update account with new data
-    const updatedAccount = await instagramAuthService.getConnectedAccount(userId)
+    // Salvar
+    await instagramAuthService.updateAccount(account)
 
-    const { accessToken, refreshToken, ...safeAccount } = updatedAccount!
+    const { accessToken, refreshToken, ...safeAccount } = account
 
     return res.json({
       success: true,

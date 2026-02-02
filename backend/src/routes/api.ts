@@ -6,6 +6,7 @@ import * as postController from '../controllers/postController.js'
 import * as dashboardController from '../controllers/dashboardController.js'
 import * as instagramAuthController from '../controllers/instagramAuthController.js'
 import * as instagramTokenController from '../controllers/instagramTokenController.js'
+import * as instagramDataController from '../controllers/instagramDataController.js'
 
 const router = Router()
 
@@ -22,6 +23,16 @@ router.get('/instagram/account', instagramAuthController.getConnectedAccount)
 router.delete('/instagram/account', instagramAuthController.disconnectAccount)
 router.post('/instagram/account/refresh', instagramAuthController.refreshAccountData)
 router.post('/instagram/connect-token', instagramTokenController.connectWithToken)
+
+// Instagram Data (Graph API)
+router.get('/instagram/data/profile', instagramDataController.getInstagramProfile)
+router.get('/instagram/data/media', instagramDataController.getInstagramMedia)
+router.get('/instagram/data/reels', instagramDataController.getInstagramReels)
+router.get('/instagram/data/media/:mediaId', instagramDataController.getInstagramMediaById)
+router.get('/instagram/data/media/:mediaId/insights', instagramDataController.getInstagramMediaInsights)
+router.get('/instagram/data/media/:mediaId/comments', instagramDataController.getInstagramMediaComments)
+router.get('/instagram/data/media/:mediaId/hashtags', instagramDataController.getInstagramMediaHashtags)
+router.get('/instagram/data/insights', instagramDataController.getInstagramAccountInsights)
 
 // Profiles
 router.get('/profiles', profileController.getProfiles)

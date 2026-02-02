@@ -35,7 +35,7 @@ Agora você precisa usar **Instagram Graph API** que requer:
    INSTAGRAM_REDIRECT_URI=http://localhost:3000/api/instagram/callback
    ```
 
-> 📖 **Guia Completo:** Veja [INSTAGRAM_AUTH.md](INSTAGRAM_AUTH.md) para instruções detalhadas
+> 📖 **Guia Completo:** Veja [INSTAGRAM_AUTH.md](./INSTAGRAM_AUTH.md) para instruções detalhadas
 
 ### 2️⃣ Iniciar os Servidores
 
@@ -52,6 +52,26 @@ npm run dev
 ```
 
 ### 3️⃣ Conectar no App
+
+#### Opção 1: Conexão via Token (Recomendado)
+
+1. Gere um token no [Graph API Explorer](https://developers.facebook.com/tools/explorer/)
+   - Selecione seu App
+   - Selecione sua **Página do Facebook**
+   - Adicione permissões: `instagram_basic`, `instagram_content_publish`, `pages_show_list`, `pages_read_engagement`
+   - Clique em "Generate Access Token"
+   - Copie o token gerado
+
+2. Abra http://localhost:5173
+3. Vá em **Settings** (⚙️)
+4. Clique em **"🔑 Conectar com Token"**
+5. Cole o token no campo de texto
+6. Clique em **"Conectar"**
+7. Pronto! Sua conta será conectada automaticamente ✅
+
+> 📖 **Guia Detalhado:** Veja [GERAR_TOKEN_INSTAGRAM.md](./GERAR_TOKEN_INSTAGRAM.md) para instruções passo a passo
+
+#### Opção 2: Conexão via OAuth
 
 1. Abra http://localhost:5173
 2. Vá em **Settings** (⚙️)
@@ -86,13 +106,14 @@ backend/
 ├── .env.example                                    # Template de variáveis
 ├── src/
 │   ├── controllers/
-│   │   └── instagramAuthController.ts             # 5 endpoints OAuth
+│   │   ├── instagramAuthController.ts             # 5 endpoints OAuth
+│   │   └── instagramTokenController.ts            # Conexão via token manual
 │   ├── services/
 │   │   ├── instagramAuthService.ts                # Lógica OAuth
 │   │   └── storage/
 │   │       └── InstagramAccountStorage.ts         # Armazenamento
 │   └── routes/
-│       └── api.ts                                  # +5 rotas Instagram
+│       └── api.ts                                  # +6 rotas Instagram
 ```
 
 ### Frontend
@@ -116,11 +137,12 @@ frontend/
 
 ### Instagram OAuth
 ```
-GET    /api/instagram/auth-url      # Gerar URL OAuth
-GET    /api/instagram/callback      # Receber callback
-GET    /api/instagram/account       # Buscar conta conectada
-DELETE /api/instagram/account       # Desconectar conta
-POST   /api/instagram/account/refresh  # Atualizar dados
+GET    /api/instagram/auth-url          # Gerar URL OAuth
+GET    /api/instagram/callback          # Receber callback
+POST   /api/instagram/connect-token     # Conectar com token manual
+GET    /api/instagram/account           # Buscar conta conectada
+DELETE /api/instagram/account           # Desconectar conta
+POST   /api/instagram/account/refresh   # Atualizar dados
 ```
 
 ## 📸 Interface
@@ -129,12 +151,13 @@ A página de Settings agora mostra:
 
 **Quando NÃO conectado:**
 ```
-┌─────────────────────────────────────┐
-│  Status da Conexão                  │
-│  Conecte sua conta do Instagram     │
-│                                      │
-│         [📷 Conectar Instagram]     │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│  Status da Conexão                      │
+│  Conecte sua conta do Instagram         │
+│                                          │
+│  [🔑 Conectar com Token]                │
+│  [📷 Conectar Instagram]                │
+└─────────────────────────────────────────┘
 ```
 
 **Quando CONECTADO:**
@@ -178,4 +201,4 @@ Agora que sua conta está conectada, você pode:
 
 ---
 
-**Precisa de Ajuda?** Veja [INSTAGRAM_AUTH.md](INSTAGRAM_AUTH.md) para o guia completo!
+**Precisa de Ajuda?** Veja [INSTAGRAM_AUTH.md](./INSTAGRAM_AUTH.md) para o guia completo!

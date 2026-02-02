@@ -40,3 +40,10 @@
 - `GET /api/posts/:id/stats` - Estatísticas de uma postagem
 - `PUT /api/posts/:id` - Atualizar postagem agendada
 - `DELETE /api/posts/:id` - Cancelar postagem
+### Instagram (Autenticação e Conexão)
+- `GET /api/instagram/auth-url` - Gerar URL de autorização OAuth
+- `GET /api/instagram/callback` - Callback OAuth após autorização
+- `POST /api/instagram/connect-token` - Conectar conta com token manual
+- `GET /api/instagram/account` - Buscar conta Instagram conectada
+- `DELETE /api/instagram/account` - Desconectar conta Instagram
+- `POST /api/instagram/account/refresh` - Atualizar dados da conta

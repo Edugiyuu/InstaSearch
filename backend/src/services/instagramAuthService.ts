@@ -259,6 +259,13 @@ export class InstagramAuthService {
   }
 
   /**
+   * Update account data
+   */
+  async updateAccount(account: InstagramAccount): Promise<void> {
+    await storage.update(account.id, account)
+  }
+
+  /**
    * Disconnect Instagram account
    */
   async disconnectAccount(userId: string): Promise<boolean> {

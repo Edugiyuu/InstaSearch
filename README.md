@@ -60,7 +60,16 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
 └──────────────────┘
 ```
 
-## 🛠️ Stack Tecnológica
+## � Documentação
+
+- [Setup](docs/SETUP.md) - Configuração inicial do projeto
+- [Arquitetura](docs/ARCHITECTURE.md) - Estrutura e design do sistema
+- [API](docs/API.md) - Documentação completa da API
+- [Instagram - Início Rápido](docs/INSTAGRAM_QUICKSTART.md) - Como conectar sua conta Instagram
+- [Instagram - Gerar Token](docs/GERAR_TOKEN_INSTAGRAM.md) - Passo a passo para gerar token
+- [Instagram - Autenticação](docs/INSTAGRAM_AUTH.md) - Guia completo de OAuth
+
+## �🛠️ Stack Tecnológica
 
 ### Backend
 - **Node.js** com Express
