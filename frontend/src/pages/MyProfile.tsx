@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useMyInstagram } from '../hooks/useMyInstagram';
-import './MyProfile.css';
+import { useEffect, useState } from 'react'
+import { useMyInstagram } from '../hooks/useMyInstagram'
+import './MyProfile.css'
 
 const MyProfile = () => {
   const { profile, media, reels, insights, loading, error, fetchAll } = useMyInstagram();

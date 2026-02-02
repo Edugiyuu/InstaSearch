@@ -134,14 +134,8 @@ Criar uma aplicação para analisar perfis de referência do Instagram, estudar 
 
 ### 8. Página "Meu Perfil" (100%)
 - [x] **Hook useMyInstagram:**
-  - Buscar perfil Preparado para IA**
-**Concluído em:** 2 de Fevereiro de 2026
-
-Infraestrutura completa para iniciar integração com IA:
-- ✅ Conexão Instagram funcionando
-- ✅ Busca de posts/reels implementada
-- ✅ Visualização de dados na página "Meu Perfil"
-- ✅ APIs prontas para alimentar serviços de IA
+  - Buscar perfil conectado
+  - Buscar todas as postagens
   - Buscar apenas reels
   - Buscar insights da conta (opcional)
   - Buscar insights de posts individuais
@@ -165,33 +159,51 @@ Infraestrutura completa para iniciar integração com IA:
   - Link "📱 Meu Perfil" no Sidebar
   - Funcionamento completo com API do Instagram
 
+### 9. Limpeza e Organização de Código (100%)
+- [x] **Arquivos Removidos:**
+  - backend/src/test-storage.ts (175 linhas)
+- [x] **Reorganização:**
+  - Scripts movidos para backend/scripts/
+  - add-token.js, test-api.ps1, test-routes.ps1
+- [x] **Imports Otimizados:**
+  - Removido useEffect não utilizado em useMyInstagram
+  - Corrigido import path em App.tsx
+  - Limpeza de código não utilizado
+
 ## 🚧 Em Andamento
 
-### **FASE ATUAL: Serviços de IA**
-**Início:** 2 de Fevereiro de 2026
+### **FASE ATUAL: Preparado para IA**
+**Concluído em:** 2 de Fevereiro de 2026
+
+Infraestrutura completa para iniciar integração com IA:
+- ✅ Conexão Instagram funcionando
+- ✅ Busca de posts/reels implementada
+- ✅ Visualização de dados na página "Meu Perfil"
+- ✅ APIs prontas para alimentar serviços de IA
+- ✅ Código limpo e organizado
 
 #### Próximos Passos:
 - [ ] Implementar AIService para análise de perfis
-- [ 9. Serviço de IA (OpenAI)
+- [ ] Integrar análise de reels com IA
+- [ ] Geração de conteúdo com IA
+- [ ] Sistema de publicação automática
+
+## 📝 Pendente
+
+### 10. Serviço de IA (OpenAI)
 - [ ] AIService.ts para análise de perfis
 - [ ] Análise de padrões em reels
 - [ ] Geração de insights
 - [ ] Geração de sugestões de conteúdo
 - [ ] Geração de captions e hashtags
 
-### 10 AIService.ts para análise de perfis
-- [ ] Análise de padrões em reels
-- [ ] Geração de insights
-- [ ] Geração de sugestões de conteúdo
-- [ ] Geração de captions e hashtags
-
-### 91 Publishing Service
+### 11. Publishing Service
 - [ ] Sistema de fila com node-cron
 - [ ] Publicação automática no Instagram
 - [ ] Webhook para atualizar métricas
 - [ ] Notificações de status
 
-### 10. Melhorias Futuras
+### 12. Melhorias Futuras
 - [ ] Autenticação de usuários (JWT)
 - [ ] Middleware de autenticação
 - [ ] Testes automatizados (Jest/Vitest)
@@ -212,17 +224,18 @@ InstaSearch/
 │   └── package.json
 │
 ├── backend/                     ✅ COMPLETO
-│   ├── src/8 controllers)
+│   ├── src/
+│   │   ├── controllers/        (8 controllers)
 │   │   ├── middleware/         (errorHandler)
 │   │   ├── models/             (TypeScript types)
 │   │   ├── routes/             (api.ts)
 │   │   ├── services/           (Instagram Auth & Graph)
-│   │   ├── services/storage/   (8pi.ts)
-│   │   ├── services/storage/   (7 storage classes)
+│   │   ├── services/storage/   (8 storage classes)
 │   │   ├── utils/              (logger, idGenerator)
 │   │   └── index.ts
 │   ├── data/                   (JSON storage)
 │   ├── logs/                   (Winston logs)
+│   ├── scripts/                (utilitários de teste)
 │   └── package.json
 │
 └── docs/                        ✅ COMPLETO
@@ -258,15 +271,16 @@ InstaSearch/
 - Sem banco de dados
 - Sem Docker/MongoDB
 
-## 📊 Estatísticas62 arquivos
-- **Linhas de Código:** ~6200+ linhas
+
+- **Total de Arquivos:** ~60 arquivos de produção
+- **Linhas de Código:** ~6000+ linhas (após limpeza)
 - **Endpoints da API:** 41 rotas
 - **Componentes React:** 9 componentes
 - **Páginas:** 7 páginas (Dashboard, Profiles, Analysis, Content, Calendar, Settings, MyProfile)
 - **Storage Classes:** 8 classes
-- **Hooks Customizados:** 7componentes
-- **Storage Classes:** 8 classes
-- **Hooks Customizados:** 6 hooks
+- **Hooks Customizados:** 7 hooks
+- **Documentação:** 7 arquivos markdown
+- **Scripts Utilitários:** 3 arquivos (organizados em /scripts)
 - **Documentação:** 7 arquivos markdown
 
 ## 🎯 Próxima Sessão
@@ -301,11 +315,18 @@ InstaSearch/
    - Gerenciamento de estado robusto
    - Tratamento de erros melhorado
    - Suporte a Promise.allSettled
+Limpeza e Organização:**
+   - Removido backend/src/test-storage.ts (175 linhas)
+   - Scripts movidos para backend/scripts/
+   - Imports otimizados (removido useEffect não utilizado)
+   - Corrigido import path inconsistente em App.tsx
+   - Código 100% limpo e sem código morto
 
-4. **Arquivos Criados/Modificados:**
+5. **Arquivos Criados/Modificados:**
    - `frontend/src/hooks/useMyInstagram.ts`
    - `frontend/src/pages/MyProfile.tsx`
    - `frontend/src/pages/MyProfile.css`
+   - `frontend/src/App.tsx`
    - `backend/src/services/instagramGraphService.ts`
    - `backend/src/controllers/instagramDataController.ts`
    - `backend/src/controllers/instagramAuthController.ts`
@@ -319,6 +340,5 @@ InstaSearch/
 - Proxy configurado no Vite para /api -> http://localhost:3000
 - Instagram conectado e funcionando via token manual
 - Página "Meu Perfil" exibindo posts e reels corretamente
-- Backend rodando em http://localhost:3000
-- Frontend rodando em http://localhost:5173
+- Código limpo e organizado, pronto para implementação de IA
 - Proxy configurado no Vite para /api -> http://localhost:3000
