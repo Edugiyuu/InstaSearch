@@ -1074,6 +1074,165 @@ Authorization: Bearer {token}
 
 ---
 
+## 🤖 Inteligência Artificial (Google Gemini)
+
+### POST /ai/analyze-profile
+
+Analisa um perfil do Instagram usando IA e retorna insights detalhados.
+
+**Request**:
+```json
+{
+  "profileData": {
+    "username": "makeup_artist",
+    "bio": "Maquiadora profissional | Tutoriais diários",
+    "followersCount": 15000,
+    "followingCount": 500,
+    "postsCount": 250,
+    "posts": [
+      {
+        "caption": "Tutorial de maquiagem natural",
+        "likesCount": 450,
+        "commentsCount": 23,
+        "type": "reel"
+      }
+    ]
+  }
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "overview": "O perfil é de uma maquiadora profissional...",
+    "contentThemes": ["Tutoriais de maquiagem", "Produtos acessíveis"],
+    "targetAudience": "Iniciantes e entusiastas de maquiagem...",
+    "postingFrequency": "Frequência alta e consistente...",
+    "engagementPattern": "Engajamento moderado, 3-4%...",
+    "recommendations": ["Otimizar Reels", "Garantir consistência"]
+  }
+}
+```
+
+### POST /ai/generate-content
+
+Gera sugestões de conteúdo baseadas na análise de perfil.
+
+**Request**:
+```json
+{
+  "profileAnalysis": {
+    "contentThemes": ["maquiagem", "tutoriais"],
+    "targetAudience": "Iniciantes em maquiagem"
+  },
+  "count": 5
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "title": "Tutorial de Maquiagem Natural em 5 Minutos",
+      "description": "Passo a passo rápido...",
+      "format": "reel",
+      "targetAudience": "Iniciantes",
+      "estimatedEngagement": "alto",
+      "hooks": ["Você tem só 5 minutos?"],
+      "hashtags": ["#maquiagemrapida", "#tutorialmake"]
+    }
+  ]
+}
+```
+
+### POST /ai/generate-caption
+
+Gera caption criativa para post com hashtags e CTA.
+
+**Request**:
+```json
+{
+  "contentIdea": "Tutorial de maquiagem para iniciantes",
+  "tone": "casual",
+  "includeHashtags": true
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "caption": "Quem aí sempre quis aprender a se maquiar? 🙋‍♀️...",
+    "hashtags": ["#MaquiagemParaIniciantes", "#MakeDeFarmacia"],
+    "callToAction": "Assista e me conta qual seu produto favorito!",
+    "tone": "casual"
+  }
+}
+```
+
+### POST /ai/analyze-hashtags
+
+Analisa hashtags e sugere melhorias.
+
+**Request**:
+```json
+{
+  "hashtags": ["#maquiagem", "#makeup", "#beleza"]
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "relevance": "As hashtags são altamente relevantes...",
+    "recommendations": ["Diversifique com tags de médio volume"],
+    "alternatives": ["#dicasdemaquiagem", "#resenhademaquiagem"]
+  }
+}
+```
+
+### GET /ai/health
+
+Verifica status do serviço de IA.
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "status": "healthy",
+    "model": "gemini-2.5-flash",
+    "provider": "Google Gemini",
+    "free": true,
+    "dailyLimit": 1500
+  }
+}
+```
+
+**Características da IA:**
+- ✅ **100% Gratuito** - Google Gemini
+- ✅ **1,500 requests/dia**
+- ✅ **Modelo:** gemini-2.5-flash
+- ✅ **Sem cartão de crédito**
+
+---
+
+## 📊 Estatísticas da API
+
+- **Total de Endpoints:** 46
+- **Endpoints de IA:** 5 (novos!)
+- **Endpoints do Instagram:** 13
+- **Endpoints de Análise:** 5
+
+---
+
 ## 📝 Notas
 
 - Todas as datas seguem o formato ISO 8601 (UTC)
@@ -1086,4 +1245,6 @@ Authorization: Bearer {token}
 
 ---
 
-**Documentação gerada em: 30/01/2026**
+**Documentação atualizada em:** 2 de Fevereiro de 2026  
+**Versão:** 1.0  
+**Novidade:** 🤖 Endpoints de IA com Google Gemini!

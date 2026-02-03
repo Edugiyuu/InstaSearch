@@ -7,6 +7,7 @@ import * as dashboardController from '../controllers/dashboardController.js'
 import * as instagramAuthController from '../controllers/instagramAuthController.js'
 import * as instagramTokenController from '../controllers/instagramTokenController.js'
 import * as instagramDataController from '../controllers/instagramDataController.js'
+import * as aiController from '../controllers/aiController.js'
 
 const router = Router()
 
@@ -15,6 +16,13 @@ router.get('/health', dashboardController.healthCheck)
 
 // Dashboard
 router.get('/dashboard/overview', dashboardController.getDashboardOverview)
+
+// AI Services
+router.post('/ai/analyze-profile', aiController.analyzeInstagramProfile)
+router.post('/ai/generate-content', aiController.generateContentSuggestions)
+router.post('/ai/generate-caption', aiController.generateCaption)
+router.post('/ai/analyze-hashtags', aiController.analyzeHashtags)
+router.get('/ai/health', aiController.checkAIHealth)
 
 // Instagram Authentication
 router.get('/instagram/auth-url', instagramAuthController.getAuthUrl)

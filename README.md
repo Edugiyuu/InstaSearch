@@ -83,7 +83,7 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
 - **Vite** como build tool
 
 ### IA e Análise
-- **OpenAI GPT-4** para análise e geração de conteúdo
+- **Google Gemini** para análise e geração de conteúdo (100% gratuito)
 - **Instagram Graph API** para integração
 - **Node.js** para scripts de análise
 

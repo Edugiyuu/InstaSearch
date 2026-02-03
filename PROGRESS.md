@@ -190,12 +190,31 @@ Infraestrutura completa para iniciar integração com IA:
 
 ## 📝 Pendente
 
-### 10. Serviço de IA (OpenAI)
-- [ ] AIService.ts para análise de perfis
-- [ ] Análise de padrões em reels
-- [ ] Geração de insights
-- [ ] Geração de sugestões de conteúdo
-- [ ] Geração de captions e hashtags
+### 10. Serviço de IA (Google Gemini) (100%)
+- [x] **AIService.ts completo:**
+  - Integração com Google Gemini API (100% gratuito)
+  - Modelo: gemini-2.5-flash (1,500 requests/dia)
+  - analyzeProfile() - Análise completa de perfis
+  - analyzeReel() - Análise de reels/vídeos
+  - generateContentSuggestions() - Sugestões de conteúdo
+  - generateCaption() - Captions com hashtags e CTA
+  - analyzeHashtags() - Análise e sugestões de hashtags
+  - healthCheck() - Verificação de status
+- [x] **Controller de IA (aiController.ts):**
+  - 5 endpoints REST implementados
+  - Tratamento de erros robusto
+  - Validações de input
+- [x] **Integração com analysisController:**
+  - Processamento em background
+  - Análise automática de perfis
+  - Geração de insights com IA
+- [x] **Scripts de teste:**
+  - test-gemini.js (70 linhas, otimizado)
+  - test-ai-endpoints.ps1 (testes completos)
+- [x] **Documentação:**
+  - docs/GEMINI_SETUP.md (guia completo)
+  - Configuração do .env
+  - Troubleshooting
 
 ### 11. Publishing Service
 - [ ] Sistema de fila com node-cron
@@ -225,23 +244,24 @@ InstaSearch/
 │
 ├── backend/                     ✅ COMPLETO
 │   ├── src/
-│   │   ├── controllers/        (8 controllers)
+│   │   ├── controllers/        (9 controllers + aiController)
 │   │   ├── middleware/         (errorHandler)
 │   │   ├── models/             (TypeScript types)
-│   │   ├── routes/             (api.ts)
-│   │   ├── services/           (Instagram Auth & Graph)
+│   │   ├── routes/             (api.ts com rotas de IA)
+│   │   ├── services/           (Instagram Auth, Graph, AI)
 │   │   ├── services/storage/   (8 storage classes)
 │   │   ├── utils/              (logger, idGenerator)
 │   │   └── index.ts
 │   ├── data/                   (JSON storage)
 │   ├── logs/                   (Winston logs)
-│   ├── scripts/                (utilitários de teste)
+│   ├── scripts/                (test-gemini, test-ai-endpoints)
 │   └── package.json
 │
 └── docs/                        ✅ COMPLETO
     ├── ARCHITECTURE.md
     ├── SETUP.md
     ├── API.md
+    ├── GEMINI_SETUP.md          (novo - configuração de IA)
     ├── INSTAGRAM_AUTH.md
     ├── INSTAGRAM_QUICKSTART.md
     ├── GERAR_TOKEN_INSTAGRAM.md
@@ -262,7 +282,7 @@ InstaSearch/
 - Node.js + Express 4.18.2
 - TypeScript 5.3.3
 - Winston (logging)
-- OpenAI 4.24.1
+- Google Gemini API (IA gratuita)
 - Node-cron 3.0.3
 - Nanoid 5.1.6
 
@@ -272,65 +292,89 @@ InstaSearch/
 - Sem Docker/MongoDB
 
 
-- **Total de Arquivos:** ~60 arquivos de produção
-- **Linhas de Código:** ~6000+ linhas (após limpeza)
-- **Endpoints da API:** 41 rotas
+- **Total de Arquivos:** ~65 arquivos de produção
+- **Linhas de Código:** ~7500+ linhas
+- **Endpoints da API:** 46 rotas (41 anteriores + 5 de IA)
 - **Componentes React:** 9 componentes
 - **Páginas:** 7 páginas (Dashboard, Profiles, Analysis, Content, Calendar, Settings, MyProfile)
 - **Storage Classes:** 8 classes
 - **Hooks Customizados:** 7 hooks
-- **Documentação:** 7 arquivos markdown
-- **Scripts Utilitários:** 3 arquivos (organizados em /scripts)
-- **Documentação:** 7 arquivos markdown
+- **Controllers:** 9 controllers (incluindo aiController)
+- **Services:** 3 services (Instagram Auth, Graph, AI)
+- **Documentação:** 8 arquivos markdown
+- **Scripts Utilitários:** 4 scripts (add-token, test-api, test-routes, test-gemini, test-ai-endpoints)
 
 ## 🎯 Próxima Sessão
 
-**Foco:** Serviço de IA para Análise de Perfis
+**Foco:** Integração de IA com Frontend
 **Arquivos a Criar:**
-1. `backend/src/services/aiService.ts` - Service para OpenAI
-2. Integrar análise de reels com IA
-3. Geração de insights e sugestões
-4. Geração de captions e hashtags
+1. `frontend/src/hooks/useAI.ts` - Hook para endpoints de IA
+2. Atualizar `frontend/src/pages/MyProfile.tsx` - Botão "Analisar com IA"
+3. `frontend/src/components/AIAnalysisModal.tsx` - Modal de resultados
+4. Atualizar `frontend/src/pages/Analysis.tsx` - Integração com IA
+5. Atualizar `frontend/src/pages/Content.tsx` - Geração de conteúdo com IA
 
-**Objetivo:** Implementar a camada de IA para:
-- Analisar padrões em reels
-- Gerar insights sobre perfis de referência
-- Sugerir temas de conteúdo
-- Gerar captions e hashtags automaticamente
+**Objetivo:** Conectar frontend com os serviços de IA:
+- Botão para analisar perfil do Instagram com IA
+- Visualização de insights e recomendações
+- Geração de sugestões de conteúdo
+- Geração de captions e hashtags
+- Interface amigável para interação com IA
 ## 📝 Últimas Atualizações (2 de Fevereiro de 2026)
 
 ### ✅ Implementado:
-1. **Nova Página "Meu Perfil":**
+
+#### 1. **Serviço de IA com Google Gemini (NOVO!):**
+   - **AIService completo** (`backend/src/services/aiService.ts`):
+     - 6 métodos de análise e geração
+     - Modelo: gemini-2.5-flash (100% gratuito)
+     - 1,500 requests/dia, sem cartão de crédito
+   - **5 novos endpoints de IA:**
+     - POST `/api/ai/analyze-profile` - Análise de perfil
+     - POST `/api/ai/generate-content` - Sugestões de conteúdo
+     - POST `/api/ai/generate-caption` - Geração de captions
+     - POST `/api/ai/analyze-hashtags` - Análise de hashtags
+     - GET `/api/ai/health` - Status da IA
+   - **Controller de IA** (`backend/src/controllers/aiController.ts`)
+   - **Integração com análises:** Processamento em background
+   - **Scripts de teste:** test-gemini.js (70 linhas otimizado)
+   - **Documentação:** docs/GEMINI_SETUP.md
+
+#### 2. **Nova Página "Meu Perfil":**
    - Visualização completa do perfil conectado
    - Grid de posts e reels com filtros
    - Card de insights (quando disponível)
    - Interface responsiva e moderna
 
-2. **Correções na API do Instagram:**
+#### 3. **Correções na API do Instagram:**
    - Migração para Facebook Graph API v18.0
    - Correção no uso do accountId
    - Insights tratados como opcionais
 
-3. **Hook useMyInstagram:**
+#### 4. **Hook useMyInstagram:**
    - Gerenciamento de estado robusto
    - Tratamento de erros melhorado
    - Suporte a Promise.allSettled
-Limpeza e Organização:**
-   - Removido backend/src/test-storage.ts (175 linhas)
-   - Scripts movidos para backend/scripts/
-   - Imports otimizados (removido useEffect não utilizado)
-   - Corrigido import path inconsistente em App.tsx
-   - Código 100% limpo e sem código morto
 
-5. **Arquivos Criados/Modificados:**
+#### 5. **Limpeza e Organização:**
+   - Removido backend/src/test-storage.ts (175 linhas)
+   - Scripts organizados em backend/scripts/
+   - Imports otimizados
+   - Código 100% limpo
+
+#### 6. **Arquivos Criados/Modificados:**
+   - `backend/src/services/aiService.ts` (395 linhas - NOVO)
+   - `backend/src/controllers/aiController.ts` (90 linhas - NOVO)
+   - `backend/scripts/test-gemini.js` (70 linhas - NOVO)
+   - `backend/scripts/test-ai-endpoints.ps1` (NOVO)
+   - `docs/GEMINI_SETUP.md` (NOVO)
+   - `backend/src/routes/api.ts` (atualizado)
+   - `backend/src/controllers/analysisController.ts` (atualizado)
+   - `backend/.env` (atualizado com GEMINI_API_KEY)
    - `frontend/src/hooks/useMyInstagram.ts`
    - `frontend/src/pages/MyProfile.tsx`
    - `frontend/src/pages/MyProfile.css`
    - `frontend/src/App.tsx`
-   - `backend/src/services/instagramGraphService.ts`
-   - `backend/src/controllers/instagramDataController.ts`
-   - `backend/src/controllers/instagramAuthController.ts`
-   - `backend/src/services/instagramAuthService.ts`
 
 ---
 
