@@ -19,7 +19,11 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
 - **Vídeos Curtos e Longos**:
   - 8 segundos: 1 prompt otimizado
   - 16 segundos: 2 prompts sequenciais com continuidade narrativa
-- **4 Estilos Visuais**: Cinematic, Realistic, Animated, Minimalist
+- **14 Estilos Visuais**: Cinematic, Realistic, Animated, Minimalist, Meme, Nonsense, Comedy, Aesthetic, Dramatic, Educational, Retro, Futuristic, Abstract, Trendy
+- **Diálogos/Falas (NOVO!)**: Adicione personagens falantes
+  - Especifique quem fala e o que fala
+  - Perfeito para comidas falantes, objetos animados, narrativas
+  - Timing customizável (início/meio/final)
 - **Integração Direta**: Botão "Criar no Grok" com deep link + clipboard
 
 ### 2. Análise de Perfis de Referência

@@ -30,7 +30,8 @@ const instagramService = new InstagramGraphService();
  * - contentId?: string - ID de uma ideia de conteúdo existente
  * - useMyProfile?: boolean - Usar contexto do perfil Instagram conectado
  * - duration: 8 | 16 - Duração do vídeo (8s = 1 prompt, 16s = 2 prompts)
- * - style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist'
+ * - style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy'
+ * - dialogues?: Array<{speaker: string, text: string, timing?: string}> - Diálogos/falas no vídeo
  */
 export const generateVideoPrompt = asyncHandler(
   async (req: Request, res: Response) => {
@@ -39,7 +40,8 @@ export const generateVideoPrompt = asyncHandler(
       contentId, 
       useMyProfile = false, 
       duration = 8, 
-      style = 'cinematic' 
+      style = 'cinematic',
+      dialogues 
     } = req.body;
 
     // Validar duração
@@ -110,7 +112,8 @@ export const generateVideoPrompt = asyncHandler(
       contentIdea,
       profileContext,
       duration: duration as 8 | 16,
-      style: style as any
+      style: style as any,
+      dialogues
     });
 
     res.json({
@@ -164,6 +167,66 @@ export const getAvailableStyles = asyncHandler(
             name: 'Minimalista',
             description: 'Visual limpo, cores simples, foco no essencial',
             bestFor: 'Conteúdo corporativo, tech, design'
+          },
+          {
+            id: 'meme',
+            name: 'Meme',
+            description: 'Estilo de meme viral, humor visual rápido',
+            bestFor: 'Conteúdo viral, humor, trends'
+          },
+          {
+            id: 'nonsense',
+            name: 'Nonsense',
+            description: 'Absurdo, surreal, bizarro, fora do comum',
+            bestFor: 'Humor absurdo, conteúdo experimental'
+          },
+          {
+            id: 'comedy',
+            name: 'Comédia',
+            description: 'Humor situacional, timing cômico',
+            bestFor: 'Sketches, piadas, entretenimento'
+          },
+          {
+            id: 'aesthetic',
+            name: 'Aesthetic',
+            description: 'Visual artístico, paleta de cores harmoniosa',
+            bestFor: 'Lifestyle, moda, arte, vibes'
+          },
+          {
+            id: 'dramatic',
+            name: 'Dramático',
+            description: 'Alto contraste, tensão visual, impactante',
+            bestFor: 'Histórias emocionais, revelações'
+          },
+          {
+            id: 'educational',
+            name: 'Educacional',
+            description: 'Claro, didático, visual explicativo',
+            bestFor: 'Tutoriais, dicas, how-to, ensino'
+          },
+          {
+            id: 'retro',
+            name: 'Retrô',
+            description: 'Estilo vintage, nostálgico, anos 80/90',
+            bestFor: 'Nostalgia, throwback, cultura pop'
+          },
+          {
+            id: 'futuristic',
+            name: 'Futurista',
+            description: 'Sci-fi, tech avançada, neon, cyberpunk',
+            bestFor: 'Tech, inovação, futurismo'
+          },
+          {
+            id: 'abstract',
+            name: 'Abstrato',
+            description: 'Arte abstrata, formas, cores não literais',
+            bestFor: 'Arte, experimentos visuais, conceitual'
+          },
+          {
+            id: 'trendy',
+            name: 'Trendy',
+            description: 'Segue tendências atuais do Instagram/TikTok',
+            bestFor: 'Trends, viral content, zeitgeist'
           }
         ],
         durations: [

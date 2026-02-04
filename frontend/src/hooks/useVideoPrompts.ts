@@ -8,10 +8,16 @@ const api = axios.create({
   },
 });
 
+export interface Dialogue {
+  speaker: string;
+  text: string;
+  timing?: string;
+}
+
 interface VideoPrompt {
   prompt: string;
   duration: number;
-  style: string;
+  style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy';
   technicalSpecs: {
     aspectRatio: string;
     fps: number;
@@ -26,7 +32,7 @@ interface VideoPromptResult {
   grokUrl: string;
   metadata?: {
     duration: number;
-    style: string;
+    style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy';
     promptCount: number;
     source: string;
   };
@@ -58,7 +64,8 @@ export function useVideoPrompts() {
     contentId?: string;
     useMyProfile?: boolean;
     duration: number;
-    style: string;
+    style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy';
+    dialogues?: Dialogue[];
   }) => {
     setLoading(true);
     setError(null);

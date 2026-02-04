@@ -186,22 +186,25 @@ Implementação de sistema para gerar prompts otimizados para ferramentas de IA 
 - ✅ **Integração:** Deep link com parâmetros OU fallback clipboard + auto-open
 
 #### 🎯 Funcionalidades a Implementar:
-- [ ] Método `generateVideoPrompt()` no AIService (Google Gemini)
+- [x] Método `generateVideoPrompt()` no AIService (Google Gemini)
   - Gerar 1 prompt para vídeos de 8s
   - Gerar 2 prompts sequenciais (Parte 1 + Parte 2) para vídeos de 16s
   - Baseado no perfil Instagram conectado OU tópico customizado
-  - Especificações técnicas: 9:16 aspect ratio, estilo cinematográfico
+  - Especificações técnicas: 9:16 aspect ratio, 14 estilos visuais
+  - **NOVO:** Sistema de diálogos/falas para personagens falantes
+- [x] Tipos TypeScript para diálogos (interface Dialogue)
 - [ ] Controller e endpoint `/api/video-prompts/generate`
 - [ ] Página "Video Prompts" no frontend
   - Opções: "Meu Perfil", "Ideia de Conteúdo", "Tópico Customizado"
   - Seletor de duração: 8s ou 16s
-  - Seletor de estilo: Cinematic, Realistic, Animated, Minimalist
+  - Seletor de estilo: 14 estilos disponíveis
+  - **NOVO:** Inputs dinâmicos para adicionar diálogos (quem fala + o que fala)
   - Botão "🚀 Criar no Grok" (deep link + fallback clipboard)
   - Cards com prompts gerados e botão copiar
 - [ ] Integração com página Content
   - Botão "🎬 Gerar Prompt de Vídeo" em cada ideia
   - Redireciona para Video Prompts com contexto pré-preenchido
-- [ ] Documentação atualizada
+- [x] Documentação atualizada (VIDEO_PROMPTS.md com exemplos de diálogos)
 
 #### Próximos Passos Após Implementação:
 - [ ] Implementar AIService completo para análise de perfis

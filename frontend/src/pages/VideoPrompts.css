@@ -99,6 +99,207 @@
   color: #1565c0;
 }
 
+/* Dialogues Section */
+.dialogues-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.dialogues-header label {
+  margin: 0;
+}
+
+.btn-toggle-dialogues {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-toggle-dialogues:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.dialogues-section {
+  background: #f8f9fa;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.dialogues-info {
+  background: #e3f2fd;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  color: #1565c0;
+  font-size: 0.9rem;
+}
+
+.dialogue-form {
+  margin-bottom: 1rem;
+}
+
+.dialogue-inputs {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.dialogue-inputs input,
+.dialogue-inputs select {
+  padding: 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.dialogue-inputs input:focus,
+.dialogue-inputs select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.input-speaker {
+  min-width: 150px;
+}
+
+.input-text {
+  flex: 1;
+}
+
+.input-timing {
+  min-width: 140px;
+}
+
+.btn-add-dialogue {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-add-dialogue:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-add-dialogue:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dialogues-list {
+  margin-top: 1.5rem;
+}
+
+.dialogues-list h4 {
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+}
+
+.dialogue-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.dialogue-item:hover {
+  border-color: var(--primary);
+  transform: translateX(4px);
+}
+
+.dialogue-content {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.dialogue-speaker {
+  font-weight: 600;
+  color: var(--primary);
+  font-size: 0.95rem;
+}
+
+.dialogue-text {
+  color: var(--text-primary);
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+.dialogue-timing {
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.btn-remove-dialogue {
+  background: #fee;
+  color: #c33;
+  border: 1px solid #fcc;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  line-height: 1;
+}
+
+.btn-remove-dialogue:hover {
+  background: #c33;
+  color: white;
+  border-color: #c33;
+}
+
+.dialogues-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.dialogues-empty p {
+  margin: 0.5rem 0;
+}
+
+.example-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.example-text strong {
+  color: var(--primary);
+}
+
 /* Duration Selector */
 .duration-selector {
   display: grid;
@@ -451,5 +652,34 @@
 
   .style-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* Dialogues responsive */
+  .dialogues-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .dialogue-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-add-dialogue {
+    width: 100%;
+  }
+
+  .dialogue-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dialogue-item {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .btn-remove-dialogue {
+    width: 100%;
   }
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useVideoPrompts } from '../hooks/useVideoPrompts';
+import { useVideoPrompts, Dialogue } from '../hooks/useVideoPrompts';
 import { useSearchParams } from 'react-router-dom';
 import './VideoPrompts.css';
 
@@ -26,6 +26,13 @@ const VideoPrompts = () => {
   const [duration, setDuration] = useState(8);
   const [style, setStyle] = useState('cinematic');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  
+  // Estados para diálogos
+  const [dialogues, setDialogues] = useState<Dialogue[]>([]);
+  const [newSpeaker, setNewSpeaker] = useState('');
+  const [newText, setNewText] = useState('');
+  const [newTiming, setNewTiming] = useState<string>('');
+  const [showDialogues, setShowDialogues] = useState(false);
 
   useEffect(() => {
     fetchStyles();
@@ -48,10 +55,37 @@ const VideoPrompts = () => {
         return;
       }
 
+      // Adicionar diálogos se houver
+      if (dialogues.length > 0) {
+        params.dialogues = dialogues;
+      }
+
       await generatePrompt(params);
     } catch (err) {
       // Error já está no state
     }
+  };
+
+  const handleAddDialogue = () => {
+    if (newSpeaker.trim() && newText.trim()) {
+      const dialogue: Dialogue = {
+        speaker: newSpeaker.trim(),
+        text: newText.trim(),
+      };
+      
+      if (newTiming) {
+        dialogue.timing = newTiming;
+      }
+
+      setDialogues([...dialogues, dialogue]);
+      setNewSpeaker('');
+      setNewText('');
+      setNewTiming('');
+    }
+  };
+
+  const handleRemoveDialogue = (index: number) => {
+    setDialogues(dialogues.filter((_, i) => i !== index));
   };
 
   const handleCopy = async (text: string, index: number) => {
@@ -156,6 +190,95 @@ const VideoPrompts = () => {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="form-section">
+            <div className="dialogues-header">
+              <label>💬 Diálogos/Falas (Opcional)</label>
+              <button
+                className="btn-toggle-dialogues"
+                onClick={() => setShowDialogues(!showDialogues)}
+              >
+                {showDialogues ? '➖ Esconder' : '➕ Adicionar Diálogos'}
+              </button>
+            </div>
+
+            {showDialogues && (
+              <div className="dialogues-section">
+                <p className="dialogues-info">
+                  💡 Adicione falas para personagens, objetos ou narradores. Perfeito para vídeos de humor, educação ou narrativas criativas!
+                </p>
+
+                <div className="dialogue-form">
+                  <div className="dialogue-inputs">
+                    <input
+                      type="text"
+                      placeholder="Quem fala? (ex: Pizza, Narrador...)"
+                      value={newSpeaker}
+                      onChange={(e) => setNewSpeaker(e.target.value)}
+                      className="input-speaker"
+                    />
+                    <input
+                      type="text"
+                      placeholder="O que fala?"
+                      value={newText}
+                      onChange={(e) => setNewText(e.target.value)}
+                      className="input-text"
+                    />
+                    <select
+                      value={newTiming}
+                      onChange={(e) => setNewTiming(e.target.value)}
+                      className="input-timing"
+                    >
+                      <option value="">Quando? (opcional)</option>
+                      <option value="início">Início</option>
+                      <option value="meio">Meio</option>
+                      <option value="final">Final</option>
+                    </select>
+                    <button
+                      className="btn-add-dialogue"
+                      onClick={handleAddDialogue}
+                      disabled={!newSpeaker.trim() || !newText.trim()}
+                    >
+                      ➕ Adicionar
+                    </button>
+                  </div>
+                </div>
+
+                {dialogues.length > 0 && (
+                  <div className="dialogues-list">
+                    <h4>Diálogos Adicionados ({dialogues.length}):</h4>
+                    {dialogues.map((dialogue, index) => (
+                      <div key={index} className="dialogue-item">
+                        <div className="dialogue-content">
+                          <span className="dialogue-speaker">👤 {dialogue.speaker}:</span>
+                          <span className="dialogue-text">"{dialogue.text}"</span>
+                          {dialogue.timing && (
+                            <span className="dialogue-timing">⏱️ {dialogue.timing}</span>
+                          )}
+                        </div>
+                        <button
+                          className="btn-remove-dialogue"
+                          onClick={() => handleRemoveDialogue(index)}
+                          title="Remover diálogo"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {dialogues.length === 0 && (
+                  <div className="dialogues-empty">
+                    <p>Nenhum diálogo adicionado ainda.</p>
+                    <p className="example-text">
+                      <strong>Exemplo:</strong> Pizza → "Eu sou a melhor comida!" → início
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <button

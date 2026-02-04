@@ -52,10 +52,16 @@ interface CaptionResult {
   tone: string;
 }
 
+export interface Dialogue {
+  speaker: string; // Quem fala (ex: "Pizza", "Hambúrguer", "Narrador")
+  text: string;    // O que fala
+  timing?: string; // Opcional: momento da fala (ex: "início", "meio", "final")
+}
+
 interface VideoPrompt {
   prompt: string;
   duration: number;
-  style: string;
+  style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy';
   technicalSpecs: {
     aspectRatio: string;
     fps: number;
@@ -407,10 +413,11 @@ Responda APENAS com o JSON válido, sem texto adicional.
       targetAudience?: string;
     };
     duration: 8 | 16;
-    style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist';
+    style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy';
+    dialogues?: Dialogue[]; // Diálogos/falas no vídeo
   }): Promise<VideoPromptResult> {
     try {
-      const { topic, contentIdea, profileContext, duration, style = 'cinematic' } = input;
+      const { topic, contentIdea, profileContext, duration, style = 'cinematic', dialogues } = input;
 
       logger.info(`🎬 Gerando prompt de vídeo: ${duration}s, estilo: ${style}`);
 
@@ -445,6 +452,19 @@ Tópico solicitado: ${topic}
 `;
       }
 
+      if (dialogues && dialogues.length > 0) {
+        contextDescription += `
+Diálogos/Falas no vídeo:
+`;
+        dialogues.forEach((dialogue, i) => {
+          contextDescription += `${i + 1}. ${dialogue.speaker}: "${dialogue.text}"`;
+          if (dialogue.timing) {
+            contextDescription += ` (${dialogue.timing})`;
+          }
+          contextDescription += `\n`;
+        });
+      }
+
       const promptCount = duration === 8 ? 1 : 2;
       const segmentDuration = duration === 8 ? 8 : 8;
 
@@ -467,6 +487,8 @@ IMPORTANTE SOBRE PROMPTS PARA VÍDEO IA:
 3. Para vídeos de 16s: criar 2 prompts com CONTINUIDADE narrativa (Parte 1 → Parte 2)
 4. Evitar texto on-screen (difícil de controlar em IA)
 5. Foco em ação, transições suaves, dinâmica visual
+${dialogues && dialogues.length > 0 ? `6. IMPORTANTE: Incorporar os diálogos/falas no prompt visual - descrever expressões faciais, movimentos labiais, gestos que correspondam às falas
+7. Os personagens/objetos devem "falar" através de animações visuais (bocas se movendo, gestos, etc.)` : ''}
 
 TAREFA:
 Gere ${promptCount} prompt(s) profissional(is) para criar um vídeo de ${duration}s sobre o contexto acima.
