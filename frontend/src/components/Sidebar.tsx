@@ -30,6 +30,11 @@ function Sidebar() {
           <span className="sidebar-text">Conteúdo</span>
         </NavLink>
         
+        <NavLink to="/video-prompts" className="sidebar-link">
+          <span className="sidebar-icon">🎬</span>
+          <span className="sidebar-text">Video Prompts</span>
+        </NavLink>
+        
         <NavLink to="/calendar" className="sidebar-link">
           <span className="sidebar-icon">📅</span>
           <span className="sidebar-text">Calendário</span>

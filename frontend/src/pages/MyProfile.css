@@ -17,7 +17,12 @@
   margin: 0;
 }
 
-.btn-refresh {
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-refresh, .btn-ai {
   padding: 0.75rem 1.5rem;
   background: var(--primary);
   color: white;
@@ -29,6 +34,11 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-weight: 500;
+}
+
+.btn-ai {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .btn-refresh:hover:not(:disabled) {
@@ -37,9 +47,26 @@
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
-.btn-refresh:disabled {
+.btn-ai:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-refresh:disabled, .btn-ai:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.ai-error-message {
+  background: #fee;
+  border: 1px solid #fcc;
+  color: #c33;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Profile Card */

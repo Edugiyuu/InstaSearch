@@ -6,7 +6,24 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
 
 ## 🎯 Funcionalidades Principais
 
-### 1. Análise de Perfis de Referência
+### 1. Geração de Prompts para Vídeo IA 🎬 (NOVO!)
+- **Gerar Prompts Otimizados**: Crie prompts profissionais para ferramentas de IA de vídeo
+  - Grok Video (https://grok.com/imagine)
+  - Runway ML
+  - Pika Labs
+  - Outras ferramentas de geração de vídeo
+- **Baseado em Contexto**:
+  - Perfil Instagram conectado (bio, temas, público-alvo)
+  - Ideias de conteúdo existentes
+  - Tópicos customizados
+- **Vídeos Curtos e Longos**:
+  - 8 segundos: 1 prompt otimizado
+  - 16 segundos: 2 prompts sequenciais com continuidade narrativa
+- **4 Estilos Visuais**: Cinematic, Realistic, Animated, Minimalist
+- **Integração Direta**: Botão "Criar no Grok" com deep link + clipboard
+
+### 2. Análise de Perfis de Referência
+### 2. Análise de Perfis de Referência
 - **Coleta de Dados**: Busca e armazena informações de perfis do Instagram
 - **Análise de Reels**: Analisa cada reel dos perfis de referência
   - Tema do conteúdo
@@ -17,18 +34,20 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
   - Engajamento (likes, comentários, visualizações)
 - **Extração de Padrões**: Identifica padrões de sucesso nos conteúdos
 
-### 2. Análise com IA
+### 3. Análise com IA
 - **Análise de Conteúdo**: Compreende o tema e estilo dos posts
 - **Reconhecimento de Tendências**: Identifica tendências nos perfis analisados
 - **Análise de Engajamento**: Correlaciona características com performance
 - **Extração de Insights**: Gera insights sobre o que funciona melhor
 
-### 3. Geração de Conteúdo
+### 4
+### 4. Geração de Conteúdo
 - **Criação de Ideias**: Gera ideias de conteúdo baseadas nas análises
 - **Geração de Scripts**: Cria roteiros para reels
 - **Sugestão de Hashtags**: Recomenda hashtags relevantes
 - **Agendamento**: Planeja calendário de postagens
 
+### 5
 ### 4. Publicação Automatizada
 - **Integração com Instagram**: Conecta com a API do Instagram
 - **Postagem Automática**: Publica conteúdo na conta configurada

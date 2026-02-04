@@ -172,49 +172,62 @@ Criar uma aplicação para analisar perfis de referência do Instagram, estudar 
 
 ## 🚧 Em Andamento
 
-### **FASE ATUAL: Preparado para IA**
-**Concluído em:** 2 de Fevereiro de 2026
+### **FASE ATUAL: Geração de Prompts para IA de Vídeo**
+**Iniciado em:** 3 de Fevereiro de 2026
 
-Infraestrutura completa para iniciar integração com IA:
-- ✅ Conexão Instagram funcionando
-- ✅ Busca de posts/reels implementada
-- ✅ Visualização de dados na página "Meu Perfil"
-- ✅ APIs prontas para alimentar serviços de IA
-- ✅ Código limpo e organizado
+Implementação de sistema para gerar prompts otimizados para ferramentas de IA de vídeo (Grok Video, Runway, etc.):
 
-#### Próximos Passos:
-- [ ] Implementar AIService para análise de perfis
+#### 📋 Decisões Tomadas:
+- ✅ **Abordagem escolhida:** Gerar prompts otimizados ao invés de integração direta com APIs de vídeo
+- ✅ **Razão:** APIs de vídeo (Runway, Pika) são caras ($95-500/mês) e complexas
+- ✅ **Ferramenta alvo:** Grok Video (https://grok.com/imagine)
+- ✅ **Limitação do Grok:** Gera vídeos de 7-8 segundos por prompt
+- ✅ **Solução para vídeos longos:** Gerar 2 prompts sequenciais com continuidade narrativa (total 16s)
+- ✅ **Integração:** Deep link com parâmetros OU fallback clipboard + auto-open
+
+#### 🎯 Funcionalidades a Implementar:
+- [ ] Método `generateVideoPrompt()` no AIService (Google Gemini)
+  - Gerar 1 prompt para vídeos de 8s
+  - Gerar 2 prompts sequenciais (Parte 1 + Parte 2) para vídeos de 16s
+  - Baseado no perfil Instagram conectado OU tópico customizado
+  - Especificações técnicas: 9:16 aspect ratio, estilo cinematográfico
+- [ ] Controller e endpoint `/api/video-prompts/generate`
+- [ ] Página "Video Prompts" no frontend
+  - Opções: "Meu Perfil", "Ideia de Conteúdo", "Tópico Customizado"
+  - Seletor de duração: 8s ou 16s
+  - Seletor de estilo: Cinematic, Realistic, Animated, Minimalist
+  - Botão "🚀 Criar no Grok" (deep link + fallback clipboard)
+  - Cards com prompts gerados e botão copiar
+- [ ] Integração com página Content
+  - Botão "🎬 Gerar Prompt de Vídeo" em cada ideia
+  - Redireciona para Video Prompts com contexto pré-preenchido
+- [ ] Documentação atualizada
+
+#### Próximos Passos Após Implementação:
+- [ ] Implementar AIService completo para análise de perfis
 - [ ] Integrar análise de reels com IA
-- [ ] Geração de conteúdo com IA
-- [ ] Sistema de publicação automática
+- [ ] Geração de conteúdo/ideias com IA
+- [ ] Sistema de agendamento de postagens
 
 ## 📝 Pendente
 
-### 10. Serviço de IA (Google Gemini) (100%)
-- [x] **AIService.ts completo:**
-  - Integração com Google Gemini API (100% gratuito)
-  - Modelo: gemini-2.5-flash (1,500 requests/dia)
-  - analyzeProfile() - Análise completa de perfis
-  - analyzeReel() - Análise de reels/vídeos
-  - generateContentSuggestions() - Sugestões de conteúdo
-  - generateCaption() - Captions com hashtags e CTA
-  - analyzeHashtags() - Análise e sugestões de hashtags
-  - healthCheck() - Verificação de status
-- [x] **Controller de IA (aiController.ts):**
-  - 5 endpoints REST implementados
-  - Tratamento de erros robusto
-  - Validações de input
-- [x] **Integração com analysisController:**
-  - Processamento em background
-  - Análise automática de perfis
-  - Geração de insights com IA
-- [x] **Scripts de teste:**
-  - test-gemini.js (70 linhas, otimizado)
-  - test-ai-endpoints.ps1 (testes completos)
-- [x] **Documentação:**
-  - docs/GEMINI_SETUP.md (guia completo)
-  - Configuração do .env
-  - Troubleshooting
+### 10. Serviço de IA (Google Gemini) - EM PROGRESSO
+- [x] Integração com Google Gemini API (100% gratuito) ✅
+- [x] docs/GEMINI_SETUP.md criado ✅
+- [ ] **PRÓXIMO:** Método `generateVideoPrompt()` para prompts de vídeo
+- [ ] AIService.ts completo para análise de perfis
+- [ ] Análise de padrões em reels
+- [ ] Geração de insights
+- [ ] Geração de sugestões de conteúdo
+- [ ]2. Publishing Service (FUTURO)
+- [ ] Sistema de fila com node-cron
+- [ ] Publicação automática no Instagram
+- [ ] Webhook para atualizar métricas
+- [ ] Notificações de status
+
+### 13Suporte para vídeos de 8s (1 prompt) e 16s (2 prompts sequenciais)
+- [ ] Integração com página Content
+- [ ] Documentação completa (API.md, README.md)
 
 ### 11. Publishing Service
 - [ ] Sistema de fila com node-cron
@@ -244,24 +257,23 @@ InstaSearch/
 │
 ├── backend/                     ✅ COMPLETO
 │   ├── src/
-│   │   ├── controllers/        (9 controllers + aiController)
+│   │   ├── controllers/        (8 controllers)
 │   │   ├── middleware/         (errorHandler)
 │   │   ├── models/             (TypeScript types)
-│   │   ├── routes/             (api.ts com rotas de IA)
-│   │   ├── services/           (Instagram Auth, Graph, AI)
+│   │   ├── routes/             (api.ts)
+│   │   ├── services/           (Instagram Auth & Graph)
 │   │   ├── services/storage/   (8 storage classes)
 │   │   ├── utils/              (logger, idGenerator)
 │   │   └── index.ts
 │   ├── data/                   (JSON storage)
 │   ├── logs/                   (Winston logs)
-│   ├── scripts/                (test-gemini, test-ai-endpoints)
+│   ├── scripts/                (utilitários de teste)
 │   └── package.json
 │
 └── docs/                        ✅ COMPLETO
     ├── ARCHITECTURE.md
     ├── SETUP.md
     ├── API.md
-    ├── GEMINI_SETUP.md          (novo - configuração de IA)
     ├── INSTAGRAM_AUTH.md
     ├── INSTAGRAM_QUICKSTART.md
     ├── GERAR_TOKEN_INSTAGRAM.md
@@ -292,89 +304,110 @@ InstaSearch/
 - Sem Docker/MongoDB
 
 
-- **Total de Arquivos:** ~65 arquivos de produção
-- **Linhas de Código:** ~7500+ linhas
-- **Endpoints da API:** 46 rotas (41 anteriores + 5 de IA)
+- **Total de Arquivos:** ~60 arquivos de produção
+- **Linhas de Código:** ~6000+ linhas (após limpeza)
+- **Endpoints da API:** 41 rotas
 - **Componentes React:** 9 componentes
 - **Páginas:** 7 páginas (Dashboard, Profiles, Analysis, Content, Calendar, Settings, MyProfile)
 - **Storage Classes:** 8 classes
 - **Hooks Customizados:** 7 hooks
-- **Controllers:** 9 controllers (incluindo aiController)
-- **Services:** 3 services (Instagram Auth, Graph, AI)
-- **Documentação:** 8 arquivos markdown
-- **Scripts Utilitários:** 4 scripts (add-token, test-api, test-routes, test-gemini, test-ai-endpoints)
+- **Documentação:** 7 arquivos markdown
+- **Scripts Utilitários:** 3 arquivos (organizados em /scripts)
+- **Documentação:** 7 arquivos markdown
 
-## 🎯 Próxima Sessão
+## 🎯 Próxima Implementação
 
-**Foco:** Integração de IA com Frontend
-**Arquivos a Criar:**
-1. `frontend/src/hooks/useAI.ts` - Hook para endpoints de IA
-2. Atualizar `frontend/src/pages/MyProfile.tsx` - Botão "Analisar com IA"
-3. `frontend/src/components/AIAnalysisModal.tsx` - Modal de resultados
-4. Atualizar `frontend/src/pages/Analysis.tsx` - Integração com IA
-5. Atualizar `frontend/src/pages/Content.tsx` - Geração de conteúdo com IA
+**Foco:** Sistema de Geração de Prompts para Vídeo IA
+**Arquivos a Criar/Modificar:**
 
-**Objetivo:** Conectar frontend com os serviços de IA:
-- Botão para analisar perfil do Instagram com IA
-- Visualização de insights e recomendações
-- Geração de sugestões de conteúdo
-- Geração de captions e hashtags
-- Interface amigável para interação com IA
-## 📝 Últimas Atualizações (2 de Fevereiro de 2026)
+### Backend:
+1. `backend/src/services/aiService.ts` - Adicionar método `generateVideoPrompt()`
+2. `backend/src/controllers/videoPromptController.ts` - Controller para prompts de vídeo
+3. `backend/src/routes/api.ts` - Registrar rota `/api/video-prompts/generate`
+
+### Frontend:
+4. `frontend/src/pages/VideoPrompts.tsx` - Página de geração de prompts
+5. `frontend/src/pages/VideoPrompts.css` - Estilos da página
+6. `frontend/src/hooks/useVideoPrompts.ts` - Hook para chamar API
+7. `frontend/src/pages/Content.tsx` - Adicionar botão "🎬 Gerar Prompt"
+8. `frontend/src/components/Sidebar.tsx` - Link "🎬 Video Prompts"
+9. `frontend/src/App.tsx` - Rota `/video-prompts`
+
+### Documentação:
+10. `docs/VIDEO_PROMPTS.md` - Guia sobre geração de prompts (Grok, limitações, etc.)
+11. `docs/API.md` - Documentar endpoint `/api/video-prompts/generate`
+12. `README.md` - Adicionar feature "Geração de Prompts para IA de Vídeo"
+
+**Objetivos:**
+- ✅ Gerar prompts otimizados para Grok Video usando Google Gemini (gratuito)
+- ✅ Suporte para vídeos de 8s (1 prompt) e 16s (2 prompts sequenciais)
+- ✅ Baseado em perfil Instagram conectado OU tópicos customizados
+- ✅ Integração com deep link/clipboard para Grok
+- ✅ Botão na página Content para gerar prompts de ideias existentes
+- ✅ 100% gratuito (apenas usa Gemini API - 1,500 requests/dia)
+## 📝 Últimas Atualizações
+
+### **3 de Fevereiro de 2026** - Planejamento de Geração de Prompts de Vídeo IA
+
+**Discussão e Decisões:**
+1. **Pesquisa de APIs de Vídeo IA:**
+   - Analisadas: Runway ML, Stability AI, Google Veo 3.1, Replicate, Grok
+   - Conclusão: Nenhuma API realmente gratuita, custos de $95-500/mês + $0.10-0.50/vídeo
+   - Grok tem ferramenta de vídeo mas sem API pública
+
+2. **Decisão Final:**
+   - **Não integrar** diretamente com APIs de vídeo (custo-benefício ruim)
+   - **Gerar prompts otimizados** para usuário criar vídeos manualmente em ferramentas IA
+   - Foco em Grok Video (https://grok.com/imagine)
+
+3. **Especificações do Sistema:**
+   - Grok gera vídeos de 7-8 segundos por prompt
+   - Para vídeos de 16s: 2 prompts sequenciais com continuidade narrativa
+   - Integração: Deep link `https://grok.com/imagine?prompt=...` OU clipboard + auto-open
+   - Prompts baseados em: perfil Instagram conectado, ideias de conteúdo, ou tópicos customizados
+
+4. **Próxima Implementação:**
+   - Método `generateVideoPrompt()` no AIService usando Google Gemini
+   - Endpoint `/api/video-prompts/generate`
+   - Página VideoPrompts.tsx com formulário e integração Grok
+   - Botão "🎬 Gerar Prompt de Vídeo" na página Content
+
+---
+
+### **2 de Fevereiro de 2026** - Infraestrutura Base Completa
 
 ### ✅ Implementado:
-
-#### 1. **Serviço de IA com Google Gemini (NOVO!):**
-   - **AIService completo** (`backend/src/services/aiService.ts`):
-     - 6 métodos de análise e geração
-     - Modelo: gemini-2.5-flash (100% gratuito)
-     - 1,500 requests/dia, sem cartão de crédito
-   - **5 novos endpoints de IA:**
-     - POST `/api/ai/analyze-profile` - Análise de perfil
-     - POST `/api/ai/generate-content` - Sugestões de conteúdo
-     - POST `/api/ai/generate-caption` - Geração de captions
-     - POST `/api/ai/analyze-hashtags` - Análise de hashtags
-     - GET `/api/ai/health` - Status da IA
-   - **Controller de IA** (`backend/src/controllers/aiController.ts`)
-   - **Integração com análises:** Processamento em background
-   - **Scripts de teste:** test-gemini.js (70 linhas otimizado)
-   - **Documentação:** docs/GEMINI_SETUP.md
-
-#### 2. **Nova Página "Meu Perfil":**
+1. **Nova Página "Meu Perfil":**
    - Visualização completa do perfil conectado
    - Grid de posts e reels com filtros
    - Card de insights (quando disponível)
    - Interface responsiva e moderna
 
-#### 3. **Correções na API do Instagram:**
+2. **Correções na API do Instagram:**
    - Migração para Facebook Graph API v18.0
    - Correção no uso do accountId
    - Insights tratados como opcionais
 
-#### 4. **Hook useMyInstagram:**
+3. **Hook useMyInstagram:**
    - Gerenciamento de estado robusto
    - Tratamento de erros melhorado
    - Suporte a Promise.allSettled
-
-#### 5. **Limpeza e Organização:**
+Limpeza e Organização:**
    - Removido backend/src/test-storage.ts (175 linhas)
-   - Scripts organizados em backend/scripts/
-   - Imports otimizados
-   - Código 100% limpo
+   - Scripts movidos para backend/scripts/
+   - Imports otimizados (removido useEffect não utilizado)
+   - Corrigido import path inconsistente em App.tsx
+   - Código 100% limpo e sem código morto
 
-#### 6. **Arquivos Criados/Modificados:**
-   - `backend/src/services/aiService.ts` (395 linhas - NOVO)
-   - `backend/src/controllers/aiController.ts` (90 linhas - NOVO)
-   - `backend/scripts/test-gemini.js` (70 linhas - NOVO)
-   - `backend/scripts/test-ai-endpoints.ps1` (NOVO)
-   - `docs/GEMINI_SETUP.md` (NOVO)
-   - `backend/src/routes/api.ts` (atualizado)
-   - `backend/src/controllers/analysisController.ts` (atualizado)
-   - `backend/.env` (atualizado com GEMINI_API_KEY)
+5. **Arquivos Criados/Modificados:**
    - `frontend/src/hooks/useMyInstagram.ts`
    - `frontend/src/pages/MyProfile.tsx`
    - `frontend/src/pages/MyProfile.css`
    - `frontend/src/App.tsx`
+   - `backend/src/services/instagramGraphService.ts`
+   - `backend/src/controllers/instagramDataController.ts`
+   - `backend/src/controllers/instagramAuthController.ts`
+   - `backend/src/services/instagramAuthService.ts`
 
 ---
 

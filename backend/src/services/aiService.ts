@@ -52,6 +52,24 @@ interface CaptionResult {
   tone: string;
 }
 
+interface VideoPrompt {
+  prompt: string;
+  duration: number;
+  style: string;
+  technicalSpecs: {
+    aspectRatio: string;
+    fps: number;
+    length: string;
+  };
+}
+
+interface VideoPromptResult {
+  prompts: VideoPrompt[];
+  context: string;
+  tips: string[];
+  grokUrl: string;
+}
+
 class AIService {
   private genAI: GoogleGenerativeAI;
   private model: any;
@@ -368,6 +386,165 @@ Responda APENAS com o JSON válido, sem texto adicional.
   }
 
   /**
+   * Gera prompts otimizados para criação de vídeos com IA (Grok, Runway, etc.)
+   * Suporta vídeos de 8s (1 prompt) ou 16s (2 prompts sequenciais)
+   */
+  async generateVideoPrompt(input: {
+    topic?: string;
+    contentIdea?: {
+      title: string;
+      description: string;
+      script?: {
+        hook: string;
+        body: string;
+        cta: string;
+      };
+    };
+    profileContext?: {
+      username: string;
+      bio?: string;
+      contentThemes?: string[];
+      targetAudience?: string;
+    };
+    duration: 8 | 16;
+    style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist';
+  }): Promise<VideoPromptResult> {
+    try {
+      const { topic, contentIdea, profileContext, duration, style = 'cinematic' } = input;
+
+      logger.info(`🎬 Gerando prompt de vídeo: ${duration}s, estilo: ${style}`);
+
+      // Determinar contexto base
+      let contextDescription = '';
+      if (profileContext) {
+        contextDescription = `
+Perfil do criador:
+- Username: @${profileContext.username}
+- Bio: ${profileContext.bio || 'Não informada'}
+- Temas de conteúdo: ${profileContext.contentThemes?.join(', ') || 'Variados'}
+- Público-alvo: ${profileContext.targetAudience || 'Geral'}
+`;
+      }
+
+      if (contentIdea) {
+        contextDescription += `
+Ideia de conteúdo:
+- Título: ${contentIdea.title}
+- Descrição: ${contentIdea.description}
+${contentIdea.script ? `
+- Hook: ${contentIdea.script.hook}
+- Corpo: ${contentIdea.script.body}
+- CTA: ${contentIdea.script.cta}
+` : ''}
+`;
+      }
+
+      if (topic) {
+        contextDescription += `
+Tópico solicitado: ${topic}
+`;
+      }
+
+      const promptCount = duration === 8 ? 1 : 2;
+      const segmentDuration = duration === 8 ? 8 : 8;
+
+      const prompt = `
+Você é um especialista em criação de prompts para IA de geração de vídeo (como Grok Video, Runway ML, Pika Labs).
+
+CONTEXTO:
+${contextDescription}
+
+ESPECIFICAÇÕES TÉCNICAS:
+- Plataforma alvo: Instagram Reels
+- Aspect ratio: 9:16 (vertical)
+- Duração: ${duration} segundos total
+- Estilo visual: ${style}
+- Número de prompts: ${promptCount} (cada um gera ~${segmentDuration}s de vídeo)
+
+IMPORTANTE SOBRE PROMPTS PARA VÍDEO IA:
+1. Prompts devem ser EXTREMAMENTE descritivos e visuais
+2. Incluir: cena, iluminação, câmera, movimento, cores, atmosfera
+3. Para vídeos de 16s: criar 2 prompts com CONTINUIDADE narrativa (Parte 1 → Parte 2)
+4. Evitar texto on-screen (difícil de controlar em IA)
+5. Foco em ação, transições suaves, dinâmica visual
+
+TAREFA:
+Gere ${promptCount} prompt(s) profissional(is) para criar um vídeo de ${duration}s sobre o contexto acima.
+
+${promptCount === 2 ? `
+Como são 2 prompts sequenciais:
+- Parte 1 (0-8s): Introdução/Hook visual - apresenta o tema
+- Parte 2 (8-16s): Desenvolvimento/Conclusão - aprofunda ou conclui a narrativa
+
+GARANTIR CONTINUIDADE: 
+- Mesma paleta de cores
+- Mesmo estilo visual
+- Mesma locação (ou transição lógica)
+- Personagem/objeto consistente
+` : ''}
+
+Retorne APENAS um JSON válido (sem markdown, sem explicações) no formato:
+{
+  "prompts": [
+    {
+      "prompt": "Descrição visual detalhada do vídeo...",
+      "duration": ${segmentDuration},
+      "style": "${style}",
+      "technicalSpecs": {
+        "aspectRatio": "9:16",
+        "fps": 30,
+        "length": "${segmentDuration}s"
+      }
+    }${promptCount === 2 ? `,
+    {
+      "prompt": "Continuação visual com mesma estética...",
+      "duration": ${segmentDuration},
+      "style": "${style}",
+      "technicalSpecs": {
+        "aspectRatio": "9:16",
+        "fps": 30,
+        "length": "${segmentDuration}s"
+      }
+    }` : ''}
+  ],
+  "context": "Breve explicação do conceito do vídeo (1 frase)",
+  "tips": [
+    "Dica 1 para melhorar o resultado no Grok",
+    "Dica 2 para ajustes após gerar",
+    "Dica 3 sobre edição/finalização"
+  ]
+}
+`;
+
+      const result = await this.model.generateContent(prompt);
+      const response = result.response.text();
+
+      // Extrair JSON da resposta
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Resposta não está em formato JSON válido');
+      }
+
+      const videoPromptData = JSON.parse(jsonMatch[0]);
+
+      // Gerar URL do Grok com primeiro prompt pré-preenchido
+      const firstPrompt = encodeURIComponent(videoPromptData.prompts[0].prompt);
+      const grokUrl = `https://grok.com/imagine?prompt=${firstPrompt}`;
+
+      logger.info(`✅ ${promptCount} prompt(s) de vídeo gerado(s) com sucesso`);
+
+      return {
+        ...videoPromptData,
+        grokUrl
+      };
+
+    } catch (error: any) {
+      logger.error(`❌ Erro ao gerar prompt de vídeo: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Verifica se o serviço está funcionando
    */
   async healthCheck(): Promise<boolean> {
@@ -391,4 +568,5 @@ export function getAIService(): AIService {
   return aiServiceInstance;
 }
 
+export { AIService };
 export default AIService;

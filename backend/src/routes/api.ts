@@ -8,6 +8,7 @@ import * as instagramAuthController from '../controllers/instagramAuthController
 import * as instagramTokenController from '../controllers/instagramTokenController.js'
 import * as instagramDataController from '../controllers/instagramDataController.js'
 import * as aiController from '../controllers/aiController.js'
+import * as videoPromptController from '../controllers/videoPromptController.js'
 
 const router = Router()
 
@@ -23,6 +24,10 @@ router.post('/ai/generate-content', aiController.generateContentSuggestions)
 router.post('/ai/generate-caption', aiController.generateCaption)
 router.post('/ai/analyze-hashtags', aiController.analyzeHashtags)
 router.get('/ai/health', aiController.checkAIHealth)
+
+// Video Prompts (AI)
+router.post('/video-prompts/generate', videoPromptController.generateVideoPrompt)
+router.get('/video-prompts/styles', videoPromptController.getAvailableStyles)
 
 // Instagram Authentication
 router.get('/instagram/auth-url', instagramAuthController.getAuthUrl)

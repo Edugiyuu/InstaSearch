@@ -7,6 +7,7 @@ import Content from './pages/Content'
 import Calendar from './pages/Calendar'
 import Settings from './pages/Settings'
 import MyProfile from './pages/MyProfile'
+import VideoPrompts from './pages/VideoPrompts'
 import './styles/App.css'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path="/profiles" element={<Profiles />} />
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/content" element={<Content />} />
+          <Route path="/video-prompts" element={<VideoPrompts />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

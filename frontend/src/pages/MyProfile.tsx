@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useMyInstagram } from '../hooks/useMyInstagram'
+import { useAI } from '../hooks/useAI'
+import { AIAnalysisModal } from '../components/AIAnalysisModal'
 import './MyProfile.css'
 
 const MyProfile = () => {
   const { profile, media, reels, insights, loading, error, fetchAll } = useMyInstagram();
+  const { analyzeProfile, loading: aiLoading, error: aiError } = useAI();
   const [activeTab, setActiveTab] = useState<'all' | 'reels'>('all');
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
 
   useEffect(() => {
     fetchAll();
@@ -26,6 +31,31 @@ const MyProfile = () => {
     });
   };
 
+  const handleAnalyzeWithAI = async () => {
+    if (!profile) return;
+
+    const profileData = {
+      username: profile.username,
+      bio: profile.biography,
+      followersCount: profile.followers_count,
+      followingCount: profile.follows_count,
+      postsCount: profile.media_count,
+      posts: media.map(m => ({
+        caption: m.caption,
+        likesCount: m.like_count,
+        commentsCount: m.comments_count,
+        type: m.media_type === 'VIDEO' ? 'reel' : 'post'
+      })).slice(0, 10) // Apenas últimos 10 posts
+    };
+
+    const result = await analyzeProfile(profileData);
+    
+    if (result) {
+      setAiAnalysis(result);
+      setShowAIModal(true);
+    }
+  };
+
   if (loading && !profile) {
     return (
       <div className="my-profile">
@@ -43,38 +73,57 @@ const MyProfile = () => {
         <div className="error-message">
           <h3>⚠️ Erro</h3>
           <p>{error}</p>
-          <button onClick={fetchAll} className="btn-primary">
-            Tentar Novamente
+          <button onClick={fetchAll} className="btn-refresh">
+            🔄 Tentar Novamente
           </button>
         </div>
       </div>
     );
   }
 
-  if (!profile) {
-    return (
-      <div className="my-profile">
-        <div className="empty-state">
-          <h3>📱 Conecte seu Instagram</h3>
-          <p>Vá em Configurações para conectar sua conta do Instagram.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const currentMedia = activeTab === 'all' ? media : reels;
-
   return (
     <div className="my-profile">
       <div className="profile-header">
         <h1>📱 Meu Perfil do Instagram</h1>
-        <button onClick={fetchAll} className="btn-refresh" disabled={loading}>
-          {loading ? '⏳' : '🔄'} Atualizar
-        </button>
+        <div className="header-actions">
+          <button onClick={fetchAll} className="btn-refresh" disabled={loading}>
+            {loading ? '⏳' : '🔄'} Atualizar
+          </button>
+          <button 
+            onClick={handleAnalyzeWithAI} 
+            className="btn-ai" 
+            disabled={aiLoading || loading || !profile}
+          >
+            {aiLoading ? '⏳ Analisando...' : '🤖 Analisar com IA'}
+          </button>
+        </div>
       </div>
 
-      {/* Profile Info Card */}
-      <div className="profile-card">
+      {aiError && (
+        <div className="ai-error-message">
+          ⚠️ {aiError}
+        </div>
+      )}
+
+      {/* AI Analysis Modal */}
+      <AIAnalysisModal
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        analysis={aiAnalysis}
+        username={profile?.username || ''}
+      />
+
+      {!profile && (
+        <div className="empty-state">
+          <h3>📱 Conecte seu Instagram</h3>
+          <p>Vá em Configurações para conectar sua conta do Instagram.</p>
+        </div>
+      )}
+
+      {profile && (
+        <>
+          {/* Profile Info Card */}
+          <div className="profile-card">
         <div className="profile-avatar">
           {profile.profile_picture_url ? (
             <img src={profile.profile_picture_url} alt={profile.username} />
@@ -177,9 +226,12 @@ const MyProfile = () => {
         </div>
 
         {/* Media Grid */}
-        {currentMedia.length > 0 ? (
+        {(() => {
+          const currentMedia = activeTab === 'all' ? media : reels;
+          
+          return currentMedia.length > 0 ? (
           <div className="media-grid">
-            {currentMedia.map((item) => (
+            {currentMedia.map((item: any) => (
               <div key={item.id} className="media-item">
                 <div className="media-thumbnail">
                   {item.media_type === 'VIDEO' ? (
@@ -246,8 +298,11 @@ const MyProfile = () => {
                 : '📭 Nenhum reel encontrado'}
             </p>
           </div>
-        )}
+        );
+        })()}
       </div>
+      </>
+      )}
     </div>
   );
 };

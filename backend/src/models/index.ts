@@ -43,6 +43,8 @@ export interface Analysis {
   profileIds: string[]
   type: 'profile' | 'trend' | 'engagement' | 'comprehensive'
   status: 'processing' | 'completed' | 'failed'
+  insights?: any[]
+  suggestions?: any[]
   results?: {
     themes: Array<{
       name: string

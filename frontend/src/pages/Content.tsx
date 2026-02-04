@@ -1,7 +1,9 @@
 import { useContent } from '../hooks/useContent'
+import { useNavigate } from 'react-router-dom'
 
 function Content() {
   const { content, loading, error, approve, remove } = useContent()
+  const navigate = useNavigate()
 
   const handleApprove = async (id: string) => {
     try {
@@ -69,6 +71,12 @@ function Content() {
 
             {item.status === 'draft' && (
               <div className="content-actions">
+                <button 
+                  onClick={() => navigate(`/video-prompts?contentId=${item.id}`)}
+                  className="btn btn-secondary"
+                >
+                  🎬 Gerar Prompt de Vídeo
+                </button>
                 <button 
                   onClick={() => handleApprove(item.id)}
                   className="btn btn-primary"
