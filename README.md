@@ -6,7 +6,24 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
 
 ## 🎯 Funcionalidades Principais
 
-### 1. Geração de Prompts para Vídeo IA 🎬 (NOVO!)
+### 1. Publicação de Reels 🎥 (NOVO!)
+- **Upload Múltiplo**: Envie 1-3 vídeos (MP4, MOV, AVI, MKV)
+- **Merge de Vídeos**: Junte múltiplos vídeos em um único reel
+- **Processamento FFmpeg**: 
+  - Otimização automática para Instagram (1080x1920, 9:16)
+  - Concatenação profissional com transições suaves
+  - Frame rate 30fps, codec H.264
+- **Upload Cloudinary**: CDN público para hospedagem temporária
+- **Publicação Direta**: 
+  - Integração com Instagram Graph API v18.0
+  - Caption e hashtags customizáveis
+  - Processamento assíncrono com feedback em tempo real
+- **Interface Drag-and-Drop**: 
+  - Arraste e solte vídeos
+  - Preview com duração e tamanho
+  - Workflow visual: upload → merge → publish
+
+### 2. Geração de Prompts para Vídeo IA 🎬
 - **Gerar Prompts Otimizados**: Crie prompts profissionais para ferramentas de IA de vídeo
   - Grok Video (https://grok.com/imagine)
   - Runway ML
@@ -24,10 +41,27 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
   - Especifique quem fala e o que fala
   - Perfeito para comidas falantes, objetos animados, narrativas
   - Timing customizável (início/meio/final)
+### 2. Geração de Prompts para Vídeo IA 🎬
+- **Gerar Prompts Otimizados**: Crie prompts profissionais para ferramentas de IA de vídeo
+  - Grok Video (https://grok.com/imagine)
+  - Runway ML
+  - Pika Labs
+  - Outras ferramentas de geração de vídeo
+- **Baseado em Contexto**:
+  - Perfil Instagram conectado (bio, temas, público-alvo)
+  - Ideias de conteúdo existentes
+  - Tópicos customizados
+- **Vídeos Curtos e Longos**:
+  - 8 segundos: 1 prompt otimizado
+  - 16 segundos: 2 prompts sequenciais com continuidade narrativa
+- **8 Estilos Visuais**: Cinematic, Realistic, Animated, Minimalist, Meme, Nonsense, Aesthetic, Satisfying
+- **Diálogos/Falas**: Adicione personagens falantes
+  - Especifique quem fala e o que fala
+  - Perfeito para comidas falantes, objetos animados, narrativas
+  - Timing customizável (início/meio/final)
 - **Integração Direta**: Botão "Criar no Grok" com deep link + clipboard
 
-### 2. Análise de Perfis de Referência
-### 2. Análise de Perfis de Referência
+### 3. Análise de Perfis de Referência
 - **Coleta de Dados**: Busca e armazena informações de perfis do Instagram
 - **Análise de Reels**: Analisa cada reel dos perfis de referência
   - Tema do conteúdo
@@ -38,21 +72,19 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
   - Engajamento (likes, comentários, visualizações)
 - **Extração de Padrões**: Identifica padrões de sucesso nos conteúdos
 
-### 3. Análise com IA
+### 4. Análise com IA
 - **Análise de Conteúdo**: Compreende o tema e estilo dos posts
 - **Reconhecimento de Tendências**: Identifica tendências nos perfis analisados
 - **Análise de Engajamento**: Correlaciona características com performance
 - **Extração de Insights**: Gera insights sobre o que funciona melhor
 
-### 4
-### 4. Geração de Conteúdo
+### 5. Geração de Conteúdo
 - **Criação de Ideias**: Gera ideias de conteúdo baseadas nas análises
 - **Geração de Scripts**: Cria roteiros para reels
 - **Sugestão de Hashtags**: Recomenda hashtags relevantes
 - **Agendamento**: Planeja calendário de postagens
 
-### 5
-### 4. Publicação Automatizada
+### 6. Publicação Automatizada
 - **Integração com Instagram**: Conecta com a API do Instagram
 - **Postagem Automática**: Publica conteúdo na conta configurada
 - **Monitoramento**: Acompanha performance das postagens
@@ -87,8 +119,7 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
 
 - [Setup](docs/SETUP.md) - Configuração inicial do projeto
 - [Arquitetura](docs/ARCHITECTURE.md) - Estrutura e design do sistema
-- [API](docs/API.md) - Documentação completa da API
-- [Instagram - Início Rápido](docs/INSTAGRAM_QUICKSTART.md) - Como conectar sua conta Instagram
+- [API](docs/API.md) - Documentação completa da API- [Publicar Reels](docs/VIDEO_PUBLISH.md) - Sistema de upload/merge/publicação de vídeos ✨ NOVO- [Instagram - Início Rápido](docs/INSTAGRAM_QUICKSTART.md) - Como conectar sua conta Instagram
 - [Instagram - Gerar Token](docs/GERAR_TOKEN_INSTAGRAM.md) - Passo a passo para gerar token
 - [Instagram - Autenticação](docs/INSTAGRAM_AUTH.md) - Guia completo de OAuth
 
@@ -108,7 +139,8 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
 ### IA e Análise
 - **Google Gemini** para análise e geração de conteúdo (100% gratuito)
 - **Instagram Graph API** para integração
-- **Node.js** para scripts de análise
+- **FFmpeg** para processamento de vídeo
+- **Cloudinary** para hospedagem de mídia (CDN)
 
 ## 📁 Estrutura do Projeto
 

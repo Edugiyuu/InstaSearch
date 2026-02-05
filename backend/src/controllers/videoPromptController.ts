@@ -30,7 +30,7 @@ const instagramService = new InstagramGraphService();
  * - contentId?: string - ID de uma ideia de conteúdo existente
  * - useMyProfile?: boolean - Usar contexto do perfil Instagram conectado
  * - duration: 8 | 16 - Duração do vídeo (8s = 1 prompt, 16s = 2 prompts)
- * - style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy'
+ * - style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'aesthetic' | 'satisfying'
  * - dialogues?: Array<{speaker: string, text: string, timing?: string}> - Diálogos/falas no vídeo
  */
 export const generateVideoPrompt = asyncHandler(
@@ -172,19 +172,13 @@ export const getAvailableStyles = asyncHandler(
             id: 'meme',
             name: 'Meme',
             description: 'Estilo de meme viral, humor visual rápido',
-            bestFor: 'Conteúdo viral, humor, trends'
+            bestFor: 'Conteúdo viral, humor, trends, gen-Z'
           },
           {
             id: 'nonsense',
             name: 'Nonsense',
             description: 'Absurdo, surreal, bizarro, fora do comum',
-            bestFor: 'Humor absurdo, conteúdo experimental'
-          },
-          {
-            id: 'comedy',
-            name: 'Comédia',
-            description: 'Humor situacional, timing cômico',
-            bestFor: 'Sketches, piadas, entretenimento'
+            bestFor: 'Humor absurdo'
           },
           {
             id: 'aesthetic',
@@ -193,40 +187,10 @@ export const getAvailableStyles = asyncHandler(
             bestFor: 'Lifestyle, moda, arte, vibes'
           },
           {
-            id: 'dramatic',
-            name: 'Dramático',
-            description: 'Alto contraste, tensão visual, impactante',
-            bestFor: 'Histórias emocionais, revelações'
-          },
-          {
-            id: 'educational',
-            name: 'Educacional',
-            description: 'Claro, didático, visual explicativo',
-            bestFor: 'Tutoriais, dicas, how-to, ensino'
-          },
-          {
-            id: 'retro',
-            name: 'Retrô',
-            description: 'Estilo vintage, nostálgico, anos 80/90',
-            bestFor: 'Nostalgia, throwback, cultura pop'
-          },
-          {
-            id: 'futuristic',
-            name: 'Futurista',
-            description: 'Sci-fi, tech avançada, neon, cyberpunk',
-            bestFor: 'Tech, inovação, futurismo'
-          },
-          {
-            id: 'abstract',
-            name: 'Abstrato',
-            description: 'Arte abstrata, formas, cores não literais',
-            bestFor: 'Arte, experimentos visuais, conceitual'
-          },
-          {
-            id: 'trendy',
-            name: 'Trendy',
-            description: 'Segue tendências atuais do Instagram/TikTok',
-            bestFor: 'Trends, viral content, zeitgeist'
+            id: 'satisfying',
+            name: 'Satisfying',
+            description: 'Vídeos satisfatórios/ASMR visual - cortes, fatiamento, organização',
+            bestFor: 'Oddly satisfying, ASMR visual, loops, processos'
           }
         ],
         durations: [

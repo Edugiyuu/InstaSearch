@@ -61,7 +61,7 @@ export interface Dialogue {
 interface VideoPrompt {
   prompt: string;
   duration: number;
-  style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy';
+  style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'aesthetic' | 'satisfying';
   technicalSpecs: {
     aspectRatio: string;
     fps: number;
@@ -413,7 +413,7 @@ Responda APENAS com o JSON válido, sem texto adicional.
       targetAudience?: string;
     };
     duration: 8 | 16;
-    style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy';
+    style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'aesthetic' | 'satisfying';
     dialogues?: Dialogue[]; // Diálogos/falas no vídeo
   }): Promise<VideoPromptResult> {
     try {
@@ -468,6 +468,109 @@ Diálogos/Falas no vídeo:
       const promptCount = duration === 8 ? 1 : 2;
       const segmentDuration = duration === 8 ? 8 : 8;
 
+      // Definir instruções específicas por estilo
+      let styleInstructions = '';
+      
+      switch (style) {
+        case 'realistic':
+          styleInstructions = `
+ESTILO: REALISTA (Vlog/Selfie Autêntico)
+- Filmagem: "handheld smartphone selfie footage"
+- Enquadramento: VARIÁVEL e imperfeito - às vezes muito perto (rosto 80%), às vezes mais afastado (rosto 60%), nunca perfeitamente enquadrado
+- Zoom: Ajustes imperfeitos durante o vídeo - pessoa ajusta a distância do braço, zoom digital errático, às vezes muito perto, às vezes mais longe
+- Ângulo: Braço estendido, levemente de baixo, mas VARIA durante o vídeo
+- Imperfeições VISÍVEIS: motion blur, grain, soft focus ocasional, overexposure em zonas claras, tremor perceptível
+- Imperfeições de Câmera de Celular: iluminação desigual, granulação perceptível, distorção suave nas bordas, contraste ligeiramente forte
+- Câmera: Instável, micro-movimentos constantes, ajustes naturais e IMPERFEITOS de distância/zoom
+- Iluminação: Luz solar DIRETA e FORTE, sombras marcadas, alto contraste, lens flare ocasional
+- Ambiente: EXTERNO prioritário (rua, parque, calçada) com elementos reais, sons urbanos
+- Foco: Não perfeitamente sharp, ajustes automáticos visíveis, às vezes desfoca e volta`;
+          break;
+
+        case 'cinematic':
+          styleInstructions = `
+ESTILO: CINEMATOGRÁFICO (Profissional)
+- Filmagem: Câmera estabilizada profissionalmente, composição cinematográfica
+- Enquadramento: Rule of thirds, depth of field controlado
+- Iluminação: Dramática e artística, três pontos de luz, sombras intencionais
+- Movimento: Suave, controlado, tracking shots, slow motion ocasional
+- Cores: Grading cinematográfico, paleta específica (warm/cool tones)
+- Qualidade: Sharp, alta resolução, sem imperfeições
+- Ambiente: Locações escolhidas artisticamente, mise-en-scène cuidadosa`;
+          break;
+
+        case 'animated':
+          styleInstructions = `
+ESTILO: ANIMADO (Cartoon/3D)
+- Visual: Estilo cartoon 2D ou animação 3D
+- Personagens: Design estilizado, expressões exageradas
+- Cores: Vibrantes, saturadas, paleta cartoon
+- Movimento: Exagerado, bouncy, squash and stretch
+- Ambiente: Cenários ilustrados/modelados, não realistas
+- Efeitos: Motion graphics, transições animadas`;
+          break;
+
+        case 'minimalist':
+          styleInstructions = `
+ESTILO: MINIMALISTA (Clean & Simple)
+- Visual: Limpo, espaços negativos, composição simples
+- Cores: Paleta limitada (2-3 cores), tons neutros
+- Fundo: Sólido ou extremamente simples, sem distrações
+- Elementos: Mínimos, apenas o essencial
+- Iluminação: Uniforme, flat lighting
+- Foco: No sujeito principal, tudo mais é secundário`;
+          break;
+
+        case 'meme':
+          styleInstructions = `
+ESTILO: MEME (Viral/Humor)
+- Energia: Alta, frenética, caótica
+- Edição: Cortes rápidos, zoom-ins abruptos, freeze frames
+- Elementos: Exagerados, cômicos, unexpected
+- Timing: Punchlines visuais, perfect comedic timing
+- Expressões: Over-the-top, reações exageradas
+- Vibe: Gen-Z humor, self-aware, irônico`;
+          break;
+
+        case 'nonsense':
+          styleInstructions = `
+ESTILO: NONSENSE (Absurdo/Surreal)
+- Visual: Bizarro, surreal, não faz sentido lógico
+- Elementos: Inesperados, absurdos, justaposições estranhas
+- Lógica: Quebrada intencionalmente, dream-like
+- Cores: Pode ser oversaturated ou distorcido
+- Atmosfera: Desconcertante, weird, memorable pela estranheza`;
+          break;
+
+        case 'aesthetic':
+          styleInstructions = `
+ESTILO: AESTHETIC (Artístico/Vibe)
+- Visual: Artisticamente composto, instagram-worthy
+- Cores: Paleta harmoniosa e específica (pastel/moody/vibrant)
+- Iluminação: Soft, dreamy, golden hour, moody lighting
+- Vibe: Mood específico (cozy/melancholic/dreamy/energetic)
+- Composição: Visualmente agradável, balanced
+- Elementos: Props e cenário contribuem para a estética`;
+          break;
+
+        case 'satisfying':
+          styleInstructions = `
+ESTILO: SATISFYING (Satisfatório/ASMR Visual)
+- Visual: Macro close-up, foco extremo em detalhes e texturas
+- Ação: Repetitiva, precisa, hipnotizante (corte, fatiamento, descascamento, organização)
+- Movimento: Slow motion ocasional, câmera estável, tracking suave
+- Iluminação: Perfeita para destacar textura e brilho, high-key ou dramática
+- Som (implícito): ASMR-friendly, sons satisfatórios (crunch, slice, pop)
+- Exemplos: Cortar sabão, fatiar objetos, organizar itens, peeling, crushing
+- Cores: Vibrantes e saturadas OU monocromáticas clean
+- Timing: Preciso, sincronizado, loops perfeitos
+- Foco: No processo/ação, não em pessoas`;
+          break;
+
+        default:
+          styleInstructions = `ESTILO: ${style}`;
+      }
+
       const prompt = `
 Você é um especialista em criação de prompts para IA de geração de vídeo (como Grok Video, Runway ML, Pika Labs).
 
@@ -478,31 +581,36 @@ ESPECIFICAÇÕES TÉCNICAS:
 - Plataforma alvo: Instagram Reels
 - Aspect ratio: 9:16 (vertical)
 - Duração: ${duration} segundos total
-- Estilo visual: ${style}
 - Número de prompts: ${promptCount} (cada um gera ~${segmentDuration}s de vídeo)
 
-IMPORTANTE SOBRE PROMPTS PARA VÍDEO IA:
-1. Prompts devem ser EXTREMAMENTE descritivos e visuais
-2. Incluir: cena, iluminação, câmera, movimento, cores, atmosfera
-3. Para vídeos de 16s: criar 2 prompts com CONTINUIDADE narrativa (Parte 1 → Parte 2)
-4. Evitar texto on-screen (difícil de controlar em IA)
-5. Foco em ação, transições suaves, dinâmica visual
-${dialogues && dialogues.length > 0 ? `6. IMPORTANTE: Incorporar os diálogos/falas no prompt visual - descrever expressões faciais, movimentos labiais, gestos que correspondam às falas
-7. Os personagens/objetos devem "falar" através de animações visuais (bocas se movendo, gestos, etc.)` : ''}
+${styleInstructions}
+
+IMPORTANTE - APLICAR O ESTILO ESCOLHIDO:
+Siga RIGOROSAMENTE as instruções do estilo "${style}" acima. Cada estilo tem características específicas de câmera, iluminação, movimento e atmosfera que devem ser respeitadas.
+
+${dialogues && dialogues.length > 0 ? `DIÁLOGOS: Incorporar as falas no prompt - descrever expressões faciais, movimentos labiais sincronizados, gestos que acompanham a fala. Personagens devem "falar" de forma natural.` : ''}
+
+ESTRUTURA DO PROMPT:
+→ Aplicar primeiro as características visuais do estilo escolhido
+→ Personagem: aparência física detalhada
+→ Comportamento e emoções: evolução de expressões
+→ Ambiente: adequado ao estilo
+→ Ações físicas do personagem
+→ Movimento de câmera conforme o estilo
 
 TAREFA:
-Gere ${promptCount} prompt(s) profissional(is) para criar um vídeo de ${duration}s sobre o contexto acima.
+Gere ${promptCount} prompt(s) DINÂMICO(S) e DETALHADO(S) para criar um vídeo de ${duration}s sobre o contexto acima.
 
 ${promptCount === 2 ? `
 Como são 2 prompts sequenciais:
-- Parte 1 (0-8s): Introdução/Hook visual - apresenta o tema
-- Parte 2 (8-16s): Desenvolvimento/Conclusão - aprofunda ou conclui a narrativa
+- Parte 1 (0-8s): Hook visual dinâmico - introduz o personagem com energia e expressividade
+- Parte 2 (8-16s): Continuação energética - mantém a dinâmica e conclui com impacto
 
 GARANTIR CONTINUIDADE: 
-- Mesma paleta de cores
-- Mesmo estilo visual
-- Mesma locação (ou transição lógica)
-- Personagem/objeto consistente
+- Mesmo personagem com aparência consistente
+- Mesma energia e vibe
+- Evolução natural das expressões e comportamentos
+- Iluminação e atmosfera coerentes
 ` : ''}
 
 Retorne APENAS um JSON válido (sem markdown, sem explicações) no formato:

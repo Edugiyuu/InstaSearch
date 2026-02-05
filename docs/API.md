@@ -883,6 +883,139 @@ Authorization: Bearer {token}
 
 ---
 
+## 🎥 Publicação de Vídeos (Reels)
+
+### POST /videos/upload
+
+Upload de 1 a 3 vídeos para junção e publicação.
+
+**Headers**:
+```
+Content-Type: multipart/form-data
+```
+
+**Request**:
+```
+videos: File[]  // 1 a 3 arquivos de vídeo
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "videos": [
+      {
+        "filename": "video_1738710530123_456789.mp4",
+        "originalName": "meu-video.mp4",
+        "path": "/data/videos/temp/video_1738710530123_456789.mp4",
+        "size": 15728640,
+        "duration": 12.5
+      }
+    ],
+    "count": 1,
+    "totalDuration": 12.5
+  }
+}
+```
+
+**Validações**:
+- Formato: .mp4, .mov, .avi, .mkv
+- Tamanho: Máximo 50MB por arquivo
+- Duração: Máximo 30 segundos por vídeo
+- Quantidade: 1 a 3 vídeos
+
+### POST /videos/merge
+
+Juntar múltiplos vídeos em um único arquivo.
+
+**Headers**:
+```
+Content-Type: application/json
+```
+
+**Request**:
+```json
+{
+  "filenames": [
+    "video_1738710530123_456789.mp4",
+    "video_1738710530456_123456.mp4"
+  ]
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "filename": "merged_1738710600000.mp4",
+    "path": "/data/videos/output/merged_1738710600000.mp4"
+  }
+}
+```
+
+**Notas**:
+- Mínimo: 2 vídeos
+- Máximo: 3 vídeos
+- Vídeos originais são deletados após merge bem-sucedido
+- Processamento via FFmpeg (1080x1920, 30fps)
+
+### POST /videos/publish-reel
+
+Publicar reel no Instagram.
+
+**Headers**:
+```
+Content-Type: application/json
+```
+
+**Request**:
+```json
+{
+  "filename": "merged_1738710600000.mp4",
+  "caption": "Confira meu novo reel! 🎥",
+  "hashtags": "video instagram reels viral"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "mediaId": "17924567890123456",
+    "message": "Reel publicado com sucesso!"
+  }
+}
+```
+
+**Fluxo**:
+1. Upload do vídeo para Cloudinary (CDN público)
+2. Criação de container de mídia no Instagram
+3. Polling até vídeo ser processado (max 60s)
+4. Publicação do reel
+5. Deleção do arquivo local
+
+### DELETE /videos/:filename
+
+Deletar arquivo temporário.
+
+**Headers**:
+```
+Content-Type: application/json
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "message": "Arquivo deletado com sucesso"
+}
+```
+
+---
+
 ## ⚙️ Configurações
 
 ### GET /settings
