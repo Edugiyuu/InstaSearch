@@ -452,7 +452,9 @@ Tópico solicitado: ${topic}
 `;
       }
 
-      if (dialogues && dialogues.length > 0) {
+      // IMPORTANTE: Vídeos "satisfying" não devem ter diálogos/pessoas falando
+      // Apenas ações visuais satisfatórias
+      if (dialogues && dialogues.length > 0 && style !== 'satisfying') {
         contextDescription += `
 Diálogos/Falas no vídeo:
 `;
@@ -564,7 +566,10 @@ ESTILO: SATISFYING (Satisfatório/ASMR Visual)
 - Exemplos: Cortar sabão, fatiar objetos, organizar itens, peeling, crushing
 - Cores: Vibrantes e saturadas OU monocromáticas clean
 - Timing: Preciso, sincronizado, loops perfeitos
-- Foco: No processo/ação, não em pessoas`;
+- Foco: No processo/ação, não em pessoas
+- CRÍTICO: SEM PESSOAS FALANDO - Sem diálogos, sem narração, sem falas. Apenas visual puro.
+- Personagens (se houver): Apenas mãos/corpo realizando a ação, SEM rosto, SEM falar
+- CONTINUIDADE (para 2 prompts): Se Parte 1 termina derretendo → Parte 2 começa derretido. NUNCA resetar o estado do objeto.`;
           break;
 
         default:
@@ -588,7 +593,9 @@ ${styleInstructions}
 IMPORTANTE - APLICAR O ESTILO ESCOLHIDO:
 Siga RIGOROSAMENTE as instruções do estilo "${style}" acima. Cada estilo tem características específicas de câmera, iluminação, movimento e atmosfera que devem ser respeitadas.
 
-${dialogues && dialogues.length > 0 ? `DIÁLOGOS: Incorporar as falas no prompt - descrever expressões faciais, movimentos labiais sincronizados, gestos que acompanham a fala. Personagens devem "falar" de forma natural.` : ''}
+${style === 'satisfying' ? `CRÍTICO - SEM PESSOAS FALANDO: Este é um vídeo SATISFYING - NÃO DEVE CONTER pessoas falando, diálogos, narração ou qualquer tipo de fala. Apenas ações visuais satisfatórias puras (corte, fatiamento, organização, etc). Foco 100% no processo visual.` : ''}
+
+${dialogues && dialogues.length > 0 && style !== 'satisfying' ? `DIÁLOGOS: Incorporar as falas no prompt - descrever expressões faciais, movimentos labiais sincronizados, gestos que acompanham a fala. Personagens devem "falar" de forma natural.` : ''}
 
 ESTRUTURA DO PROMPT:
 → Aplicar primeiro as características visuais do estilo escolhido
@@ -603,14 +610,22 @@ Gere ${promptCount} prompt(s) DINÂMICO(S) e DETALHADO(S) para criar um vídeo d
 
 ${promptCount === 2 ? `
 Como são 2 prompts sequenciais:
-- Parte 1 (0-8s): Hook visual dinâmico - introduz o personagem com energia e expressividade
-- Parte 2 (8-16s): Continuação energética - mantém a dinâmica e conclui com impacto
+- Parte 1 (0-8s): Hook visual dinâmico - introduz o personagem/objeto/ação com energia
+- Parte 2 (8-16s): Continuação DIRETA - mantém a dinâmica e conclui com impacto
 
-GARANTIR CONTINUIDADE: 
-- Mesmo personagem com aparência consistente
-- Mesma energia e vibe
-- Evolução natural das expressões e comportamentos
-- Iluminação e atmosfera coerentes
+⚠️ CRÍTICO - CONTINUIDADE TEMPORAL EXATA:
+- A Parte 2 deve começar EXATAMENTE no estado/momento final da Parte 1
+- Se Parte 1 termina com chocolate derretido → Parte 2 começa com chocolate derretido (NÃO volta inteiro)
+- Se Parte 1 termina com bolo cortado → Parte 2 começa com bolo cortado (NÃO volta inteiro)
+- Se Parte 1 termina com objeto quebrado → Parte 2 começa com objeto quebrado (NÃO volta inteiro)
+- NUNCA resetar ou reverter o estado - apenas continuar a progressão
+- Descrever o ESTADO INICIAL da Parte 2 = ESTADO FINAL da Parte 1
+
+GARANTIR CONTINUIDADE VISUAL: 
+- Mesmo objeto/personagem com aparência consistente
+- Mesma iluminação, ângulo de câmera e atmosfera
+- Transição suave e natural entre as partes
+- Progressão lógica da ação (não repetir ou voltar atrás)
 ` : ''}
 
 Retorne APENAS um JSON válido (sem markdown, sem explicações) no formato:
@@ -627,7 +642,7 @@ Retorne APENAS um JSON válido (sem markdown, sem explicações) no formato:
       }
     }${promptCount === 2 ? `,
     {
-      "prompt": "Continuação visual com mesma estética...",
+      "prompt": "CONTINUA do estado final da Parte 1 - descrever o estado inicial exato (como terminou a Parte 1) e depois a continuação da ação...",
       "duration": ${segmentDuration},
       "style": "${style}",
       "technicalSpecs": {

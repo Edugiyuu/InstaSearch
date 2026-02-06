@@ -1,4 +1,4 @@
-/**
+3333333333333333333333333/**
  * VideoService - Processamento e merge de vídeos
  * 
  * Funcionalidades:
@@ -125,7 +125,7 @@ class VideoService {
           '-c:v libx264',           // Codec de vídeo
           '-preset fast',           // Velocidade de encoding
           '-crf 23',                // Qualidade (18-28, menor = melhor)
-          '-vf scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2', // Resize para 9:16
+          '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920', // Resize e crop para 9:16 SEM bordas
           '-r 30',                  // 30 FPS
           '-c:a aac',               // Codec de áudio
           '-b:a 128k',              // Bitrate de áudio
@@ -180,7 +180,7 @@ class VideoService {
           '-c:v libx264',
           '-preset fast',
           '-crf 23',
-          '-vf scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2',
+          '-vf scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920', // Resize e crop para 9:16 SEM bordas
           '-r 30',
           '-c:a aac',
           '-b:a 128k',
