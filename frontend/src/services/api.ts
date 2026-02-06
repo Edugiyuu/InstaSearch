@@ -145,7 +145,7 @@ export const getContentStats = async () => {
 
 // Posts
 export const schedulePost = async (payload: {
-  contentId: string
+  contentId?: string
   scheduledFor: string
   caption: string
   media?: any

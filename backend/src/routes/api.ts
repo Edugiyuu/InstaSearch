@@ -10,6 +10,8 @@ import * as instagramDataController from '../controllers/instagramDataController
 import * as aiController from '../controllers/aiController.js'
 import * as videoPromptController from '../controllers/videoPromptController.js'
 import * as videoController from '../controllers/videoController.js'
+import * as schedulerController from '../controllers/schedulerController.js'
+import * as videoAnalysisController from '../controllers/videoAnalysisController.js'
 
 const router = Router()
 
@@ -34,6 +36,7 @@ router.get('/video-prompts/styles', videoPromptController.getAvailableStyles)
 router.post('/videos/upload', ...videoController.uploadVideos)
 router.post('/videos/merge', videoController.mergeVideos)
 router.post('/videos/publish-reel', videoController.publishReel)
+router.post('/videos/analyze-for-caption', videoAnalysisController.analyzeVideoForCaption)
 router.delete('/videos/:filename', videoController.deleteVideo)
 
 // Instagram Authentication
@@ -86,5 +89,11 @@ router.get('/posts/:id', postController.getPostById)
 router.get('/posts/:id/stats', postController.getPostStats)
 router.put('/posts/:id', postController.updatePost)
 router.delete('/posts/:id', postController.deletePost)
+
+// Scheduler
+router.get('/scheduler/status', schedulerController.getSchedulerStatus)
+router.post('/scheduler/publish/:id', schedulerController.publishPostNow)
+router.put('/scheduler/reschedule/:id', schedulerController.reschedulePost)
+router.delete('/scheduler/cancel/:id', schedulerController.cancelScheduledPost)
 
 export default router

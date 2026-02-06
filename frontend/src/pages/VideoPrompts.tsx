@@ -38,6 +38,14 @@ const VideoPrompts = () => {
     fetchStyles();
   }, [fetchStyles]);
 
+  // Limpar diálogos quando estilo 'satisfying' for selecionado
+  useEffect(() => {
+    if (style === 'satisfying' && dialogues.length > 0) {
+      setDialogues([]);
+      setShowDialogues(false);
+    }
+  }, [style]);
+
   const handleGenerate = async () => {
     try {
       const params: any = {
@@ -55,8 +63,8 @@ const VideoPrompts = () => {
         return;
       }
 
-      // Adicionar diálogos se houver
-      if (dialogues.length > 0) {
+      // Adicionar diálogos se houver (exceto para estilo 'satisfying')
+      if (dialogues.length > 0 && style !== 'satisfying') {
         params.dialogues = dialogues;
       }
 
@@ -192,18 +200,27 @@ const VideoPrompts = () => {
             </div>
           </div>
 
-          <div className="form-section">
-            <div className="dialogues-header">
-              <label>💬 Diálogos/Falas (Opcional)</label>
-              <button
-                className="btn-toggle-dialogues"
-                onClick={() => setShowDialogues(!showDialogues)}
-              >
-                {showDialogues ? '➖ Esconder' : '➕ Adicionar Diálogos'}
-              </button>
+          {/* Seção de diálogos - desabilitada para estilo 'satisfying' */}
+          {style === 'satisfying' ? (
+            <div className="form-section">
+              <div className="info-box" style={{ backgroundColor: '#fff3cd', borderColor: '#ffc107' }}>
+                <p>⚠️ <strong>Vídeos Satisfying não contêm diálogos ou falas.</strong></p>
+                <p>Este estilo é 100% visual - focado apenas em ações satisfatórias como cortar, organizar, fatiar, etc.</p>
+              </div>
             </div>
+          ) : (
+            <div className="form-section">
+              <div className="dialogues-header">
+                <label>💬 Diálogos/Falas (Opcional)</label>
+                <button
+                  className="btn-toggle-dialogues"
+                  onClick={() => setShowDialogues(!showDialogues)}
+                >
+                  {showDialogues ? '➖ Esconder' : '➕ Adicionar Diálogos'}
+                </button>
+              </div>
 
-            {showDialogues && (
+              {showDialogues && (
               <div className="dialogues-section">
                 <p className="dialogues-info">
                   💡 Adicione falas para personagens, objetos ou narradores. Perfeito para vídeos de humor, educação ou narrativas criativas!
@@ -278,8 +295,9 @@ const VideoPrompts = () => {
                   </div>
                 )}
               </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           <button
             className="btn-generate"

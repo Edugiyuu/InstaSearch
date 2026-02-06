@@ -372,6 +372,121 @@ export class InstagramGraphService {
       throw error;
     }
   }
+
+  /**
+   * Publica um reel no Instagram
+   * @param videoUrl URL pública do vídeo (Cloudinary, etc)
+   * @param caption Legenda do reel
+   * @param shareToFeed Se deve compartilhar no feed
+   * @returns ID do post publicado e URL permanente
+   */
+  async publishReel(videoUrl: string, caption: string, shareToFeed: boolean = true): Promise<{
+    mediaId: string;
+    permalink: string;
+  }> {
+    try {
+      const { accessToken, accountId } = await this.getAccountCredentials();
+
+      logger.info(`📱 Publicando reel no Instagram...`);
+      logger.info(`Caption: ${caption.substring(0, 100)}...`);
+
+      // Etapa 1: Criar container de mídia (upload do vídeo)
+      const containerResponse = await axios.post(
+        `${GRAPH_API_BASE_URL}/${accountId}/media`,
+        {
+          media_type: 'REELS',
+          video_url: videoUrl,
+          caption: caption,
+          share_to_feed: shareToFeed
+        },
+        {
+          params: { access_token: accessToken }
+        }
+      );
+
+      const creationId = containerResponse.data.id;
+      logger.info(`Container criado: ${creationId}`);
+
+      // Etapa 2: Aguardar processamento (polling)
+      await this.waitForVideoProcessing(creationId, accessToken);
+
+      // Etapa 3: Publicar reel
+      const publishResponse = await axios.post(
+        `${GRAPH_API_BASE_URL}/${accountId}/media_publish`,
+        {
+          creation_id: creationId
+        },
+        {
+          params: { access_token: accessToken }
+        }
+      );
+
+      const mediaId = publishResponse.data.id;
+      
+      // Buscar permalink do post publicado
+      const mediaResponse = await axios.get(`${GRAPH_API_BASE_URL}/${mediaId}`, {
+        params: {
+          fields: 'permalink',
+          access_token: accessToken
+        }
+      });
+
+      const permalink = mediaResponse.data.permalink;
+
+      logger.info(`✅ Reel publicado com sucesso! ID: ${mediaId}`);
+
+      return {
+        mediaId,
+        permalink
+      };
+
+    } catch (error: any) {
+      logger.error('❌ Erro ao publicar reel:', error.response?.data || error.message);
+      throw new Error(
+        `Erro ao publicar no Instagram: ${error.response?.data?.error?.message || error.message}`
+      );
+    }
+  }
+
+  /**
+   * Aguarda o processamento do vídeo pelo Instagram
+   */
+  private async waitForVideoProcessing(
+    creationId: string,
+    accessToken: string,
+    maxAttempts: number = 30
+  ): Promise<void> {
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      const statusResponse = await axios.get(
+        `${GRAPH_API_BASE_URL}/${creationId}`,
+        {
+          params: {
+            fields: 'status_code',
+            access_token: accessToken
+          }
+        }
+      );
+
+      const statusCode = statusResponse.data.status_code;
+
+      if (statusCode === 'FINISHED') {
+        logger.info('✅ Processamento concluído!');
+        return;
+      }
+
+      if (statusCode === 'ERROR') {
+        throw new Error('Erro no processamento do vídeo pelo Instagram');
+      }
+
+      logger.info(`⏳ Aguardando processamento... (${attempts + 1}/${maxAttempts})`);
+      await new Promise(resolve => setTimeout(resolve, 5000)); // 5 segundos
+      attempts++;
+    }
+
+    throw new Error('Timeout: vídeo não foi processado a tempo');
+  }
 }
 
 export const instagramGraphService = new InstagramGraphService();

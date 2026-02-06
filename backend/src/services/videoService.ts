@@ -247,6 +247,52 @@ class VideoService {
       logger.error('Erro ao deletar arquivo:', error);
     }
   }
+
+  /**
+   * Extrai frames de um vídeo para análise
+   * @param videoPath Caminho do vídeo
+   * @param numFrames Número de frames a extrair (padrão: 3)
+   * @returns Array de caminhos dos frames extraídos
+   */
+  async extractFrames(videoPath: string, numFrames: number = 3): Promise<string[]> {
+    const outputDir = path.join(TEMP_DIR, 'frames')
+    
+    // Criar diretório de frames se não existir
+    if (!fs.existsSync(outputDir)) {
+      await mkdir(outputDir, { recursive: true })
+    }
+
+    const duration = await this.getVideoDuration(videoPath)
+    const interval = duration / (numFrames + 1) // Divide o vídeo em intervalos
+    
+    const framePaths: string[] = []
+
+    for (let i = 1; i <= numFrames; i++) {
+      const timestamp = interval * i
+      const framePath = path.join(outputDir, `frame_${Date.now()}_${i}.jpg`)
+
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(videoPath)
+          .screenshots({
+            timestamps: [timestamp],
+            filename: path.basename(framePath),
+            folder: outputDir,
+            size: '640x?'
+          })
+          .on('end', () => {
+            framePaths.push(framePath)
+            resolve()
+          })
+          .on('error', (err) => {
+            logger.error(`Erro ao extrair frame ${i}:`, err)
+            reject(err)
+          })
+      })
+    }
+
+    logger.info(`✅ ${framePaths.length} frames extraídos de ${path.basename(videoPath)}`)
+    return framePaths
+  }
 }
 
 export { VideoService };

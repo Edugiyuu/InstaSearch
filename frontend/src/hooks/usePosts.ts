@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getPosts, getUpcomingPosts, updatePost, deletePost } from '../services/api'
+import { schedulePost as apiSchedulePost, getPosts, getUpcomingPosts, updatePost, deletePost } from '../services/api'
 import type { Post } from '../types'
 
 export function usePosts() {
@@ -54,6 +54,21 @@ export function usePosts() {
     }
   }
 
+  const schedulePost = async (payload: {
+    contentId?: string
+    scheduledFor: string
+    caption: string
+    media?: any
+  }) => {
+    try {
+      const post = await apiSchedulePost(payload)
+      setPosts(prev => [post, ...prev])
+      return post
+    } catch (err: any) {
+      throw new Error(err.response?.data?.error?.message || 'Failed to schedule post')
+    }
+  }
+
   useEffect(() => {
     fetchPosts()
   }, [fetchPosts])
@@ -63,7 +78,9 @@ export function usePosts() {
     loading, 
     error, 
     editPost,
-    remove,
+    remove: remove,
+    deletePost: remove,
+    schedulePost,
     fetchUpcoming,
     refetch: fetchPosts 
   }

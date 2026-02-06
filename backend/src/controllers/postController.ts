@@ -8,13 +8,16 @@ import type { Post } from '../models/index.js'
 export const schedulePost = asyncHandler(async (req: Request, res: Response) => {
   const { contentId, scheduledFor, caption, media } = req.body
 
-  if (!contentId || !scheduledFor || !caption) {
+  if (!scheduledFor || !caption) {
     throw new AppError('Missing required fields', 400, 'VALIDATION_ERROR')
   }
 
-  const content = await contentStorage.findById(contentId)
-  if (!content) {
-    throw new AppError('Content not found', 404, 'CONTENT_NOT_FOUND')
+  // Se contentId foi fornecido, validar que o conteúdo existe
+  if (contentId) {
+    const content = await contentStorage.findById(contentId)
+    if (!content) {
+      throw new AppError('Content not found', 404, 'CONTENT_NOT_FOUND')
+    }
   }
 
   const post: Post = {
@@ -29,8 +32,10 @@ export const schedulePost = asyncHandler(async (req: Request, res: Response) => 
 
   await postStorage.save(post)
 
-  // Atualizar status do conteúdo
-  await contentStorage.schedule(contentId, scheduledFor)
+  // Atualizar status do conteúdo se fornecido
+  if (contentId) {
+    await contentStorage.schedule(contentId, scheduledFor)
+  }
 
   res.status(201).json({
     success: true,

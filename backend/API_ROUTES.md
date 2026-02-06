@@ -40,6 +40,13 @@
 - `GET /api/posts/:id/stats` - Estatísticas de uma postagem
 - `PUT /api/posts/:id` - Atualizar postagem agendada
 - `DELETE /api/posts/:id` - Cancelar postagem
+
+### Scheduler (Agendamento Automático)
+- `GET /api/scheduler/status` - Status do scheduler e próximos posts
+- `POST /api/scheduler/publish/:id` - Publicar post agendado imediatamente
+- `PUT /api/scheduler/reschedule/:id` - Reagendar um post
+- `DELETE /api/scheduler/cancel/:id` - Cancelar agendamento
+
 ### Instagram (Autenticação e Conexão)
 - `GET /api/instagram/auth-url` - Gerar URL de autorização OAuth
 - `GET /api/instagram/callback` - Callback OAuth após autorização

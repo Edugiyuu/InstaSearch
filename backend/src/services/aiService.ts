@@ -413,7 +413,7 @@ Responda APENAS com o JSON válido, sem texto adicional.
       targetAudience?: string;
     };
     duration: 8 | 16;
-    style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'aesthetic' | 'satisfying';
+    style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'weird' | 'aesthetic' | 'satisfying';
     dialogues?: Dialogue[]; // Diálogos/falas no vídeo
   }): Promise<VideoPromptResult> {
     try {
@@ -542,6 +542,23 @@ ESTILO: NONSENSE (Absurdo/Surreal)
 - Lógica: Quebrada intencionalmente, dream-like
 - Cores: Pode ser oversaturated ou distorcido
 - Atmosfera: Desconcertante, weird, memorable pela estranheza`;
+          break;
+
+        case 'weird':
+          styleInstructions = `
+ESTILO: WEIRD (Bizarro/Perturbador - jonmud.fun style)
+- Visual: EXTREMAMENTE bizarro, perturbador mas hipnotizante
+- Conceito: Situações cotidianas → pesadelos visuais, interpretações literais absurdas
+- Personagens: Comportamentos anormais, expressões exageradas, ações ilógicas
+- Objetos: Comida gigante, proporções erradas, texturas realistas em contextos bizarros
+- Física: Ignorar leis quando aumenta absurdo (flutuando, derretendo, crescendo)
+- Cenário: Ambientes normais COM elementos perturbadores
+- Timing: Lento deliberado OU frenético caótico, nunca normal
+- Som implícito: Visceral, úmido, ASMR desconfortável
+- Humor: Absurdo, dark, liminal spaces, unsettling mas engraçado
+- Exemplos: "sopa infinita", "chocolate vivo fugindo", "mãos gigantes manipulando pessoa pequena"
+- Tom: Perturbador mas você não consegue parar de olhar (uncanny valley)
+- PROIBIDO: Violência explícita, gore, sexual - bizarro deve ser SURREAL`;
           break;
 
         case 'aesthetic':
@@ -699,6 +716,108 @@ Retorne APENAS um JSON válido (sem markdown, sem explicações) no formato:
       return response.trim().toUpperCase().includes('OK');
     } catch (error) {
       return false;
+    }
+  }
+
+  /**
+   * Gera legenda baseada em análise visual de frames do vídeo
+   * @param frameImages Array de imagens em base64
+   * @param style Estilo visual do vídeo (weird, realistic, cinematic, etc)
+   * @returns Legenda contextual com hashtags
+   */
+  async generateCaptionFromVideo(frameImages: string[], style: string = 'realistic'): Promise<string> {
+    try {
+      logger.info(`🎬 Gerando legenda para estilo: ${style}`)
+      logger.info(`🎞️ Analisando ${frameImages.length} frames...`)
+
+      // Criar prompt com as imagens
+      const imageParts = frameImages.map(imageData => ({
+        inlineData: {
+          data: imageData,
+          mimeType: 'image/jpeg'
+        }
+      }))
+
+      // Ajustar prompt baseado no estilo
+      let styleContext = ''
+      switch (style) {
+        case 'weird':
+          styleContext = `
+ESTILO DO VÍDEO: WEIRD/BIZARRO (jonmud.fun)
+- Foque no QUÃO ESTRANHO e BIZARRO é o conteúdo
+- Use linguagem como "WTF", "espera o quê?", "isso é muito bizarro"
+- Emojis perturbadores mas divertidos: 👻😳🤯😱😵‍💫
+- Tom: Desconcertante mas engraçado
+- Hashtags: #weird #bizarre #wtf #oddlyterrifying #liminalspace #unsettling #cursed`
+          break
+        case 'meme':
+          styleContext = `
+ESTILO DO VÍDEO: MEME/VIRAL
+- Use linguagem de meme e humor gen-Z
+- Emojis humorísticos: 😂💀😭🙏👀
+- Tom: Engraçado e viral
+- Hashtags: #meme #viral #funnyvideos #relatable #comedy`
+          break
+        case 'satisfying':
+          styleContext = `
+ESTILO DO VÍDEO: SATISFYING/ASMR VISUAL
+- Foque nos detalhes satisfatórios do vídeo
+- Use linguagem como "satisfatório", "hipnotizante", "relaxante"
+- Emojis: 😌✨👌🏼❤️
+- Hashtags: #satisfying #oddlysatisfying #asmr #relaxing`
+          break
+        case 'aesthetic':
+          styleContext = `
+ESTILO DO VÍDEO: AESTHETIC/ARTÍSTICO
+- Foque na beleza visual e na vibe
+- Use linguagem poética e artística
+- Emojis: ✨🌿🌸🌙🧡
+- Hashtags: #aesthetic #vibes #artsy #moodygrams`
+          break
+        default:
+          styleContext = '\nUse linguagem natural e engajante para Instagram Reels'
+      }
+
+      const prompt = `Analyze these images that are frames from an Instagram video (Reel) and create an AMAZING and VIRAL caption.
+${styleContext}
+
+IMPORTANT:
+- Be CREATIVE and EYE-CATCHING
+- Use relevant emojis
+- Include 5-8 strategic hashtags
+- Maximum 300 characters
+- The caption MUST be in English
+- Focus on what you SEE in the images
+- Be specific about the visual content
+- Don't make up things that aren't in the images
+- ADAPT THE TONE to match the video style above
+
+WHAT DO YOU SEE IN THE IMAGES?
+Describe the visual content and create a caption that:
+1. Grabs attention in the first 2 seconds
+2. Is relevant to Instagram audience
+3. Encourages interaction (comments, shares)
+4. Uses hashtags that help with reach
+5. MATCHES THE STYLE CONTEXT ABOVE
+
+RESPONSE FORMAT (only the caption text):
+[Eye-catching caption in English] #hashtag1 #hashtag2 #hashtag3`
+
+      const result = await this.model.generateContent([prompt, ...imageParts])
+      const caption = result.response.text().trim()
+
+      logger.info(`✅ Legenda contextual gerada com sucesso`)
+      return caption
+
+    } catch (error: any) {
+      logger.error(`❌ Erro ao gerar legenda do vídeo: ${error.message}`)
+      
+      // Fallback para legenda genérica
+      return `🎥 Novo vídeo incrível! Não deixe de assistir até o final! 
+
+O que você achou? Comenta aqui embaixo! 👇
+
+#reels #viral #instagram #conteudo #video #explore #fyp #trending`
     }
   }
 }

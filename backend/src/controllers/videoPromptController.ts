@@ -30,7 +30,7 @@ const instagramService = new InstagramGraphService();
  * - contentId?: string - ID de uma ideia de conteúdo existente
  * - useMyProfile?: boolean - Usar contexto do perfil Instagram conectado
  * - duration: 8 | 16 - Duração do vídeo (8s = 1 prompt, 16s = 2 prompts)
- * - style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'aesthetic' | 'satisfying'
+ * - style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'weird' | 'aesthetic' | 'satisfying'
  * - dialogues?: Array<{speaker: string, text: string, timing?: string}> - Diálogos/falas no vídeo
  */
 export const generateVideoPrompt = asyncHandler(
@@ -179,6 +179,12 @@ export const getAvailableStyles = asyncHandler(
             name: 'Nonsense',
             description: 'Absurdo, surreal, bizarro, fora do comum',
             bestFor: 'Humor absurdo'
+          },
+          {
+            id: 'weird',
+            name: 'Weird (jonmud.fun style)',
+            description: 'EXTREMAMENTE bizarro e perturbador - situações cotidianas → pesadelos visuais',
+            bestFor: 'Conteúdo viral bizarro, uncanny valley, liminal spaces, humor dark'
           },
           {
             id: 'aesthetic',

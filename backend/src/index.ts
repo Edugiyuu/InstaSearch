@@ -30,6 +30,10 @@ app.use((req: Request, res: Response, next) => {
 const { default: apiRoutes } = await import('./routes/api.js')
 app.use('/api', apiRoutes)
 
+// Import and start scheduler
+const { schedulerService } = await import('./services/schedulerService.js')
+schedulerService.start()
+
 // Root route
 app.get('/', (req: Request, res: Response) => {
   res.json({
@@ -67,6 +71,19 @@ app.listen(PORT, () => {
   logger.info(`🚀 Server running on http://localhost:${PORT}`)
   logger.info(`📝 API documentation: http://localhost:${PORT}`)
   logger.info(`🏥 Health check: http://localhost:${PORT}/api/health`)
+})
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM signal received: closing HTTP server')
+  schedulerService.stop()
+  process.exit(0)
+})
+
+process.on('SIGINT', () => {
+  logger.info('SIGINT signal received: closing HTTP server')
+  schedulerService.stop()
+  process.exit(0)
 })
 
 export default app

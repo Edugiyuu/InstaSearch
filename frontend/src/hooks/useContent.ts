@@ -65,6 +65,7 @@ export function useContent() {
     content, 
     loading, 
     error, 
+    fetchContent,
     editContent,
     approve,
     remove,
