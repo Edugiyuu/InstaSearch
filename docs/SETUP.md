@@ -21,10 +21,11 @@ Este guia irá ajudá-lo a configurar o ambiente de desenvolvimento completo do 
    - Crie uma conta
    - Crie um App
 
-2. **OpenAI API**
-   - Acesse: https://platform.openai.com/
-   - Crie uma conta
-   - Gere uma API key
+2. **Google Gemini API** (100% GRATUITO)
+   - Acesse: https://aistudio.google.com/app/apikey
+   - Faça login com sua conta Google
+   - Gere uma API key (sem cartão de crédito)
+   - Veja o guia completo: [GEMINI_SETUP.md](./GEMINI_SETUP.md)
 
 3. **Conta Instagram**
    - Crie uma conta específica para o bot
@@ -65,14 +66,17 @@ NODE_ENV=development
 # Storage
 DATA_DIR=./data
 
-# OpenAI
-OPENAI_API_KEY=sk-sua-chave-aqui
-OPENAI_MODEL=gpt-4-turbo-preview
+# Google Gemini AI (100% gratuito)
+# Obtenha sua chave em: https://aistudio.google.com/app/apikey
+GEMINI_API_KEY=sua_chave_aqui
+GEMINI_MODEL=gemini-1.5-flash
 
 # Instagram API
-INSTAGRAM_APP_ID=seu-app-id
-INSTAGRAM_APP_SECRET=seu-app-secret
-INSTAGRAM_ACCESS_TOKEN=seu-token-de-acesso
+INSTAGRAM_CLIENT_ID=seu_client_id
+INSTAGRAM_CLIENT_SECRET=seu_client_secret
+INSTAGRAM_REDIRECT_URI=http://localhost:3000/api/instagram/callback
+INSTAGRAM_ACCESS_TOKEN=
+INSTAGRAM_ACCOUNT_ID=
 
 # JWT
 JWT_SECRET=seu-segredo-jwt-super-secreto
@@ -189,16 +193,20 @@ npm test
 # http://localhost:5173
 ```
 
-### 3. Teste o AI Engine
+### 3. Teste a IA (Google Gemini)
 
 ```bash
-cd ai-engine
+cd backend
 
-# Execute os testes
-python -m pytest tests/
+# Teste a conexão com Gemini
+node scripts/test-gemini.js
 
-# Teste manualmente
-python test_connection.py
+# Deve retornar:
+# ✅ Variável GEMINI_API_KEY encontrada
+# 📊 Modelo configurado: gemini-1.5-flash
+# 🔗 Conectando ao Google Gemini...
+# ✅ Resposta do Gemini: OK
+# ✨ SUCESSO! Google Gemini API configurada corretamente.
 ```
 
 ### 4. Teste o Fluxo Completo
@@ -237,13 +245,14 @@ mkdir profiles reels analyses content posts
 3. Verifique se o Access Token não expirou
 4. Regenere o token se necessário
 
-### Problema: OpenAI API retorna erro
+### Problema: Google Gemini API retorna erro
 
 **Solução**:
 1. Verifique se a API key está correta
-2. Confirme que há créditos na conta
-3. Verifique rate limits
-4. Use modelo alternativo (gpt-3.5-turbo) se necessário
+2. Confirme que está usando `gemini-1.5-flash` (gratuito)
+3. Verifique rate limits (15 RPM / 1.500 por dia)
+4. Execute o teste: `node scripts/test-gemini.js`
+5. Consulte o guia: [GEMINI_SETUP.md](./GEMINI_SETUP.md)
 
 ### Problema: Frontend não carrega
 

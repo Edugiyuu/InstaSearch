@@ -388,7 +388,7 @@ interface Dialogue {
 
 ### 4. AI Analysis Engine
 
-**Tecnologia**: Python, OpenAI API, TensorFlow (opcional)
+**Tecnologia**: Node.js, Google Gemini API (100% gratuito)
 
 **Módulos**:
 
@@ -442,10 +442,10 @@ Especificações técnicas:
 Prompt otimizado: {generated_prompt}
 ```
 
-**Prompts de IA**:
+**Exemplo de Prompt para Análise com Gemini**:
 
-```python
-ANALYSIS_PROMPT = """
+```typescript
+const ANALYSIS_PROMPT = `
 Analise os seguintes reels do Instagram e identifique:
 1. Temas principais
 2. Estilo de comunicação
@@ -453,10 +453,13 @@ Analise os seguintes reels do Instagram e identifique:
 4. Formato de conteúdo (tutorial, entretenimento, educativo, etc)
 5. Tom de voz
 
-Reels: {reels_data}
+Reels: ${JSON.stringify(reelsData)}
 
 Forneça uma análise detalhada em formato JSON.
-"""
+`;
+
+const result = await aiService.analyzeProfile(profileData);
+```
 
 GENERATION_PROMPT = """
 Com base na seguinte análise de perfis de referência, gere {count} ideias 

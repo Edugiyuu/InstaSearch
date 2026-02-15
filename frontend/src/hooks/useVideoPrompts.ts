@@ -17,7 +17,7 @@ export interface Dialogue {
 interface VideoPrompt {
   prompt: string;
   duration: number;
-  style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy';
+  style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'weird' | 'aesthetic' | 'satisfying' | 'pov';
   technicalSpecs: {
     aspectRatio: string;
     fps: number;
@@ -32,7 +32,7 @@ interface VideoPromptResult {
   grokUrl: string;
   metadata?: {
     duration: number;
-    style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy';
+    style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'weird' | 'aesthetic' | 'satisfying' | 'pov';
     promptCount: number;
     source: string;
   };
@@ -64,7 +64,7 @@ export function useVideoPrompts() {
     contentId?: string;
     useMyProfile?: boolean;
     duration: number;
-    style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'comedy' | 'aesthetic' | 'dramatic' | 'educational' | 'retro' | 'futuristic' | 'abstract' | 'trendy';
+    style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'weird' | 'aesthetic' | 'satisfying' | 'pov';
     dialogues?: Dialogue[];
   }) => {
     setLoading(true);

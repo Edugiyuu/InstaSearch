@@ -423,6 +423,7 @@ function ScheduleModal({ isOpen, onClose, onSchedule, initialData, contentList =
                       onChange={(e) => setVideoStyle(e.target.value)}
                     >
                       <option value="realistic">📹 Realista (Vlog/Selfie)</option>
+                      <option value="pov">👀 POV (Primeira Pessoa)</option>
                       <option value="cinematic">🎬 Cinematográfico</option>
                       <option value="meme">😂 Meme (Viral/Humor)</option>
                       <option value="weird">👻 Weird (Bizarro - jonmud.fun)</option>
@@ -435,6 +436,7 @@ function ScheduleModal({ isOpen, onClose, onSchedule, initialData, contentList =
                     <span className="form-hint">
                       {videoStyle === 'weird' && '👻 Vídeos BIZARROS e perturbadores que param o scroll'}
                       {videoStyle === 'realistic' && '📹 Aparência natural de vlog/selfie com celular'}
+                      {videoStyle === 'pov' && '👀 Primeira pessoa - você é o protagonista'}
                       {videoStyle === 'meme' && '😂 Estilo meme viral com humor rápido'}
                       {videoStyle === 'aesthetic' && '✨ Visual artístico com paleta harmoniosa'}
                       {videoStyle === 'satisfying' && '😌 Vídeos satisfatórios tipo ASMR visual'}

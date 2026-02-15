@@ -30,7 +30,7 @@ const instagramService = new InstagramGraphService();
  * - contentId?: string - ID de uma ideia de conteúdo existente
  * - useMyProfile?: boolean - Usar contexto do perfil Instagram conectado
  * - duration: 8 | 16 - Duração do vídeo (8s = 1 prompt, 16s = 2 prompts)
- * - style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'weird' | 'aesthetic' | 'satisfying'
+ * - style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'weird' | 'aesthetic' | 'satisfying' | 'pov'
  * - dialogues?: Array<{speaker: string, text: string, timing?: string}> - Diálogos/falas no vídeo
  */
 export const generateVideoPrompt = asyncHandler(
@@ -155,6 +155,12 @@ export const getAvailableStyles = asyncHandler(
             name: 'Realista',
             description: 'Aparência natural e realista, como vídeo filmado',
             bestFor: 'Tutoriais, demonstrações, vlogs'
+          },
+          {
+            id: 'pov',
+            name: 'POV (Primeira Pessoa)',
+            description: 'Perspectiva em primeira pessoa - você é o protagonista',
+            bestFor: 'Experiências imersivas, situações relacionáveis, storytelling'
           },
           {
             id: 'animated',

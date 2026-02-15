@@ -61,7 +61,7 @@ export interface Dialogue {
 interface VideoPrompt {
   prompt: string;
   duration: number;
-  style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'aesthetic' | 'satisfying';
+  style: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'aesthetic' | 'satisfying' | 'pov';
   technicalSpecs: {
     aspectRatio: string;
     fps: number;
@@ -413,7 +413,7 @@ Responda APENAS com o JSON válido, sem texto adicional.
       targetAudience?: string;
     };
     duration: 8 | 16;
-    style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'weird' | 'aesthetic' | 'satisfying';
+    style?: 'cinematic' | 'realistic' | 'animated' | 'minimalist' | 'meme' | 'nonsense' | 'weird' | 'aesthetic' | 'satisfying' | 'pov';
     dialogues?: Dialogue[]; // Diálogos/falas no vídeo
   }): Promise<VideoPromptResult> {
     try {
@@ -587,6 +587,24 @@ ESTILO: SATISFYING (Satisfatório/ASMR Visual)
 - CRÍTICO: SEM PESSOAS FALANDO - Sem diálogos, sem narração, sem falas. Apenas visual puro.
 - Personagens (se houver): Apenas mãos/corpo realizando a ação, SEM rosto, SEM falar
 - CONTINUIDADE (para 2 prompts): Se Parte 1 termina derretendo → Parte 2 começa derretido. NUNCA resetar o estado do objeto.`;
+          break;
+
+        case 'pov':
+          styleInstructions = `
+ESTILO: POV (Point of View - Primeira Pessoa)
+- Perspectiva: SEMPRE em primeira pessoa - câmera É o espectador
+- Enquadramento: O que o espectador veria com seus próprios olhos
+- Corpo visível: Apenas mãos, braços, pés do POV (do próprio espectador)
+- Interação: Objetos/pessoas interagem DIRETAMENTE com a câmera/espectador
+- Movimento: Natural como se fosse você andando/olhando/fazendo
+- Imersão: Espectador SE TORNA o personagem principal
+- Exemplos populares: "POV: você acordou em...", "POV: seu amigo te leva para...", "POV: você é..."
+- Ângulo: Eye-level, perspectiva humana natural
+- Câmera: Pode ter leve shake (movimentos naturais da cabeça/corpo)
+- CRÍTICO: NUNCA mostrar o rosto do POV - apenas o que ELE vê e suas mãos/pés
+- Contexto: Situações relacionáveis ou fantasiosas onde o espectador é o protagonista
+- Tom: Imersivo, "você está vivendo isso agora"
+- Diálogos: Outros personagens falam COM a câmera (com você)`;
           break;
 
         default:
@@ -773,6 +791,16 @@ ESTILO DO VÍDEO: AESTHETIC/ARTÍSTICO
 - Use linguagem poética e artística
 - Emojis: ✨🌿🌸🌙🧡
 - Hashtags: #aesthetic #vibes #artsy #moodygrams`
+          break
+        case 'pov':
+          styleContext = `
+ESTILO DO VÍDEO: POV (PRIMEIRA PESSOA)
+- Use "POV:" no início da legenda
+- Descreva a experiência em segunda pessoa ("você")
+- Crie situações relacionáveis ou fantasiosas
+- Emojis: 👀🫵🏼💭🎬
+- Tom: Imersivo e envolvente
+- Hashtags: #pov #povs #relatable #storytime #fyp`
           break
         default:
           styleContext = '\nUse linguagem natural e engajante para Instagram Reels'

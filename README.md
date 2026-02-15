@@ -36,25 +36,7 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
 - **Vídeos Curtos e Longos**:
   - 8 segundos: 1 prompt otimizado
   - 16 segundos: 2 prompts sequenciais com continuidade narrativa
-- **14 Estilos Visuais**: Cinematic, Realistic, Animated, Minimalist, Meme, Nonsense, Comedy, Aesthetic, Dramatic, Educational, Retro, Futuristic, Abstract, Trendy
-- **Diálogos/Falas (NOVO!)**: Adicione personagens falantes
-  - Especifique quem fala e o que fala
-  - Perfeito para comidas falantes, objetos animados, narrativas
-  - Timing customizável (início/meio/final)
-### 2. Geração de Prompts para Vídeo IA 🎬
-- **Gerar Prompts Otimizados**: Crie prompts profissionais para ferramentas de IA de vídeo
-  - Grok Video (https://grok.com/imagine)
-  - Runway ML
-  - Pika Labs
-  - Outras ferramentas de geração de vídeo
-- **Baseado em Contexto**:
-  - Perfil Instagram conectado (bio, temas, público-alvo)
-  - Ideias de conteúdo existentes
-  - Tópicos customizados
-- **Vídeos Curtos e Longos**:
-  - 8 segundos: 1 prompt otimizado
-  - 16 segundos: 2 prompts sequenciais com continuidade narrativa
-- **8 Estilos Visuais**: Cinematic, Realistic, Animated, Minimalist, Meme, Nonsense, Aesthetic, Satisfying
+- **10 Estilos Visuais**: Cinematic, Realistic, POV, Animated, Minimalist, Meme, Nonsense, Weird, Aesthetic, Satisfying
 - **Diálogos/Falas**: Adicione personagens falantes
   - Especifique quem fala e o que fala
   - Perfeito para comidas falantes, objetos animados, narrativas
@@ -104,15 +86,16 @@ InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de re
          │
     ┌────┴────┐
     │         │
-┌───▼───┐ ┌──▼──────┐
-│Instagram│ │IA Engine│
-│Scraper  │ │(OpenAI) │
-└───┬─────┘ └──┬──────┘
-    │          │
-┌───▼──────────▼───┐
-│    Database      │
-│   (MongoDB)      │
-└──────────────────┘
+┌───▼───────┐ ┌──▼────────────┐
+│ Instagram │ │  IA Engine    │
+│Graph API  │ │Google Gemini  │
+└───┬───────┘ └──┬────────────┘
+    │            │
+┌───▼────────────▼──────┐
+│  Armazenamento        │
+│  Sistema Arquivos     │
+│     (JSON)            │
+└───────────────────────┘
 ```
 
 ## � Documentação
@@ -176,7 +159,7 @@ InstaSearch/
 ### Pré-requisitos
 - Node.js 18+
 - Conta Meta Developer (para Instagram API)
-- OpenAI API Key
+- Google Gemini API Key (100% gratuito)
 
 ### Instalação
 
@@ -200,9 +183,11 @@ npm install
 ```env
 PORT=3000
 DATA_DIR=./data
-OPENAI_API_KEY=sua_chave_aqui
-INSTAGRAM_APP_ID=seu_app_id
-INSTAGRAM_APP_SECRET=seu_app_secret
+GEMINI_API_KEY=sua_chave_aqui
+GEMINI_MODEL=gemini-1.5-flash
+INSTAGRAM_CLIENT_ID=seu_client_id
+INSTAGRAM_CLIENT_SECRET=seu_client_secret
+INSTAGRAM_REDIRECT_URI=http://localhost:3000/api/instagram/callback
 ```
 
 2. Configure as credenciais do Instagram no dashboard
@@ -241,11 +226,13 @@ npm run dev
 
 ## 📈 Roadmap
 
-### Fase 1 - MVP (Atual)
-- [ ] Sistema de análise de perfis
-- [ ] Integração com OpenAI
-- [ ] Dashboard básico
-- [ ] Análise de reels
+### Fase 1 - MVP (✅ Completo)
+- [✅] Sistema de análise de perfis
+- [✅] Integração com Google Gemini (100% gratuito)
+- [✅] Dashboard básico
+- [✅] Análise de reels
+- [✅] Geração de prompts para vídeo IA
+- [✅] Upload e publicação de reels
 
 ### Fase 2
 - [ ] Geração automática de legendas
