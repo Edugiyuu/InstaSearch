@@ -17,7 +17,6 @@ export default function VideoPublish() {
     reset,
     totalDuration,
     videoCount,
-    needsMerge,
     canPublish,
   } = useVideoPublish();
 
@@ -25,6 +24,7 @@ export default function VideoPublish() {
   const [hashtags, setHashtags] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
+  const [generatingCaption, setGeneratingCaption] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estados do fluxo
@@ -84,6 +84,41 @@ export default function VideoPublish() {
     setCaption('');
     setHashtags('');
     setPublishSuccess(false);
+  };
+
+  const handleGenerateCaption = async () => {
+    if (!mergedVideo && uploadedVideos.length === 0) {
+      alert('⚠️ Faça upload de pelo menos um vídeo primeiro!');
+      return;
+    }
+
+    setGeneratingCaption(true);
+
+    try {
+      // Determinar qual vídeo analisar
+      const videoToAnalyze = mergedVideo || uploadedVideos[0];
+
+      const response = await fetch('http://localhost:3000/api/videos/analyze-for-caption', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: videoToAnalyze.filename,
+          style: 'realistic' // Pode ser dinâmico se quiser
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data.caption) {
+        setCaption(data.data.caption);
+      } else {
+        throw new Error(data.message || 'Erro ao gerar legenda');
+      }
+    } catch (err: any) {
+      alert(`❌ Erro ao gerar legenda: ${err.message}`);
+    } finally {
+      setGeneratingCaption(false);
+    }
   };
 
   const formatDuration = (seconds: number) => {
@@ -221,19 +256,35 @@ export default function VideoPublish() {
 
           <div className="publish-form">
             <div className="form-group">
-              <label htmlFor="caption">
-                <strong>Legenda do Reel</strong> <span className="required">*</span>
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <label htmlFor="caption" style={{ margin: 0 }}>
+                  <strong>Legenda do Reel</strong> <span className="required">*</span>
+                </label>
+                <button
+                  type="button"
+                  className="btn-generate-caption"
+                  onClick={handleGenerateCaption}
+                  disabled={generatingCaption || (!mergedVideo && uploadedVideos.length === 0)}
+                  title="Analisa o vídeo e gera legenda contextual com IA"
+                >
+                  {generatingCaption ? '⏳ Gerando...' : '🎬 Analisar Vídeo & Gerar Legenda'}
+                </button>
+              </div>
               <textarea
                 id="caption"
                 className="form-textarea"
-                placeholder="Escreva uma legenda envolvente para o seu reel..."
+                placeholder={uploadedVideos.length > 0 || mergedVideo ? "Clique em 'Analisar Vídeo' para IA ver o conteúdo e gerar legenda..." : "Escreva uma legenda envolvente para o seu reel..."}
                 rows={4}
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
                 maxLength={2200}
               />
               <span className="char-count">{caption.length}/2200 caracteres</span>
+              {(uploadedVideos.length > 0 || mergedVideo) && !caption && (
+                <span className="form-hint" style={{ color: '#667eea', fontWeight: 600, marginTop: '0.5rem', display: 'block' }}>
+                  💡 Clique em "Analisar Vídeo" para a IA ver seu vídeo e criar legenda personalizada!
+                </span>
+              )}
             </div>
 
             <div className="form-group">

@@ -400,6 +400,33 @@
   margin-top: 0.25rem;
 }
 
+/* Botão de gerar legenda com IA */
+.btn-generate-caption {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.btn-generate-caption:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-generate-caption:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Responsivo */
 @media (max-width: 768px) {
   .video-publish-container {
