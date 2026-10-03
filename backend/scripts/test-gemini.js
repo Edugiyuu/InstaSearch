@@ -64,7 +64,7 @@ async function testGemini() {
       console.log('🤖 Use: gemini-2.5-flash no .env');
     }
     
-    console.log('📖 Consulte: docs/GEMINI_SETUP.md\n');
+    console.log('📖 Consulte: docs/AI.md\n');
     process.exit(1);
   }
 }

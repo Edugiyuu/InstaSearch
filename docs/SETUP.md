@@ -1,369 +1,147 @@
-# Guia de Setup - InstaSearch
+# Instalação e Configuração
 
-Este guia irá ajudá-lo a configurar o ambiente de desenvolvimento completo do InstaSearch.
+Objetivo: do zero ao primeiro Reel publicado em menos de 30 minutos.
 
-## 📋 Pré-requisitos
+## 1. Pré-requisitos
 
-### Software Necessário
+| Item | Versão / observação | Verificar |
+|---|---|---|
+| Node.js | 20 ou superior | `node -v` |
+| npm | vem com o Node | `npm -v` |
+| FFmpeg + ffprobe | no PATH. No Windows, use a build *full* do [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) | `ffmpeg -version` |
+| Git | qualquer versão recente | `git --version` |
 
-1. **Node.js** (v18 ou superior)
-   - Download: https://nodejs.org/
-   - Verifique: `node --version`
+Contas necessárias (todas com opção gratuita):
 
-2. **Git**
-   - Download: https://git-scm.com/
-   - Verifique: `git --version`
+| Serviço | Para quê | Onde |
+|---|---|---|
+| Meta for Developers | Conectar e publicar no Instagram | [developers.facebook.com](https://developers.facebook.com/) |
+| Google AI Studio | Chave do Gemini (legendas e análises) | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+| Cloudinary | URL pública temporária do vídeo para a publicação | [cloudinary.com](https://cloudinary.com/users/register_free) |
 
-### Contas e APIs Necessárias
-
-1. **Meta Developer Account**
-   - Acesse: https://developers.facebook.com/
-   - Crie uma conta
-   - Crie um App
-
-2. **Google Gemini API** (100% GRATUITO)
-   - Acesse: https://aistudio.google.com/app/apikey
-   - Faça login com sua conta Google
-   - Gere uma API key (sem cartão de crédito)
-   - Veja o guia completo: [GEMINI_SETUP.md](./GEMINI_SETUP.md)
-
-3. **Conta Instagram**
-   - Crie uma conta específica para o bot
-   - Converta para conta Business/Creator
-   - Conecte ao Facebook Page
-
-## 🚀 Setup Passo a Passo
-
-### 1. Clone o Repositório
+### Instalando o FFmpeg
 
 ```bash
-git clone https://github.com/seu-usuario/InstaSearch.git
+# Windows (winget)
+winget install Gyan.FFmpeg
+
+# macOS
+brew install ffmpeg
+
+# Debian/Ubuntu
+sudo apt install ffmpeg
+```
+
+Feche e reabra o terminal depois de instalar para atualizar o PATH.
+
+## 2. Clonar e instalar
+
+```bash
+git clone https://github.com/Edugiyuu/InstaSearch.git
 cd InstaSearch
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-### 2. Configure o Backend
+## 3. Variáveis de ambiente
+
+### Backend: `backend/.env`
 
 ```bash
 cd backend
-
-# Instale as dependências
-npm install
-
-# Crie o arquivo .env
-copy .env.example .env
-
-# Edite o arquivo .env com suas credenciais
-notepad .env
+cp .env.example .env
 ```
 
-**Conteúdo do .env**:
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `PORT` | não (padrão `3000`) | Porta da API |
+| `NODE_ENV` | não | `development` mostra detalhes de erro nas respostas |
+| `LOG_LEVEL` | não (padrão `info`) | Nível de log do Winston |
+| `GEMINI_API_KEY` | **sim**, para recursos de IA | Chave do Google AI Studio |
+| `GEMINI_MODEL` | não (padrão `gemini-2.5-flash`) | Modelo usado. Confira os nomes atuais na [documentação do Gemini](https://ai.google.dev/gemini-api/docs/models) |
+| `CLOUDINARY_CLOUD_NAME` | **sim**, para publicar | Dashboard do Cloudinary |
+| `CLOUDINARY_API_KEY` | **sim**, para publicar | Dashboard do Cloudinary |
+| `CLOUDINARY_API_SECRET` | **sim**, para publicar | Dashboard do Cloudinary |
+| `INSTAGRAM_CLIENT_ID` | só para OAuth | ID do App na Meta |
+| `INSTAGRAM_CLIENT_SECRET` | só para OAuth | Chave secreta do App |
+| `INSTAGRAM_REDIRECT_URI` | só para OAuth | `http://localhost:3000/api/instagram/callback` |
 
-```env
-# Server
-PORT=3000
-NODE_ENV=development
+> A conexão por token (método recomendado) **não** precisa das variáveis `INSTAGRAM_*`. Veja [INSTAGRAM.md](INSTAGRAM.md).
 
-# Storage
-DATA_DIR=./data
-
-# Google Gemini AI (100% gratuito)
-# Obtenha sua chave em: https://aistudio.google.com/app/apikey
-GEMINI_API_KEY=sua_chave_aqui
-GEMINI_MODEL=gemini-1.5-flash
-
-# Instagram API
-INSTAGRAM_CLIENT_ID=seu_client_id
-INSTAGRAM_CLIENT_SECRET=seu_client_secret
-INSTAGRAM_REDIRECT_URI=http://localhost:3000/api/instagram/callback
-INSTAGRAM_ACCESS_TOKEN=
-INSTAGRAM_ACCOUNT_ID=
-
-# JWT
-JWT_SECRET=seu-segredo-jwt-super-secreto
-JWT_EXPIRES_IN=7d
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-
-# Scraping
-SCRAPER_USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64)
-SCRAPER_DELAY_MS=2000
-SCRAPER_MAX_RETRIES=3
-
-# Logging
-LOG_LEVEL=debug
-```
-
-```bash
-# Inicie o servidor em modo desenvolvimento
-npm run dev
-```
-
-O backend estará rodando em `http://localhost:3000`
-
-**Nota**: Na primeira execução, as pastas de dados serão criadas automaticamente em `./data/`
-
-### 3. Configure o Frontend
-
-```bash
-cd ../frontend
-
-# Instale as dependências
-npm install
-
-# Crie o arquivo .env
-copy .env.example .env
-
-# Edite o arquivo .env
-notepad .env
-```
-
-**Conteúdo do .env**:
-
-```env
-VITE_API_URL=http://localhost:3000/api
-VITE_APP_NAME=InstaSearch
-```
-
-```bash
-# Inicie o servidor de desenvolvimento
-npm run dev
-```
-
-O frontend estará rodando em `http://localhost:5173`
-
-### 4. Configure as Credenciais do Instagram
-
-#### 7.1. Crie um App no Meta Developer
-
-1. Acesse https://developers.facebook.com/apps/
-2. Clique em "Create App"
-3. Escolha "Business" como tipo
-4. Preencha os detalhes do app
-5. Adicione o produto "Instagram Basic Display" ou "Instagram Graph API"
-
-#### 7.2. Configure o Instagram Graph API
-
-1. No painel do app, vá em "Instagram Graph API"
-2. Configure o redirect URI: `http://localhost:3000/auth/instagram/callback`
-3. Adicione permissões necessárias:
-   - `instagram_basic`
-   - `instagram_content_publish`
-   - `pages_read_engagement`
-   - `pages_manage_posts`
-
-#### 7.3. Conecte sua conta Instagram
-
-1. Vincule sua página do Facebook ao app
-2. Vincule sua conta Instagram à página do Facebook
-3. Gere o Access Token
-
-**No Dashboard do InstaSearch**:
-
-1. Acesse `http://localhost:5173/settings`
-2. Clique em "Connect Instagram Account"
-3. Siga o fluxo de autorização
-4. O token será salvo automaticamente
-
-## 🧪 Teste a Instalação
-
-### 1. Teste o Backend
-
-```bash
-cd backend
-
-# Execute os testes
-npm test
-
-# Teste um endpoint manualmente
-curl http://localhost:3000/api/health
-# Resposta esperada: {"status":"ok"}
-```
-
-### 2. Teste o Frontend
+### Frontend: `frontend/.env`
 
 ```bash
 cd frontend
-
-# Execute os testes
-npm test
-
-# Acesse no navegador
-# http://localhost:5173
+cp .env.example .env
 ```
 
-### 3. Teste a IA (Google Gemini)
+| Variável | Padrão |
+|---|---|
+| `VITE_API_URL` | `http://localhost:3000/api` |
+| `VITE_APP_NAME` | `InstaSearch` |
+
+## 4. Rodar
+
+```bash
+# Terminal 1
+cd backend
+npm run dev
+```
+
+```bash
+# Terminal 2
+cd frontend
+npm run dev
+```
+
+- API: http://localhost:3000 (health check em `/api/health`)
+- App: http://localhost:5173
+
+O agendador inicia junto com o backend. **Posts agendados só são publicados enquanto o backend estiver rodando.**
+
+## 5. Conectar o Instagram
+
+Siga [INSTAGRAM.md](INSTAGRAM.md). Resumo: gere o token no Graph API Explorer, estenda no Access Token Debugger e cole em **Configurações → Conectar com Token**.
+
+## 6. Verificar a instalação
 
 ```bash
 cd backend
-
-# Teste a conexão com Gemini
-node scripts/test-gemini.js
-
-# Deve retornar:
-# ✅ Variável GEMINI_API_KEY encontrada
-# 📊 Modelo configurado: gemini-1.5-flash
-# 🔗 Conectando ao Google Gemini...
-# ✅ Resposta do Gemini: OK
-# ✨ SUCESSO! Google Gemini API configurada corretamente.
+node scripts/test-gemini.js      # testa a chave e o modelo do Gemini
+node scripts/test-scheduler.js   # testa o agendador
 ```
 
-### 4. Teste o Fluxo Completo
+No Windows também há scripts PowerShell em `backend/scripts/` (`test-api.ps1`, `test-routes.ps1`, `check-instagram-setup.ps1`, `test-publish.ps1`, `test-ai-endpoints.ps1`).
 
-1. Acesse o Dashboard: `http://localhost:5173`
-2. Adicione um perfil de referência
-3. Aguarde a análise completar
-4. Gere conteúdo baseado na análise
-5. Visualize as sugestões
+Teste completo pela interface:
+1. **Publicar Reels** → envie um clipe curto vertical.
+2. Clique em gerar legenda com IA.
+3. Publique ou agende para daqui a 5 minutos.
 
-## 🐛 Troubleshooting
+## 7. Onde ficam os dados
 
-### Problema: Pasta de dados não é criada
+Tudo fica em `backend/data/` (no `.gitignore`):
 
-**Solução**:
-```bash
-# Crie manualmente as pastas necessárias
-cd backend
-mkdir data
-cd data
-mkdir profiles reels analyses content posts
+```
+backend/data/
+├── instagram_accounts/   # contas conectadas e tokens (texto puro!)
+├── posts/                # posts agendados e publicados
+├── profiles/ reels/ analyses/ content/ users/
+└── videos/
+    ├── temp/             # uploads
+    └── output/           # vídeos processados
 ```
 
-### Problema: Erro ao ler/escrever arquivos
+**Backup:** copie a pasta `backend/data/`. **Limpeza:** apague o conteúdo de `videos/temp` e `videos/output` de vez em quando; ainda não há limpeza automática.
 
-**Solução**:
-1. Verifique permissões da pasta `data/`
-2. Confirme que DATA_DIR está correto no .env
-3. Verifique se há espaço em disco
+## Solução de problemas
 
-### Problema: Erro de autenticação Instagram
-
-**Solução**:
-1. Verifique se o App ID e Secret estão corretos
-2. Confirme que a conta está em Business mode
-3. Verifique se o Access Token não expirou
-4. Regenere o token se necessário
-
-### Problema: Google Gemini API retorna erro
-
-**Solução**:
-1. Verifique se a API key está correta
-2. Confirme que está usando `gemini-1.5-flash` (gratuito)
-3. Verifique rate limits (15 RPM / 1.500 por dia)
-4. Execute o teste: `node scripts/test-gemini.js`
-5. Consulte o guia: [GEMINI_SETUP.md](./GEMINI_SETUP.md)
-
-### Problema: Frontend não carrega
-
-**Solução**:
-```bash
-# Limpe o cache
-npm run clean
-
-# Reinstale dependências
-rm -rf node_modules
-npm install
-
-# Tente em modo verbose
-npm run dev -- --debug
-```
-
-### Problema: Scraper não funciona
-
-**Solução**:
-1. Verifique se o perfil é público
-2. Aumente o delay entre requisições
-3. Use proxy se necessário
-4. Verifique logs de erro detalhados
-
-## 🔧 Configurações Avançadas
-
-### Usar Proxy para Scraping
-
-No arquivo `backend/.env`:
-```env
-PROXY_HOST=seu-proxy.com
-PROXY_PORT=8080
-PROXY_USERNAME=usuario
-PROXY_PASSWORD=senha
-```
-
-### Configurar Webhooks
-
-Para receber notificações do Instagram:
-
-1. Configure um domínio público (use ngrok para desenvolvimento)
-2. No Meta App, configure o Webhook URL
-3. Adicione no `backend/.env`:
-```env
-WEBHOOK_VERIFY_TOKEN=seu-token-de-verificacao
-```
-
-### Backup dos Dados
-
-```bash
-# Faça backup da pasta de dados regularmente
-cp -r backend/data backend/data-backup-$(date +%Y%m%d)
-
-# Ou use o comando do Windows:
-xcopy backend\data backend\data-backup-%date:~-4,4%%date:~-7,2%%date:~-10,2% /E /I
-```
-
-## 📚 Próximos Passos
-
-Agora que o ambiente está configurado:
-
-1. Leia a [Documentação da API](./API.md)
-2. Explore a [Arquitetura](./ARCHITECTURE.md)
-3. Contribua lendo o [Guia de Contribuição](./CONTRIBUTING.md)
-
-## 💡 Dicas de Desenvolvimento
-
-### Hot Reload
-
-Todos os serviços suportam hot reload:
-- Backend: Usa `nodemon`
-- Frontend: Vite hot reload automático
-- AI Engine: Usa `watchdog` (se configurado)
-
-### Debugging
-
-#### VS Code Launch Configuration
-
-Crie `.vscode/launch.json`:
-
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Debug Backend",
-      "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/backend/src/index.ts",
-      "preLaunchTask": "npm: dev",
-      "outFiles": ["${workspaceFolder}/backend/dist/**/*.js"]
-    }
-  ]
-}
-```
-
-### Logs
-
-- Backend: `backend/logs/`
-- Dados: `backend/data/` (arquivos JSON)
-
-## 🆘 Suporte
-
-Se encontrar problemas:
-
-1. Verifique os logs
-2. Consulte a seção de Troubleshooting
-3. Abra uma issue no GitHub
-4. Entre em contato com a equipe
-
----
-
-**Pronto! Seu ambiente está configurado e você está pronto para desenvolver! 🎉**
+| Problema | Solução |
+|---|---|
+| `Cannot find ffmpeg` / `ffprobe` | FFmpeg fora do PATH. Reinstale e reabra o terminal |
+| `GEMINI_API_KEY não configurada` | Preencha o `.env` e reinicie o backend |
+| `Resource has been exhausted` (Gemini) | Limite do plano gratuito atingido. Espere o reset ou ative o faturamento. Veja [AI.md](AI.md) |
+| Publicação falha no upload | Credenciais do Cloudinary ausentes ou erradas |
+| Erros de token do Instagram | Veja a tabela de erros em [INSTAGRAM.md](INSTAGRAM.md#erros-comuns) |
+| Frontend não acessa a API | Confira `VITE_API_URL` e se o backend está na porta 3000 |
+| Porta em uso | Mude `PORT` no `.env` e ajuste `VITE_API_URL` |

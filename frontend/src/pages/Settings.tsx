@@ -278,21 +278,6 @@ function Settings() {
         )}
 
         <div className="card">
-          <h2 className="card-title">API OpenAI</h2>
-          <div className="settings-section">
-            <div className="settings-item">
-              <div className="settings-item-info">
-                <div className="settings-item-label">Chave da API</div>
-                <div className="settings-item-description">
-                  Configure sua chave da API OpenAI
-                </div>
-              </div>
-              <button className="btn btn-secondary">Configurar</button>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
           <h2 className="card-title">Preferências</h2>
           <div className="settings-section">
             <div className="settings-item">

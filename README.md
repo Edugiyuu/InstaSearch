@@ -1,263 +1,144 @@
-# InstaSearch - Analisador e Criador de Conteúdo Instagram com IA
+# InstaSearch
 
-## 📋 Visão Geral
+**Do tema ao Short, com você no controle.**
+Você dá um assunto, por exemplo *"Sukuna nunca teve energia vermelha?"*, e grava a voz (ElevenLabs, microfone...). O app escreve o roteiro e monta o Short no **estilo** que você escolher. No estilo comentário de anime, por exemplo, isso significa uma imagem nova a cada segundo, legendas de 1 a 2 palavras, setas, X vermelho, memes e efeitos sonoros. Também há explicativo, curiosidades, história com gameplay de fundo, ranking e os estilos que você mesmo criar. Depois mostra a **prévia ao vivo**, aplica os seus ajustes e publica.
 
-InstaSearch é uma aplicação inteligente que analisa perfis do Instagram de referência e utiliza IA para criar conteúdo original inspirado nesses perfis. A aplicação automatiza o processo de pesquisa, análise e criação de conteúdo para Instagram.
+> Self-hosted · em PT-BR · motor gratuito para uso pessoal · você usa as suas próprias chaves · sem depender de um único fornecedor de IA
 
-## 🎯 Funcionalidades Principais
+---
 
-### 1. Publicação de Reels 🎥 (NOVO!)
-- **Upload Múltiplo**: Envie 1-3 vídeos (MP4, MOV, AVI, MKV)
-- **Merge de Vídeos**: Junte múltiplos vídeos em um único reel
-- **Processamento FFmpeg**: 
-  - Otimização automática para Instagram (1080x1920, 9:16)
-  - Concatenação profissional com transições suaves
-  - Frame rate 30fps, codec H.264
-- **Upload Cloudinary**: CDN público para hospedagem temporária
-- **Publicação Direta**: 
-  - Integração com Instagram Graph API v18.0
-  - Caption e hashtags customizáveis
-  - Processamento assíncrono com feedback em tempo real
-- **Interface Drag-and-Drop**: 
-  - Arraste e solte vídeos
-  - Preview com duração e tamanho
-  - Workflow visual: upload → merge → publish
-
-### 2. Geração de Prompts para Vídeo IA 🎬
-- **Gerar Prompts Otimizados**: Crie prompts profissionais para ferramentas de IA de vídeo
-  - Grok Video (https://grok.com/imagine)
-  - Runway ML
-  - Pika Labs
-  - Outras ferramentas de geração de vídeo
-- **Baseado em Contexto**:
-  - Perfil Instagram conectado (bio, temas, público-alvo)
-  - Ideias de conteúdo existentes
-  - Tópicos customizados
-- **Vídeos Curtos e Longos**:
-  - 8 segundos: 1 prompt otimizado
-  - 16 segundos: 2 prompts sequenciais com continuidade narrativa
-- **10 Estilos Visuais**: Cinematic, Realistic, POV, Animated, Minimalist, Meme, Nonsense, Weird, Aesthetic, Satisfying
-- **Diálogos/Falas**: Adicione personagens falantes
-  - Especifique quem fala e o que fala
-  - Perfeito para comidas falantes, objetos animados, narrativas
-  - Timing customizável (início/meio/final)
-- **Integração Direta**: Botão "Criar no Grok" com deep link + clipboard
-
-### 3. Análise de Perfis de Referência
-- **Coleta de Dados**: Busca e armazena informações de perfis do Instagram
-- **Análise de Reels**: Analisa cada reel dos perfis de referência
-  - Tema do conteúdo
-  - Estilo visual
-  - Tipo de edição
-  - Duração média
-  - Hashtags utilizadas
-  - Engajamento (likes, comentários, visualizações)
-- **Extração de Padrões**: Identifica padrões de sucesso nos conteúdos
-
-### 4. Análise com IA
-- **Análise de Conteúdo**: Compreende o tema e estilo dos posts
-- **Reconhecimento de Tendências**: Identifica tendências nos perfis analisados
-- **Análise de Engajamento**: Correlaciona características com performance
-- **Extração de Insights**: Gera insights sobre o que funciona melhor
-
-### 5. Geração de Conteúdo
-- **Criação de Ideias**: Gera ideias de conteúdo baseadas nas análises
-- **Geração de Scripts**: Cria roteiros para reels
-- **Sugestão de Hashtags**: Recomenda hashtags relevantes
-- **Agendamento**: Planeja calendário de postagens
-
-### 6. Publicação Automatizada
-- **Integração com Instagram**: Conecta com a API do Instagram
-- **Postagem Automática**: Publica conteúdo na conta configurada
-- **Monitoramento**: Acompanha performance das postagens
-
-## 🏗️ Arquitetura do Sistema
+## Como funciona
 
 ```
-┌─────────────────┐
-│   Frontend      │
-│   (Dashboard)   │
-└────────┬────────┘
-         │
-┌────────▼────────┐
-│   Backend API   │
-│   (Node.js)     │
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-┌───▼───────┐ ┌──▼────────────┐
-│ Instagram │ │  IA Engine    │
-│Graph API  │ │Google Gemini  │
-└───┬───────┘ └──┬────────────┘
-    │            │
-┌───▼────────────▼──────┐
-│  Armazenamento        │
-│  Sistema Arquivos     │
-│     (JSON)            │
-└───────────────────────┘
+ Tema + estilo ─► Roteiro (IA) ─► Sua voz ─► Batidas visuais ─► Biblioteca + lista de busca ─► Prévia ao vivo ⟲ ajustes ─► Render ─► Publicar
 ```
 
-## � Documentação
+| Etapa | Quem faz |
+|---|---|
+| Roteiro (editável) e botão "copiar narração" para o ElevenLabs | IA |
+| Voz | **Você**: ElevenLabs, microfone ou TTS local opcional |
+| Transcrição e divisão em batidas visuais, no ritmo do estilo (ex.: uma troca a cada 0,7 a 1,5s) | App (Whisper local) |
+| Escolher imagem, recorte, tipo de cena (tela cheia, "prova", meme, versus), setas, emojis e efeitos sonoros | App + IA, usando a **sua biblioteca** |
+| Imagens que faltam | **Você** arrasta, a partir da lista do que procurar |
+| Prévia e ajustes ("troca a imagem da batida 7", "coloca um X aqui") | Ao vivo no navegador |
+| Render e publicação no Instagram / MP4 para Shorts e TikTok | App |
 
-- [Setup](docs/SETUP.md) - Configuração inicial do projeto
-- [Arquitetura](docs/ARCHITECTURE.md) - Estrutura e design do sistema
-- [API](docs/API.md) - Documentação completa da API- [Publicar Reels](docs/VIDEO_PUBLISH.md) - Sistema de upload/merge/publicação de vídeos ✨ NOVO- [Instagram - Início Rápido](docs/INSTAGRAM_QUICKSTART.md) - Como conectar sua conta Instagram
-- [Instagram - Gerar Token](docs/GERAR_TOKEN_INSTAGRAM.md) - Passo a passo para gerar token
-- [Instagram - Autenticação](docs/INSTAGRAM_AUTH.md) - Guia completo de OAuth
+### Estilos
 
-## �🛠️ Stack Tecnológica
+Um estilo é um arquivo de configuração: ritmo dos cortes, tipos de cena, legendas, movimentos, efeitos sonoros e tom do roteiro. Você pode duplicar um estilo e ajustar, ou (no futuro) gerar um a partir de um vídeo de referência. Veja [o catálogo](docs/AUTO_EDIT.md#estilos).
 
-### Backend
-- **Node.js** com Express
-- **TypeScript** para type safety
-- **Sistema de arquivos** para armazenamento (JSON)
-- **Node-cron** para agendamento de tarefas
+### O gargalo é conseguir as imagens, não editar
 
-### Frontend
-- **React** com TypeScript
-- **CSS puro** para estilização
-- **Vite** como build tool
+Os Shorts têm no máximo 40 segundos, mas os estilos de cortes rápidos usam de 25 a 40 imagens em cada um. Por isso o app tem uma **biblioteca pessoal que cresce com o uso**. Cada imagem é catalogada pela IA (personagem, emoção, onde fica o rosto), reaproveitada em outros vídeos e recortada de vários jeitos (aberto, close, detalhe). Depois de alguns vídeos no mesmo nicho, você só busca as poucas imagens que faltam.
 
-### IA e Análise
-- **Google Gemini** para análise e geração de conteúdo (100% gratuito)
-- **Instagram Graph API** para integração
-- **FFmpeg** para processamento de vídeo
-- **Cloudinary** para hospedagem de mídia (CDN)
+O app **não gera vídeo por IA** (Grok, Sora, Veo): ele **monta e edita** a partir do seu material, com [Remotion](https://www.remotion.dev/) (React). Também há um **modo gravado** para quem aparece na câmera.
 
-## 📁 Estrutura do Projeto
+Detalhes em [docs/AUTO_EDIT.md](docs/AUTO_EDIT.md) e o propósito completo em [docs/PURPOSE.md](docs/PURPOSE.md).
 
-```
-InstaSearch/
-├── backend/
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── services/
-│   │   │   ├── ai/
-│   │   │   ├── instagram/
-│   │   │   └── storage/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   └── utils/
-│   ├── data/           # Armazenamento local (JSON)
-│   ├── tests/
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── hooks/
-│   │   ├── services/
-│   │   └── styles/     # CSS puro
-│   └── package.json
-├── docs/
-└── README.md
-```
+## O que funciona hoje
 
-## 🚀 Começando
+| Funcionalidade | Status |
+|---|---|
+| Conectar conta Instagram Business/Creator (token ou OAuth) | ✅ Funciona |
+| Ver perfil, reels e insights da sua conta | ✅ Funciona |
+| Upload de 1 a 3 clipes, junção e formatação 1080x1920 com FFmpeg | ✅ Funciona |
+| Legenda do post gerada por IA a partir de frames do vídeo (Gemini) | ✅ Funciona |
+| Publicação direta de Reels (via Cloudinary + Graph API) | ✅ Funciona |
+| Agendamento com publicação automática | ✅ Funciona (o backend precisa estar rodando no horário) |
+| Gerador de prompts para IA de vídeo | ⚠️ Legado: vai virar o gerador de roteiro em cenas |
+| Análise de perfis de referência | 🚧 Interface existe, mas ainda não coleta dados (vai usar a Business Discovery API) |
+| Geração de ideias de conteúdo a partir de análises | 🚧 Endpoint ainda é um stub |
+| Tema → roteiro → voz → batidas → prévia ao vivo → render (Remotion) | 📋 Planejado (prioridade) |
+| Biblioteca de imagens com catalogação por IA e lista de busca | 📋 Planejado (prioridade) |
+| Setas, memes, emojis, efeitos sonoros e ajustes em linguagem natural | 📋 Planejado |
+| Modo gravado (corte de silêncios e takes) | 📋 Planejado |
+| Ciclo de aprendizado (métricas → ideias) | 📋 Planejado |
+
+Status detalhado e próximos passos em [docs/ROADMAP.md](docs/ROADMAP.md).
+
+## Começando
 
 ### Pré-requisitos
-- Node.js 18+
-- Conta Meta Developer (para Instagram API)
-- Google Gemini API Key (100% gratuito)
+
+- Node.js 20+
+- FFmpeg instalado e no PATH
+- Conta Instagram **Business ou Creator** vinculada a uma Página do Facebook
+- App no [Meta for Developers](https://developers.facebook.com/)
+- Chave da API do [Google Gemini](https://aistudio.google.com/app/apikey) (há um nível gratuito com limites)
+- Conta [Cloudinary](https://cloudinary.com/) (o plano gratuito basta para uso pessoal)
 
 ### Instalação
 
 ```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/InstaSearch.git
+git clone https://github.com/Edugiyuu/InstaSearch.git
 cd InstaSearch
 
-# Instale as dependências do backend
 cd backend
 npm install
+cp .env.example .env   # preencha as chaves
 
-# Instale as dependências do frontend
 cd ../frontend
 npm install
+cp .env.example .env
 ```
-
-### Configuração
-
-1. Crie um arquivo `.env` na pasta `backend/`:
-```env
-PORT=3000
-DATA_DIR=./data
-GEMINI_API_KEY=sua_chave_aqui
-GEMINI_MODEL=gemini-1.5-flash
-INSTAGRAM_CLIENT_ID=seu_client_id
-INSTAGRAM_CLIENT_SECRET=seu_client_secret
-INSTAGRAM_REDIRECT_URI=http://localhost:3000/api/instagram/callback
-```
-
-2. Configure as credenciais do Instagram no dashboard
 
 ### Executando
 
 ```bash
-# Backend (em um terminal)
-cd backend
-npm run dev
+# Terminal 1
+cd backend && npm run dev     # http://localhost:3000
 
-# Frontend (em outro terminal)
-cd frontend
-npm run dev
+# Terminal 2
+cd frontend && npm run dev    # http://localhost:5173
 ```
 
-## 📖 Documentação Adicional
+Depois abra **Configurações** no app e conecte sua conta. O guia completo de instalação está em [docs/SETUP.md](docs/SETUP.md) e o de conexão com o Instagram em [docs/INSTAGRAM.md](docs/INSTAGRAM.md).
 
-- [Arquitetura Detalhada](./docs/ARCHITECTURE.md)
-- [Guia de API](./docs/API.md)
-- [Guia de Setup](./docs/SETUP.md)
-- [Guia de Contribuição](./docs/CONTRIBUTING.md)
+## Quanto custa
 
-## 🔐 Segurança e Privacidade
+O motor de edição (Remotion, Whisper e FFmpeg locais) é **gratuito para uso pessoal**, e Gemini e Cloudinary têm planos gratuitos. Só custa o que você escolher: por exemplo, o plano do ElevenLabs para a voz ou um gerador de imagens. Veja a tabela completa em [docs/COSTS.md](docs/COSTS.md).
 
-- Todas as credenciais são armazenadas de forma segura
-- Compliance com termos de uso do Instagram
-- Dados criptografados em repouso
-- Rate limiting implementado
+## Stack
 
-## ⚠️ Avisos Legais
+- **Backend:** Node.js, Express, TypeScript, armazenamento em arquivos JSON
+- **Frontend:** React 18, Vite, TypeScript, CSS puro
+- **Vídeo:** FFmpeg (fluent-ffmpeg) hoje; Remotion (composição em React, prévia ao vivo e render) para a edição automática
+- **IA:** Google Gemini, com plano de suportar outros provedores
+- **Integrações:** Instagram Graph API, Cloudinary
 
-- Esta aplicação deve ser usada em conformidade com os Termos de Serviço do Instagram
-- Respeite direitos autorais ao criar conteúdo inspirado em outros perfis
-- O uso de automação deve seguir as diretrizes da plataforma
+Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) e endpoints em [docs/API.md](docs/API.md).
 
-## 📈 Roadmap
+## Documentação
 
-### Fase 1 - MVP (✅ Completo)
-- [✅] Sistema de análise de perfis
-- [✅] Integração com Google Gemini (100% gratuito)
-- [✅] Dashboard básico
-- [✅] Análise de reels
-- [✅] Geração de prompts para vídeo IA
-- [✅] Upload e publicação de reels
+| Documento | Conteúdo |
+|---|---|
+| [PURPOSE.md](docs/PURPOSE.md) | Propósito, público, princípios e o que o projeto **não** é |
+| [ROADMAP.md](docs/ROADMAP.md) | O que está pronto, o que falta e a ordem de construção |
+| [SETUP.md](docs/SETUP.md) | Instalação, variáveis de ambiente e solução de problemas |
+| [INSTAGRAM.md](docs/INSTAGRAM.md) | Conectar a conta: app Meta, token, permissões e erros comuns |
+| [VIDEO_PIPELINE.md](docs/VIDEO_PIPELINE.md) | O que já funciona: upload, junção, legenda e publicação; modo gravado |
+| [AUTO_EDIT.md](docs/AUTO_EDIT.md) | **Especificação do fluxo tema → Short** (roteiro, batidas, biblioteca, tipos de cena, prévia, Remotion) |
+| [SCHEDULER.md](docs/SCHEDULER.md) | Agendamento e publicação automática |
+| [AI.md](docs/AI.md) | Onde a IA é usada, configuração do Gemini e provedores futuros |
+| [COSTS.md](docs/COSTS.md) | O que é grátis, o que é pago e quanto custa |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Estrutura do código e decisões técnicas |
+| [API.md](docs/API.md) | Referência dos endpoints |
+| [FIGMA.md](docs/FIGMA.md) | Prototipar telas no Figma com IA (desenhar e ler designs via MCP) |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Como contribuir |
 
-### Fase 2
-- [ ] Geração automática de legendas
-- [ ] Sugestão de horários de postagem
-- [ ] Análise de concorrentes
-- [ ] Relatórios de performance
+## Segurança: leia antes de usar
 
-### Fase 3
-- [ ] Suporte para múltiplas contas
-- [ ] Geração de imagens com IA
-- [ ] Integração com ferramentas de edição
-- [ ] App mobile
+- Os tokens do Instagram ficam em **arquivos JSON sem criptografia** em `backend/data/`. Não exponha essa pasta, não faça commit dela e não rode o backend aberto na internet sem autenticação. Criptografar os tokens está no roadmap.
+- O backend **não tem autenticação nem rate limiting**. Ele foi feito para rodar em `localhost`.
+- Nunca coloque tokens ou chaves no código. Use o `.env`, que já está no `.gitignore`.
 
-## 🤝 Contribuindo
+## Avisos
 
-Contribuições são bem-vindas! Por favor, leia o [Guia de Contribuição](./docs/CONTRIBUTING.md) antes de submeter PRs.
+- Use de acordo com os [Termos da Plataforma Meta](https://developers.facebook.com/terms/) e as regras do Instagram.
+- **Direitos autorais:** usar personagens e artes protegidas (anime, filmes, jogos) é responsabilidade de quem publica. As plataformas podem remover vídeos ou bloquear a monetização. Veja [AUTO_EDIT.md](docs/AUTO_EDIT.md#direitos-autorais).
+- Reels publicados pela API **não podem usar músicas da biblioteca do Instagram**. Use trilhas livres de direitos.
+- **Licença do Remotion:** gratuito para pessoas físicas, organizações sem fins lucrativos e empresas com até 3 funcionários. Empresas maiores precisam de uma [licença paga](https://www.remotion.dev/license) para usar a edição automática.
 
-## 📄 Licença
+## Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](./LICENSE) para mais detalhes.
-
-## 📧 Contato
-
-Para dúvidas ou sugestões, abra uma issue no GitHub.
-
----
-
-**Nota**: Esta aplicação é para fins educacionais e de pesquisa. Use com responsabilidade.
+[MIT](LICENSE)
