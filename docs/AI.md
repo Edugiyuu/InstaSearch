@@ -1,94 +1,145 @@
 # Inteligência Artificial no InstaSearch
 
-Este documento cobre onde a IA é usada, como configurar o Gemini e o plano para suportar outros provedores. Ele substitui o antigo `GEMINI_SETUP.md`.
+Onde a IA é usada, como configurar o Gemini e como o app passa para o **Claude Haiku 4.5** quando o Gemini cai ou acaba a cota grátis. Substitui o antigo `GEMINI_SETUP.md`.
 
 ## Onde a IA é usada
 
-| Recurso | Status | Entrada → saída | Arquivo |
+| Recurso | Status | Entrada → saída | Código |
 |---|---|---|---|
-| Legenda do post a partir do vídeo | ✅ | 3 frames + estilo → legenda | `aiService.generateCaptionFromVideo` |
-| Análise do seu perfil | ✅ | bio + posts recentes → temas, público, pontos fortes | `aiService.analyzeProfile` (aba Meu Perfil) |
-| Legenda a partir de uma ideia | ✅ | ideia + tom → legenda + hashtags | `aiService.generateCaption` |
-| Análise de hashtags | ✅ | lista → classificação e sugestões | `aiService.analyzeHashtags` |
-| Sugestões de conteúdo | ✅ (sem tela dedicada) | análise de perfil → ideias com roteiro | `aiService.generateContentSuggestions` |
-| Prompts para IA de vídeo | ⚠️ legado | tema/estilo → prompts | `aiService.generateVideoPrompt`, vai virar o gerador de roteiro |
-| Roteiro | 📋 | tema + tom + duração → cenas (narração, dicas visuais, ênfase) | ver [AUTO_EDIT.md](AUTO_EDIT.md#2-roteiro-ia) |
-| Catalogação da biblioteca | 📋 | imagem/clipe → personagens, tags, descrição, **regiões (caixas)** | roda uma vez por arquivo; as regiões alimentam recortes e setas. Ver [AUTO_EDIT.md](AUTO_EDIT.md#catalogação-automática) |
-| Planejador de batidas | 📋 | batidas + 5 a 10 candidatos da biblioteca por batida → `EditPlan` (tipo de cena, material, recorte, anotações, sfx) e lista de busca | ver [AUTO_EDIT.md](AUTO_EDIT.md#4-batidas-visuais-automático) |
-| Ajustes em linguagem natural | 📋 | plano + pedido → patch | "coloca um X na cena da energia vermelha" |
-| Geração de imagem (opcional) | 📋 | dica visual → imagem | provider plugável |
-| Ciclo de aprendizado | 📋 | métricas dos seus Reels → próximas ideias | ver [ROADMAP.md](ROADMAP.md) |
+| Roteiro | ✅ | tema + estilo + tom + duração → título, narração e cenas (legenda, o que a imagem mostra, efeito, efeito sonoro, figurinha) | `shortsAI.generateScript` |
+| Dividir uma narração pronta em cenas | ✅ | texto do usuário → cenas, sem mudar o texto | `shortsAI.generateScript` (com `narration`) |
+| "Peça um ajuste" | ✅ | cenas + pedido em português → cenas novas + resposta | `shortsAI.adjustBeats` |
+| Escolher as imagens das cenas | ✅ | roteiro inteiro + catálogo da biblioteca → uma imagem por cena, com motivo e área de zoom | `shortsAI.pickImagesWithAI` |
+| Catalogar imagens e figurinhas | ✅ | imagem → nome, personagens, etiquetas, descrição, áreas (rosto, mão…) | `shortsAI.catalogImage` |
+| Catalogar efeitos sonoros e músicas | ✅ (só Gemini) | áudio → nome e etiquetas | `shortsAI.catalogSound` |
+| Legenda do post | ✅ | título + narração → legenda + hashtags | `aiService.generateCaption` |
+| Legenda a partir de frames, análise de perfil, hashtags | ✅ legado | ver "Ferramentas antigas" | `aiService.ts` |
+| Transcrição da voz (Whisper) | 📋 | áudio → palavras com tempo | planejado; hoje o tempo das cenas é estimado |
 
-Regra de projeto: **a IA sugere e o usuário aprova.** Nenhuma saída de IA é publicada sem passar pela interface.
+Regra de projeto: **a IA sugere e o usuário aprova.** Nada é publicado sem passar pela revisão.
+
+Gasto típico por vídeo: 1 chamada para o roteiro, 1 para escolher as imagens, 1 por "Peça um ajuste" e 1 por imagem nova catalogada (só uma vez por imagem).
+
+## Provedores e reserva automática
+
+Todas as chamadas do fluxo de Shorts passam por um único módulo, [`backend/src/services/shorts/llm.ts`](../backend/src/services/shorts/llm.ts). Ele tenta os provedores em ordem e, se um falhar por **cota (429), sobrecarga (5xx) ou rede**, passa o mesmo pedido para o próximo:
+
+```
+Gemini (grátis)  ──falhou──►  Claude API (Haiku 4.5, com chave)  ──falhou──►  Claude Code (Haiku 4.5, seu plano Pro/Max)
+```
+
+| Provedor | Quando entra | Modelo | Custo | Precisa de |
+|---|---|---|---|---|
+| **Gemini** | sempre primeiro | `GEMINI_MODEL` (padrão `gemini-2.5-flash`) | grátis com limite diário (em out/2026: 20 pedidos/dia no `gemini-2.5-flash`) | `GEMINI_API_KEY` |
+| **Claude API** | se o Gemini falhar | `claude-haiku-4-5` (fixo) | pago por uso, centavos por vídeo | `ANTHROPIC_API_KEY` (créditos no Console, separado do plano Pro) |
+| **Claude Code** | se os anteriores falharem | `claude-haiku-4-5` (fixo) | conta no limite do seu plano Pro/Max, sem cobrança extra | Claude Code instalado e logado, `CLAUDE_CODE=on` |
+
+Detalhes do comportamento:
+
+- **Pausa por cota.** Quando o Gemini responde 429, o app lê o "tente de novo em…" do erro e deixa o Gemini de lado até esse horário. Os pedidos vão direto para o Claude, sem gastar uma tentativa a cada vez. A primeira resposta certa do Gemini depois disso tira a pausa.
+- **Áudio só no Gemini.** O Claude não ouve áudio. Sem o Gemini, efeitos sonoros e músicas ficam com as etiquetas tiradas do nome do arquivo (`whoosh_01.mp3` → `whoosh`).
+- **Imagens funcionam nos três.** Na API o Claude recebe a imagem em base64; no Claude Code ela vai para uma pasta temporária que só aquele pedido pode ler e que é apagada logo depois.
+- **Log.** O terminal do backend mostra quem respondeu cada pedido, por exemplo:
+  ```
+  ⚠️ Gemini indisponível (...) Usando o Claude.
+  Claude Code: 11.8s na IA · 1426 tokens de entrada, 1559 de saída
+  🤖 Respondido por Claude Code do plano (claude-haiku-4-5) — reserva
+  ```
+- **Configurações.** A tela mostra o estado de cada provedor (com a hora em que a cota do Gemini volta) sem gastar nenhuma chamada. O botão "Testar conexão" é o único que chama o Gemini.
+
+### Variáveis (`backend/.env`)
+
+```env
+GEMINI_API_KEY=sua_chave
+GEMINI_MODEL=gemini-2.5-flash
+
+# Claude API (opcional, pago por uso)
+ANTHROPIC_API_KEY=
+
+# Claude Code com o seu plano Pro/Max (opcional)
+CLAUDE_CODE=on
+# CLAUDE_CODE_PATH=C:\caminho\para\claude.cmd   # só se o comando não estiver no PATH
+
+# auto (padrão) = Gemini → Claude API → Claude Code
+# gemini | claude | claude-code = usa só aquele
+LLM_PROVIDER=auto
+```
+
+O `.env` só é lido quando o backend inicia: **reinicie o backend depois de mudar**.
 
 ## Configurando o Gemini
 
-1. Acesse [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) e crie uma chave.
-2. No `backend/.env`:
-   ```env
-   GEMINI_API_KEY=sua_chave
-   GEMINI_MODEL=gemini-2.5-flash
-   ```
-3. Teste:
+1. Crie uma chave em [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey).
+2. Coloque `GEMINI_API_KEY` e `GEMINI_MODEL` no `backend/.env`.
+3. Teste com `node scripts/test-gemini.js` (na pasta `backend`) ou no botão "Testar conexão" das Configurações.
+
+Os limites do nível grátis mudam com frequência e caíram muito em 2025–2026; confira a [página de limites](https://ai.google.dev/gemini-api/docs/rate-limits). No nível grátis o Google pode usar os dados enviados para melhorar os produtos. O app desliga o "thinking" do Gemini (`thinkingBudget: 0`): o roteiro sai em segundos em vez de mais de um minuto.
+
+## Usando o Claude Code com o plano Pro/Max
+
+O plano Pro **não inclui** a API (a chave de API é cobrada à parte, no Console). Mas o Pro inclui o **Claude Code**, que tem um modo não interativo (`claude -p`). O backend chama esse comando no seu computador e usa o seu login.
+
+1. Instale:
    ```bash
-   cd backend
-   node scripts/test-gemini.js
+   npm install -g @anthropic-ai/claude-code
    ```
-4. Com o backend rodando, `GET /api/ai/health` informa se o serviço está ativo.
+2. Entre com a conta do plano (abre o navegador):
+   ```bash
+   claude auth login
+   ```
+   Confira com `claude auth status` (deve mostrar `"loggedIn": true` e `"authMethod": "claude.ai"`).
+3. No `backend/.env`, coloque `CLAUDE_CODE=on` e reinicie o backend.
 
-### Custos e limites
+Como cada pedido roda (`askClaudeCode` em `llm.ts`):
 
-- O Gemini tem um **nível gratuito**, mas os limites (requisições por minuto e por dia) **mudaram várias vezes** e foram reduzidos ao longo de 2025. Não conte com números fixos: consulte a [página de limites](https://ai.google.dev/gemini-api/docs/rate-limits) e a de [preços](https://ai.google.dev/gemini-api/docs/pricing).
-- No nível gratuito, o Google pode usar os dados enviados para melhorar os produtos. Se isso for um problema, ative o faturamento.
-- O InstaSearch faz **poucas chamadas por vídeo**: 1 para o roteiro, 1 ou 2 para o planejador e 1 por pedido de ajuste. A catalogação gasta 1 chamada de visão por imagem **nova** e fica em cache; com a biblioteca crescendo, esse custo cai. Para uso pessoal, o nível gratuito ou um custo de centavos por mês costuma bastar.
-
-### Modelos
-
-Use um modelo da família **Flash**: é rápido, barato e aceita imagens, o que a legenda por frames exige. Os modelos *Pro* são desnecessários para as tarefas atuais. Os nomes mudam com frequência; confira a [lista oficial](https://ai.google.dev/gemini-api/docs/models).
-
-### Erros comuns
-
-| Erro | Solução |
+| Opção | Por quê |
 |---|---|
-| `API key not valid` | Chave errada ou com espaços. Gere outra |
-| `Resource has been exhausted` / 429 | Limite atingido. Espere ou ative o faturamento |
-| `models/... is not found` | Nome de modelo descontinuado. Atualize `GEMINI_MODEL` |
-| Resposta não é um JSON válido | O modelo saiu do formato pedido. Tente de novo; o roadmap prevê saída estruturada com validação |
+| `--model claude-haiku-4-5` | O modelo que menos gasta do limite do plano |
+| `MAX_THINKING_TOKENS=0` | Sem "raciocínio": antes o Haiku gastava ~10 mil tokens para entregar um roteiro de ~1.500; agora ~1.500 e ~15 s em vez de ~70 s |
+| `--system-prompt` curto | O prompt padrão do Claude Code é feito para programar e é grande; o curto deixa cada pedido com ~1.500 tokens de entrada |
+| `--tools ""` (ou só `Read` na catalogação) | Sem acesso a arquivos, terminal ou internet |
+| `--strict-mcp-config`, `--disable-slash-commands`, `--disallowedTools mcp__*` | Não carrega MCP, skills nem comandos |
+| `--no-session-persistence` | Os pedidos não ficam salvos no histórico do Claude Code |
+| `ANTHROPIC_API_KEY` removida do ambiente do processo | Garante que a cobrança vai para o plano, e não para a API |
+| `--output-format json` | O backend lê o campo `result` e registra tempo e tokens no log |
 
-## Provedores plugáveis (planejado)
+Cuidados:
 
-Hoje o código chama o SDK do Gemini direto. O plano é isolar tudo atrás de interfaces, para que trocar de provedor seja só configuração:
+- **Uso pessoal.** O plano é individual. Se o app um dia atender outras pessoas, use a chave de API.
+- **Conta no seu limite.** Os pedidos dividem o limite de uso com o claude.ai e o Claude Code.
+- **Mais lento que o Gemini:** ~6 s para o programa iniciar mais o tempo da resposta.
 
-```ts
-interface LLMProvider {
-  generateText(prompt: string, opts?: { json?: boolean; images?: Buffer[] }): Promise<string>
-}
-interface TranscriptionProvider { transcribe(audioPath: string): Promise<Word[]> }
-interface TTSProvider { synthesize(text: string, voice?: string): Promise<{ audioPath: string }> }
-interface ImageGenProvider { generate(prompt: string, opts?: { aspect: '9:16' | '1:1' }): Promise<{ imagePath: string }> }
-```
+## Usando a Claude API
 
-| Tipo | Padrão (grátis) | Alternativas |
+1. Crie a chave e compre créditos em [platform.claude.com](https://platform.claude.com) (Settings → API Keys / Billing).
+2. Coloque `ANTHROPIC_API_KEY` no `backend/.env` e reinicie o backend.
+
+O app usa o SDK oficial (`@anthropic-ai/sdk`), modelo `claude-haiku-4-5`, sem parâmetros de esforço (o Haiku 4.5 não tem níveis de esforço). Se o Claude recusar um pedido por segurança, o app mostra uma mensagem pedindo para reformular o tema.
+
+## Erros comuns
+
+| Mensagem no app | O que fazer |
+|---|---|
+| "A cota grátis do Gemini acabou por hoje…" | Espere a hora mostrada nas Configurações, ou ligue o Claude Code (`CLAUDE_CODE=on`) ou a Claude API |
+| "O Claude Code não está instalado…" | `npm install -g @anthropic-ai/claude-code` e reinicie o backend. Se instalou em outro lugar, use `CLAUDE_CODE_PATH` |
+| "O Claude Code não está logado…" | Rode `claude auth login` num terminal |
+| "A ANTHROPIC_API_KEY do backend/.env é inválida." | Gere outra chave no Console |
+| "Nenhuma IA configurada…" | Coloque pelo menos `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` ou `CLAUDE_CODE=on` |
+| "A IA não respondeu direito…" | Resposta fora do formato JSON. Tente de novo |
+| `models/... is not found` (Gemini) | Nome de modelo descontinuado. Atualize `GEMINI_MODEL` |
+
+## Próximos passos
+
+| Tipo | Hoje | Planejado |
 |---|---|---|
-| LLM (roteiro, plano, ajustes) | Gemini Flash (nível gratuito) | Ollama local (Llama, Qwen, Gemma), OpenAI, Claude |
-| Visão (catalogar imagens, detectar regiões) | Gemini Flash (retorna caixas delimitadoras) | Ollama com modelo de visão |
-| Transcrição | whisper.cpp local | Gemini (áudio), APIs pagas |
-| Voz | **Upload do seu áudio** (ElevenLabs, microfone) | ElevenLabs via API, Piper local |
-| Geração de imagem | desligada (você envia as imagens) | Gemini/Imagen, Flux, Stable Diffusion local |
+| LLM | Gemini → Claude Haiku (API ou plano) | Ollama local como reserva grátis |
+| Transcrição | estimada pelo número de palavras | whisper.cpp local, para a legenda completa sincronizar palavra por palavra |
+| Voz | upload do seu áudio | ElevenLabs via API, Piper local |
+| Geração de imagem | desligada (você envia as imagens) | opcional, plugável |
 
-Configuração prevista:
+Dívidas técnicas:
 
-```env
-LLM_PROVIDER=gemini        # gemini | ollama | openai | anthropic
-IMAGE_GEN_PROVIDER=none    # none | gemini | flux | sd-local
-ELEVENLABS_API_KEY=        # opcional
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:7b
-```
-
-### Dívidas técnicas relacionadas
-
-- O pacote `@google/generative-ai` foi substituído pelo SDK `@google/genai`. É preciso migrar.
-- O pacote `openai` está no `package.json`, mas não é usado. Remover, ou reaproveitar no provider OpenAI.
-- Os prompts estão como strings dentro de `aiService.ts` (cerca de 860 linhas). Mover para arquivos de template facilita ajustar e testar.
-- As respostas JSON são extraídas do texto. Usar o modo de saída estruturada (JSON schema) e validar com zod.
+- As telas antigas ainda usam `aiService.ts` direto com o Gemini, sem a reserva do Claude.
+- O pacote `@google/generative-ai` foi substituído pelo `@google/genai`. É preciso migrar.
+- O pacote `openai` está no `package.json`, mas não é usado.
+- As respostas JSON são extraídas do texto. Saída estruturada com validação (zod) deixaria mais robusto.

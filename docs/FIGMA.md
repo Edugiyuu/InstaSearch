@@ -65,28 +65,31 @@ A partir daí o agente pode criar e editar elementos. O código muda a cada vez 
 
 ## Protótipo do InstaSearch
 
-As telas do fluxo tema → Short ([AUTO_EDIT.md](AUTO_EDIT.md)) foram prototipadas no Figma com o fluxo acima, na página **"InstaSearch · Edição automática"**. Elas servem de referência visual para o `frontend/`.
+As telas do fluxo tema → Short ([AUTO_EDIT.md](AUTO_EDIT.md)) foram prototipadas no Figma com o fluxo acima, na página **"InstaSearch · Edição automática"**. O Figma é a **base visual**, não uma especificação pixel a pixel. O `frontend/` implementa o fluxo com dados reais (uma tela por rota, ver [ROADMAP.md](ROADMAP.md) e o guia [USO.md](USO.md)). Telas que dependiam só de dados de exemplo (Desempenho, Primeira configuração, Estilo por referência) saíram do app até terem backend.
 
 ### Telas
 
 | Frame | Tela | O que mostra |
 |---|---|---|
-| `01 · Editor` | Editor | Lista de batidas (com as pendentes em vermelho), prévia 9:16 ao vivo, linha do tempo (visual, voz, SFX, música), inspetor da batida (tipo de cena, material, recorte, movimento/filtro, camadas, efeitos, legenda) e caixa de **pedido de ajuste para a IA** |
+| `01 · Revisão automática` | Revisão | A IA já montou o vídeo: prévia 9:16 grande, **"Peça um ajuste"** em linguagem natural (com histórico, desfazer e sugestões), resumo do que a IA montou, **"Precisa de você"** (cenas sem imagem) e ajustes rápidos que mudam o vídeo todo (ritmo, efeitos, legenda). Não há linha do tempo nem inspetor por cena |
 | `02 · Início` | Início | Criação rápida (tema + estilo + "Gerar roteiro"), projetos recentes com status, estatísticas da biblioteca (meta de imagens novas por vídeo) e próximas publicações |
 | `03 · Novo vídeo` | Tema e estilo | Stepper do fluxo, campo de tema, **catálogo de estilos** (com ritmo e quantas imagens cada um exige), duração (15 / 20 / 30 / 40s, **máximo de 40s**), tom e atalho "já tenho a narração" |
 | `04 · Roteiro e voz` | Roteiro | Cenas editáveis (gancho, contexto, argumento, revelação, CTA) com dicas visuais; painel de voz com **Copiar narração**, upload do áudio e progresso (transcrição → batidas → material) |
-| `05 · Material e lista de busca` | Material | Cobertura de material (23/26), **lista de busca** por batida (o que procurar, copiar busca, sugestões parecidas, área para soltar) e upload em lote |
-| `06 · Biblioteca` | Biblioteca | Busca, filtros (personagens, tags, uso), grade de imagens com contagem de uso e painel de detalhe com as **regiões detectadas** (rosto, mão) |
-| `07 · Estilos` | Estilos | Lista de estilos (embutidos e seus), editor de parâmetros (ritmo, pesos de cena, legenda, camadas, SFX, música, orientações para a IA) e prévia ao vivo |
+| `04b · Montagem automática` | Montagem | Depois que a narração chega, o app monta tudo sozinho: etapas (transcrição, cenas, imagens, efeitos, música), prévia aparecendo e "o que a IA está decidindo" ao vivo. O usuário não faz nada aqui |
+| `05 · Trocar imagem` | Trocar imagem | Aberta pelo card "Precisa de você" da revisão. **Uma cena por vez** ("Cena 1 de 3"): à esquerda o frame do vídeo como está agora (imagem provisória), à direita um quadro grande "Cole a imagem aqui" com a busca pronta e o botão "Procurar no Google"; embaixo, outras imagens da biblioteca. Botões "Manter a parecida" e "Próxima cena" |
+| `06 · Biblioteca` | Biblioteca | Busca em linguagem natural, botão "Importar imagens", filtros em chips (tipo e personagem), grade de miniaturas grandes com "usada em N vídeos" e painel da imagem: quem aparece, do que se trata (etiquetas que a IA criou e você corrige) e as áreas marcadas para zoom. Ação principal: "Usar em um vídeo" |
+| `07 · Estilos` | Estilos | Galeria visual (cada estilo mostrado como um frame de Short) e ajustes em palavras simples: velocidade dos cortes, setas/X/emojis, legenda, música, tipo de imagem e "algo mais para a IA saber?". Prévia "Como fica" atualiza na hora; ação principal: "Usar no próximo vídeo". Mudar um estilo embutido salva uma cópia sua |
 | `08 · Calendário` | Calendário | Mês com posts agendados, publicados, com falha e **horário sugerido** |
 | `09 · Configurações` | Configurações | Instagram, IA (provedor/modelo/chave), voz e transcrição, mídia e render, sistema (FFmpeg, Remotion, agendador, licença) |
-| `10 · Renderizar e publicar` | Modal | Progresso do render, legenda do post gerada pela IA, destino (Instagram / baixar MP4), agora ou agendado, aviso sobre música |
+| `10 · Publicar` | Modal | Sobre a revisão: progresso do render, legenda do post gerada pela IA, destino (Instagram / baixar MP4), agora ou agendado, aviso sobre música |
 | `11 · Projetos` | Projetos | Lista de todos os vídeos com busca, filtros por status (rascunho, aguardando voz, material pendente, prévia pronta, agendado, publicado), etapa atual do fluxo e ações |
 | `12 · Desempenho` | Desempenho | Plays, retenção, seguidores e vídeos publicados; tabela por vídeo; **"o que funcionou"** (gancho, duração, estilo, horário) e **próximos temas sugeridos** |
 | `13 · Primeira configuração` | Assistente | Checklist da primeira execução: ferramentas de vídeo, Whisper, chave de IA, Instagram/Cloudinary (opcional), **biblioteca inicial** e estilo principal |
 | `14 · Criar estilo por referência` | Estilo por referência | Upload de um Short de referência, etapas da análise, o que foi medido (ritmo, legenda, cenas, anotações, áudio), frames-chave e nome do novo estilo |
 
-O menu lateral (Início, Novo vídeo, Projetos, Biblioteca, Estilos, Calendário, Desempenho, Configurações) é o mesmo em todas as telas, exceto no editor, que ocupa a tela inteira, e no assistente de primeira configuração. Cada item do menu tem a sua tela; o botão "Novo vídeo" abre o fluxo 03 → 04 → 05 → 01 → 10.
+O menu lateral (Início, Novo vídeo, Projetos, Biblioteca, Estilos, Calendário, Desempenho, Configurações) é o mesmo em todas as telas, exceto no editor, que ocupa a tela inteira, e no assistente de primeira configuração. Cada item do menu tem a sua tela; o botão "Novo vídeo" abre o fluxo 03 → 04 → 04b → 01 → 10 (a 05 só abre se faltar imagem).
+
+**Princípio:** o InstaSearch é um editor **automático**. A IA monta o vídeo e o usuário só revisa, resolve o que falta e pede ajustes por texto. As versões antigas do editor (linha do tempo, inspetor por cena) estão na área **"Arquivo"** do Figma, abaixo das telas, como referência do que *não* fazer.
 
 ### Tokens visuais
 

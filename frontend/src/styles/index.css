@@ -5,58 +5,69 @@
 }
 
 :root {
-  /* Colors */
-  --primary: #8b5cf6;
-  --primary-dark: #7c3aed;
-  --primary-light: #a78bfa;
-  --secondary: #10b981;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --info: #3b82f6;
-  
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-tertiary: #f3f4f6;
-  
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
-  
-  --border: #e5e7eb;
-  --border-light: #f3f4f6;
-  
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  
-  /* Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  --font-mono: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
-  
-  /* Spacing */
+  /* Tokens do protótipo no Figma (docs/FIGMA.md) */
+  --bg: #0f1115;
+  --panel: #16181e;
+  --panel-2: #1c1f27;
+  --panel-3: #262a33;
+  --border: #262a33;
+  --text: #f2f5f7;
+  --muted: #8c94a1;
+  --faint: #5c6370;
+  --accent: #ffd60a;
+  --accent-ink: #111111;
+  --accent-soft: rgba(255, 214, 10, 0.08);
+  --danger: #f04545;
+  --danger-soft: rgba(240, 69, 69, 0.12);
+  --success: #4dcc80;
+  --success-soft: rgba(77, 204, 128, 0.12);
+  --info: #8aa4ff;
+  --scheduled: #a78bfa;
+  --warning: #fa9940;
+  --voice: #338c73;
+  --music: #594da6;
+  --sfx: #fa9940;
+
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+
+  /* Aliases usados pelas telas antigas (Ferramentas antigas) */
+  --primary: var(--accent);
+  --primary-dark: #e6c000;
+  --primary-light: #ffe45c;
+  --secondary: var(--success);
+  --bg-primary: var(--panel);
+  --bg-secondary: var(--bg);
+  --bg-tertiary: var(--panel-2);
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-tertiary: var(--faint);
+  --border-light: var(--panel-2);
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.45);
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
   --spacing-2xl: 3rem;
-  
-  /* Border Radius */
-  --radius-sm: 0.25rem;
-  --radius: 0.5rem;
-  --radius-lg: 0.75rem;
   --radius-xl: 1rem;
-  --radius-full: 9999px;
+
+  color-scheme: dark;
 }
 
 body {
   font-family: var(--font-sans);
-  color: var(--text-primary);
-  background-color: var(--bg-secondary);
-  line-height: 1.5;
+  color: var(--text);
+  background-color: var(--bg);
+  line-height: 1.4;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -66,41 +77,37 @@ code {
 }
 
 a {
-  color: var(--primary);
+  color: inherit;
   text-decoration: none;
-  transition: color 0.2s;
-}
-
-a:hover {
-  color: var(--primary-dark);
 }
 
 button {
   font-family: inherit;
   cursor: pointer;
+  color: inherit;
 }
 
 input,
 textarea,
 select {
   font-family: inherit;
+  color: inherit;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: var(--radius);
+  background: var(--panel-3);
+  border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-tertiary);
+  background: var(--faint);
 }

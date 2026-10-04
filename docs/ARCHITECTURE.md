@@ -14,8 +14,11 @@
               ┌────────────────────┐        ┌──────────────────────┐   ┌──────────────────────┐
               │ FFmpeg / ffprobe   │        │ APIs externas        │   │ backend/data/ (JSON) │
               │ (processo local)   │        │ • Instagram Graph    │   │ um arquivo por item  │
-              └────────────────────┘        │ • Gemini             │   └──────────────────────┘
+              └────────────────────┘        │ • Gemini → Claude    │   └──────────────────────┘
+                                            │   (API ou Claude Code│
+                                            │    do plano Pro)     │
                                             │ • Cloudinary         │
+                                            │ • yt-dlp (opcional)  │
                                             └──────────────────────┘
           + SchedulerService (setInterval de 1 min, dentro do mesmo processo do backend)
 ```
@@ -38,6 +41,7 @@ backend/
 │   ├── index.ts                    # Express, CORS, logs, rotas, inicia o agendador
 │   ├── routes/api.ts               # todas as rotas (ver API.md)
 │   ├── controllers/
+│   │   ├── shortsController.ts         # fluxo tema → Short: projetos, estilos, biblioteca, sons, status da IA
 │   │   ├── videoController.ts          # upload (multer), merge, publish-reel, delete
 │   │   ├── videoAnalysisController.ts  # legenda por IA a partir de frames
 │   │   ├── videoPromptController.ts    # gerador de prompts (legado)
@@ -52,8 +56,16 @@ backend/
 │   │   ├── contentController.ts        # ideias de conteúdo (🚧 generate é um stub)
 │   │   └── dashboardController.ts      # health e visão geral
 │   ├── services/
+│   │   ├── shorts/                     # fluxo tema → Short (ver USO.md)
+│   │   │   ├── llm.ts                  # provedores de IA: Gemini → Claude API → Claude Code (Haiku 4.5)
+│   │   │   ├── shortsAI.ts             # prompts: roteiro, ajustes, escolha de imagens, catalogação
+│   │   │   ├── projects.ts             # projetos, montagem, ajustes, desfazer, música
+│   │   │   ├── library.ts              # imagens e figurinhas: busca, escolha por cena, uso
+│   │   │   ├── sounds.ts               # efeitos sonoros e músicas, importação por link (yt-dlp)
+│   │   │   ├── styles.ts               # estilos embutidos + os do usuário
+│   │   │   └── types.ts                # ShortProject, Beat, LibraryImage, SoundItem…
 │   │   ├── videoService.ts             # ffprobe, merge, optimize, extractFrames
-│   │   ├── aiService.ts                # Gemini: todos os prompts
+│   │   ├── aiService.ts                # Gemini: prompts das telas antigas e da legenda do post
 │   │   ├── instagramGraphService.ts    # Graph API (graph.facebook.com/v18.0)
 │   │   ├── instagramAuthService.ts     # OAuth + renovação (graph.instagram.com)
 │   │   ├── schedulerService.ts         # loop de publicação
@@ -69,7 +81,7 @@ backend/
 
 `FileStorage<T>` grava **um arquivo por item** em `backend/data/<coleção>/<id>.json` e cria a pasta automaticamente. Cada entidade estende essa classe com consultas específicas (ex.: `PostStorage`, `InstagramAccountStorage`).
 
-Coleções: `instagram_accounts`, `posts`, `profiles`, `reels`, `analyses`, `content`, `users`. Os vídeos ficam em `data/videos/temp` (uploads) e `data/videos/output` (processados).
+Coleções: `instagram_accounts`, `posts`, `profiles`, `reels`, `analyses`, `content`, `users` e, no fluxo de Shorts, `short_projects`, `library`, `sounds` e `styles`. Os arquivos ficam ao lado (`library/files`, `sounds/files`, `short_projects/audio`). Os vídeos das telas antigas ficam em `data/videos/temp` (uploads) e `data/videos/output` (processados).
 
 ### Tratamento de erros
 
@@ -85,14 +97,18 @@ Respostas de sucesso seguem o formato `{ "success": true, "data": ... }`.
 
 ```
 frontend/src/
-├── App.tsx              # rotas (React Router 6)
-├── components/          # Layout, Navbar, Sidebar, ScheduleModal, AIAnalysisModal
+├── App.tsx              # rotas (React Router 6, layout routes)
+├── api/shorts.ts        # tipos e cliente do fluxo tema → Short (espelha backend/src/services/shorts/types.ts)
+├── video/               # composição Remotion: ShortVideo (cenas, efeitos, figurinhas, legendas, sons), timeline, ShortPlayer
+├── components/          # AppShell (menu lateral), PublishModal, TagEditor, flow.tsx (stepper, miniaturas, botões segmentados)...
 ├── pages/               # uma página por rota (ver ROADMAP.md, "Estado atual por tela")
-├── hooks/               # useVideoPublish, usePosts, useMyInstagram, useAI...
+├── hooks/               # useShorts (projetos, biblioteca, sons, estilos), useVideoPublish, usePosts, useMyInstagram...
 ├── services/api.ts      # cliente axios (VITE_API_URL)
 ├── types/               # tipos compartilhados
-└── styles/              # CSS puro com variáveis
+└── styles/              # index.css (tokens do Figma), ui.css (botões, chips, painéis), App.css (telas antigas)
 ```
+
+O visual segue o protótipo do Figma ([FIGMA.md](FIGMA.md)): tema escuro, Inter e os tokens `--bg`, `--panel`, `--accent` etc. em `styles/index.css`. As telas antigas continuam acessíveis em **Ferramentas antigas**, no rodapé do menu.
 
 Padrão: **página → hook → `api.ts`**. A página não chama o axios direto, e o hook guarda os estados `loading` e `error`.
 

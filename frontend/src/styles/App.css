@@ -37,7 +37,7 @@
 
 .btn-primary {
   background: var(--primary);
-  color: white;
+  color: var(--accent-ink);
 }
 
 .btn-primary:hover {
@@ -55,7 +55,7 @@
 
 .btn-danger {
   background: var(--danger);
-  color: white;
+  color: var(--accent-ink);
 }
 
 .btn-danger:hover {

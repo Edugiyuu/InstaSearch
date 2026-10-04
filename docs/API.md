@@ -113,6 +113,57 @@ Detalhes: [INSTAGRAM.md](INSTAGRAM.md).
 | POST | `/content/:id/approve` | ⚠️ | |
 | DELETE | `/content/:id` | ⚠️ | |
 
+## Shorts: projetos (fluxo tema → Short)
+
+Guia de uso: [USO.md](USO.md). Todas as rotas que chamam IA passam pela reserva Gemini → Claude ([AI.md](AI.md)).
+
+| Método | Rota | | Corpo / resposta |
+|---|---|---|---|
+| GET | `/shorts/ai-status` | ✅ | Estado dos provedores (`gemini`, `claude`, `claudeCode`), sem gastar chamada |
+| GET | `/shorts/projects` | ✅ | Lista, mais recentes primeiro |
+| POST | `/shorts/projects` | ✅ | `{ theme, styleId, duration: 15–40, tone, narration? }` → projeto com roteiro e cenas (IA) |
+| GET | `/shorts/projects/:id` | ✅ | |
+| PUT | `/shorts/projects/:id` | ✅ | Campos editáveis: `title`, `beats`, `settings` (`pace`, `effects`, `caption`, `imagePicker`), `status` (`roteiro`, `revisao`, `salvo`…), `musicId` (`null` = sem música), `postCaption`, `audioDuration` |
+| DELETE | `/shorts/projects/:id` | ✅ | As imagens e sons continuam na biblioteca |
+| POST | `/shorts/projects/:id/assemble` | ✅ | Montagem: imagens (IA ou palavras), figurinhas, efeitos sonoros e música → `{ project, log }` |
+| POST | `/shorts/projects/:id/adjust` | ✅ | `{ request }` → "Peça um ajuste" (IA); só as cenas novas recebem imagem |
+| POST | `/shorts/projects/:id/undo` | ✅ | Volta a versão anterior das cenas |
+| PUT | `/shorts/projects/:id/beats/:beatId/image` | ✅ | `{ imageId }` escolhe a imagem da cena e trava; `{ imageId: null }` aceita a parecida |
+| POST | `/shorts/projects/:id/audio` | ✅ | `multipart/form-data`, campo `audio` (≤30MB) |
+| GET | `/shorts/audio/:file` | ✅ | Arquivo de áudio da narração |
+
+## Shorts: estilos
+
+| Método | Rota | | Corpo |
+|---|---|---|---|
+| GET | `/shorts/styles` | ✅ | 7 embutidos + os seus |
+| POST | `/shorts/styles` | ✅ | Estilo novo (mudar um embutido cria uma cópia sua) |
+| PUT | `/shorts/styles/:id` | ✅ | `{ name, pace, effects, caption, music, imageType, notes, … }` |
+| DELETE | `/shorts/styles/:id` | ✅ | Só estilos seus |
+
+## Biblioteca de imagens e figurinhas
+
+| Método | Rota | | Corpo / parâmetros |
+|---|---|---|---|
+| GET | `/library` | ✅ | `?q=` busca em linguagem natural |
+| POST | `/library/upload` | ✅ | `multipart/form-data`, campo `images` (até 30; ≤15MB cada) e `kind=figurinha` opcional. Cataloga com IA |
+| POST | `/library/import-url` | ✅ | `{ url }` baixa a imagem e cataloga |
+| PUT | `/library/:id` | ✅ | `{ name?, tags?, characters?, regions?, kind? }` |
+| POST | `/library/:id/recatalog` | ✅ | Cataloga de novo com IA |
+| DELETE | `/library/:id` | ✅ | |
+| GET | `/library/files/:file` | ✅ | Arquivo da imagem |
+
+## Biblioteca de sons (efeitos e músicas)
+
+| Método | Rota | | Corpo / parâmetros |
+|---|---|---|---|
+| GET | `/sounds` | ✅ | `?kind=sfx\|musica` |
+| POST | `/sounds/upload` | ✅ | `multipart/form-data`, campo `sounds` (até 30; ≤40MB) e `kind=sfx\|musica`. Etiquetas pelo nome do arquivo e pelo Gemini |
+| POST | `/sounds/import-url` | ✅ | `{ url, kind? }` pega o áudio de um Reel, TikTok ou Short (precisa do `yt-dlp`) |
+| PUT | `/sounds/:id` | ✅ | `{ name?, tags?, kind? }` |
+| DELETE | `/sounds/:id` | ✅ | |
+| GET | `/sounds/files/:file` | ✅ | Arquivo de áudio |
+
 ## Planejado
 
-Rotas de projetos (tema → roteiro → voz → plano → ajustes → render) e da biblioteca de material (busca, upload com catalogação, correção de tags): veja [AUTO_EDIT.md](AUTO_EDIT.md#endpoints-propostos).
+Render do MP4 no backend (Remotion) e publicação direto do projeto: veja [ROADMAP.md](ROADMAP.md).

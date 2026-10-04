@@ -1,0 +1,58 @@
+.pj-search {
+  max-width: 360px;
+  height: 40px;
+  font-size: 14px;
+}
+
+.pj-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 26px 20px;
+}
+
+.pj-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pj-card .project-cover {
+  margin-bottom: 6px;
+}
+
+.pj-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.pj-title:hover {
+  color: var(--accent);
+}
+
+.pj-card .status {
+  font-size: 12px;
+}
+
+.pj-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.pj-card:hover .pj-delete {
+  opacity: 1;
+}
+
+.pj-delete:hover {
+  background: var(--danger);
+}

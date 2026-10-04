@@ -1,25 +1,6 @@
 import { useDashboard } from '../hooks/useDashboard'
 import './Dashboard.css'
 
-interface DashboardStats {
-  profiles: {
-    total: number
-    active: number
-    analyzing: number
-  }
-  content: {
-    total: number
-    drafts: number
-    scheduled: number
-    published: number
-  }
-  performance: {
-    totalViews: number
-    totalLikes: number
-    avgEngagementRate: number
-  }
-}
-
 function Dashboard() {
   const { stats, loading, error } = useDashboard()
 

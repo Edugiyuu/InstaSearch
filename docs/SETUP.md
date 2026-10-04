@@ -57,8 +57,12 @@ cp .env.example .env
 | `PORT` | não (padrão `3000`) | Porta da API |
 | `NODE_ENV` | não | `development` mostra detalhes de erro nas respostas |
 | `LOG_LEVEL` | não (padrão `info`) | Nível de log do Winston |
-| `GEMINI_API_KEY` | **sim**, para recursos de IA | Chave do Google AI Studio |
+| `GEMINI_API_KEY` | **sim**, para recursos de IA (ou uma das reservas abaixo) | Chave do Google AI Studio |
 | `GEMINI_MODEL` | não (padrão `gemini-2.5-flash`) | Modelo usado. Confira os nomes atuais na [documentação do Gemini](https://ai.google.dev/gemini-api/docs/models) |
+| `ANTHROPIC_API_KEY` | não | Claude Haiku 4.5 pela API (pago por uso) como reserva do Gemini. Ver [AI.md](AI.md) |
+| `CLAUDE_CODE` | não (padrão `off`) | `on` usa o Claude Code logado com o seu plano Pro/Max (Haiku 4.5) como reserva. Ver [AI.md](AI.md#usando-o-claude-code-com-o-plano-promax) |
+| `CLAUDE_CODE_PATH` | não | Caminho do `claude` se ele não estiver no PATH |
+| `LLM_PROVIDER` | não (padrão `auto`) | `auto` = Gemini → Claude API → Claude Code; `gemini`, `claude` ou `claude-code` usa só aquele |
 | `CLOUDINARY_CLOUD_NAME` | **sim**, para publicar | Dashboard do Cloudinary |
 | `CLOUDINARY_API_KEY` | **sim**, para publicar | Dashboard do Cloudinary |
 | `CLOUDINARY_API_SECRET` | **sim**, para publicar | Dashboard do Cloudinary |
@@ -127,6 +131,10 @@ backend/data/
 ├── instagram_accounts/   # contas conectadas e tokens (texto puro!)
 ├── posts/                # posts agendados e publicados
 ├── profiles/ reels/ analyses/ content/ users/
+├── short_projects/       # projetos do fluxo tema → Short (+ audio/ com as narrações)
+├── library/              # catálogo de imagens e figurinhas (+ files/ com os arquivos)
+├── sounds/               # efeitos sonoros e músicas (+ files/)
+├── styles/               # seus estilos
 └── videos/
     ├── temp/             # uploads
     └── output/           # vídeos processados
@@ -140,7 +148,8 @@ backend/data/
 |---|---|
 | `Cannot find ffmpeg` / `ffprobe` | FFmpeg fora do PATH. Reinstale e reabra o terminal |
 | `GEMINI_API_KEY não configurada` | Preencha o `.env` e reinicie o backend |
-| `Resource has been exhausted` (Gemini) | Limite do plano gratuito atingido. Espere o reset ou ative o faturamento. Veja [AI.md](AI.md) |
+| "A cota grátis do Gemini acabou por hoje" | Espere a hora mostrada nas Configurações ou ligue a reserva do Claude. Veja [AI.md](AI.md) |
+| "Para pegar áudio de links, instale o yt-dlp" | `pip install yt-dlp` e reinicie o backend |
 | Publicação falha no upload | Credenciais do Cloudinary ausentes ou erradas |
 | Erros de token do Instagram | Veja a tabela de erros em [INSTAGRAM.md](INSTAGRAM.md#erros-comuns) |
 | Frontend não acessa a API | Confira `VITE_API_URL` e se o backend está na porta 3000 |

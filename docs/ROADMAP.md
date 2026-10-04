@@ -8,15 +8,21 @@ Legenda: ✅ pronto · ⚠️ funciona com ressalvas · 🚧 incompleto/stub · 
 
 | Tela (rota) | Estado | Observação |
 |---|---|---|
-| Dashboard (`/`) | ⚠️ | Contadores gerais; vai virar a lista de projetos + o painel "o que funcionou" |
-| Meu Perfil (`/my-profile`) | ✅ | Perfil, reels e insights da conta + análise por IA |
-| Publicar Reels (`/video-publish`) | ✅ | Upload, junção, legenda por IA, publicação |
-| Calendário (`/calendar`) | ✅ | Agendamento e publicação automática |
-| Configurações (`/settings`) | ✅ | Conexão com o Instagram |
-| Prompts de Vídeo (`/video-prompts`) | ⚠️ legado | Vai virar o gerador de roteiro (Fase 2, M3) |
-| Perfis (`/profiles`) | 🚧 | Salva o username, mas não busca dados (o comentário cita um "scraper" que não existe) |
-| Análises (`/analysis`) | 🚧 | Tela estática; o backend analisa perfis vazios |
-| Conteúdo (`/content`) | 🚧 | `POST /api/content/generate` é um stub (`TODO`) |
+| Início (`/`) | ✅ | Criação rápida, seus vídeos, contagem da biblioteca e próximas publicações (tudo real) |
+| Novo vídeo (`/novo`) | ✅ | Tema, estilo, duração e tom; o Gemini escreve o roteiro e divide em cenas. Aceita narração pronta |
+| Roteiro e voz (`/projeto/:id/roteiro`) | ✅ | Cenas editáveis, pedidos à IA, copiar narração, upload do áudio (a duração do áudio dita os cortes) |
+| Montagem (`/projeto/:id/montagem`) | ✅ | Escolhe imagens, figurinhas, efeitos sonoros e música da biblioteca e mostra as decisões |
+| Revisão (`/projeto/:id`) | ⚠️ | Prévia no `@remotion/player`, "Peça um ajuste", desfazer, ajustes rápidos (ritmo, efeitos, legenda quadrinho/completa/limpa, música), salvar para depois. Legenda completa com tempo estimado (sem Whisper) |
+| Trocar imagem (`/projeto/:id/imagens`) | ✅ | Uma cena por vez: colar, arrastar, link, Google ou biblioteca |
+| Publicar (modal) | ⚠️ | Legenda do post pela IA e "salvar para depois"; **o render MP4 ainda não existe**, então não publica |
+| Projetos (`/projetos`) | ✅ | Filtros: no roteiro, faltam imagens, prontos, salvos, publicados |
+| Biblioteca (`/biblioteca`) | ✅ | Abas Imagens, Figurinhas, Efeitos sonoros e Músicas. Catalogação pela IA; áudio de Reels/TikTok/Shorts por link (precisa do `yt-dlp`) |
+| Estilos (`/estilos`) | ✅ | Galeria, ajustes em palavras simples, prévia "Como fica"; mudar um embutido salva uma cópia |
+| Calendário (`/calendario`) | ✅ | Posts reais, status do agendador, publicar agora, cancelar, horário sugerido |
+| Configurações (`/configuracoes`) | ✅ | Instagram (token) e IA reais; voz, mídia e sistema marcados como "prévia" |
+| Ferramentas antigas (`/dashboard`, `/my-profile`, `/video-publish`, `/video-prompts`, `/profiles`, `/analysis`, `/content`) | ⚠️ legado | No rodapé do menu. Publicar Reels e Meu Perfil seguem funcionando; o resto é stub |
+
+Dados do fluxo novo ficam em `backend/data/`: `short_projects/`, `library/` (imagens e figurinhas), `sounds/` (efeitos e músicas), `styles/`.
 
 ---
 
@@ -49,24 +55,33 @@ Legenda: ✅ pronto · ⚠️ funciona com ressalvas · 🚧 incompleto/stub · 
 
 Especificação: [AUTO_EDIT.md](AUTO_EDIT.md)
 
-- [ ] **M1: protótipo Remotion.** Pacote `video/` com `FullImage`, `Evidence` e `Caption`, e **estilos como arquivo de configuração desde o início** (o `comentario-anime` primeiro); áudio + pasta de imagens → Whisper → batidas de 2 a 4 palavras → **prévia no `@remotion/player`** + render MP4 no backend. Sem LLM.
-- [ ] Estrutura de **projetos** (`data/projects/<id>/`) com versões do plano e jobs em background.
-- [ ] **M2: biblioteca.** `data/library/` + `index.json`, catalogação por visão (personagens, tags, descrição, **regiões**), busca e variantes de recorte, controle de uso para evitar repetição.
+- [ ] **M1: protótipo Remotion.** ⚠️ Prévia pronta: `frontend/src/video/` (FullImage, Evidence, legendas, setas/X/círculos, figurinhas, sons, música) no `@remotion/player`, com estilos como configuração. **Falta o render MP4 no backend** e a transcrição (Whisper).
+  - Original: pacote `video/` com `FullImage`, `Evidence` e `Caption`, e **estilos como arquivo de configuração desde o início** (o `comentario-anime` primeiro); áudio + pasta de imagens → Whisper → batidas de 2 a 4 palavras → **prévia no `@remotion/player`** + render MP4 no backend. Sem LLM.
+- [x] Estrutura de **projetos** (`data/short_projects/`, com histórico de ajustes e desfazer). Jobs em background ainda não.
+  - Original: (`data/projects/<id>/`) com versões do plano e jobs em background.
+- [x] **M2: biblioteca.** Feito: catalogação por visão (personagens, etiquetas, descrição, regiões), busca, controle de uso, figurinhas, efeitos sonoros e músicas (com áudio de links via yt-dlp). Falta: variantes de recorte.
+  - Original: `data/library/` + `index.json`, catalogação por visão (personagens, tags, descrição, **regiões**), busca e variantes de recorte, controle de uso para evitar repetição.
 
 ## Fase 2: roteiro, planejador e anotações
 
-- [ ] **M3: roteiro e planejador.** Tema → roteiro editável ("copiar narração"); batidas + candidatos da biblioteca → `EditPlan` pelo LLM; **lista de busca** com arrastar, colar e URL. Reaproveita o gerador de prompts atual.
+- [x] **M3: roteiro e planejador.** Feito: roteiro em cenas pela IA, escolha de imagens pela IA lendo o roteiro (ou por palavras), tela "Trocar imagem" com colar, arrastar, URL e Google.
+  - Original: Tema → roteiro editável ("copiar narração"); batidas + candidatos da biblioteca → `EditPlan` pelo LLM; **lista de busca** com arrastar, colar e URL. Reaproveita o gerador de prompts atual.
 - [ ] Caminho "já tenho o áudio": transcrição → roteiro reconstruído.
-- [ ] **M4: anotações e memes.** `Arrow` apontando para regiões, `Cross`, `Circle`, `Emoji`, `Sticker`, `Logo`, `Flash`, `Meme`, `Clip`, `Versus`, `TitleCard`.
-- [ ] Abstração `LLMProvider` com saída estruturada (Gemini primeiro, Ollama em seguida).
+- [ ] **M4: anotações e memes.** ⚠️ Feito: setas para regiões, X, círculos, emojis e figurinhas. Falta: Logo, Meme, Clip, Versus, TitleCard.
+  - Original: `Arrow` apontando para regiões, `Cross`, `Circle`, `Emoji`, `Sticker`, `Logo`, `Flash`, `Meme`, `Clip`, `Versus`, `TitleCard`.
+- [x] Provedor de IA com reserva automática: Gemini → Claude Haiku 4.5 (API ou Claude Code do plano Pro/Max), em `services/shorts/llm.ts`. Ver [AI.md](AI.md). Falta: Ollama e saída estruturada com validação.
 
 ## Fase 3: áudio, editor e ajustes
 
-- [ ] **M5: áudio.** Biblioteca de SFX e música, regras `sfx` de cada estilo, ducking, normalização.
-- [ ] **M6: editor da prévia.** Linha do tempo de batidas, trocar material e tipo de cena, arrastar a seta, dividir e mesclar batidas, editar legendas, desfazer/refazer.
-- [ ] **M7: ajustes em linguagem natural.** Pedido → patch → nova versão.
+- [ ] **M5: áudio.** ⚠️ Feito: biblioteca de SFX e música, sons colocados por tipo de efeito, música por clima com volume baixo sob a voz. Falta: normalização.
+  - Original: Biblioteca de SFX e música, regras `sfx` de cada estilo, ducking, normalização.
+- [ ] ~~**M6: editor da prévia.**~~ Trocado pelo editor automático (revisão + "Peça um ajuste" + ajustes rápidos); sem linha do tempo manual.
+  - Original: Linha do tempo de batidas, trocar material e tipo de cena, arrastar a seta, dividir e mesclar batidas, editar legendas, desfazer/refazer.
+- [x] **M7: ajustes em linguagem natural.** "Peça um ajuste" com histórico e desfazer; ritmo e efeitos também viram pedidos para a IA.
+  - Original: Pedido → patch → nova versão.
 - [ ] Exportar o MP4 (Shorts/TikTok) além de publicar no Instagram.
-- [ ] **M8: mais estilos.** `explicativo`, `curiosidades`, `historia-com-fundo` (fundo de gameplay + `TextCard`), `ranking`; tela para duplicar, ajustar e salvar estilos.
+- [x] **M8: mais estilos.** 7 estilos embutidos e tela para ajustar e salvar os seus.
+  - Original: `explicativo`, `curiosidades`, `historia-com-fundo` (fundo de gameplay + `TextCard`), `ranking`; tela para duplicar, ajustar e salvar estilos.
 - [ ] **M9: estilo por referência.** Vídeo de referência → rascunho de estilo (ritmo de cortes, legendas, tipos de cena).
 - [ ] **M10 (opcionais):** ElevenLabs via API, geração de imagem por IA, Pexels, modo gravado, upload direto no YouTube Shorts.
 

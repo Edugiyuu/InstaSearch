@@ -1,4 +1,8 @@
-import { Router } from 'express'
+import express, { Router } from 'express'
+import * as shortsController from '../controllers/shortsController.js'
+import { AUDIO_DIR } from '../services/shorts/projects.js'
+import { LIBRARY_FILES_DIR } from '../services/shorts/library.js'
+import { SOUND_FILES_DIR } from '../services/shorts/sounds.js'
 import * as profileController from '../controllers/profileController.js'
 import * as analysisController from '../controllers/analysisController.js'
 import * as contentController from '../controllers/contentController.js'
@@ -89,6 +93,42 @@ router.get('/posts/:id', postController.getPostById)
 router.get('/posts/:id/stats', postController.getPostStats)
 router.put('/posts/:id', postController.updatePost)
 router.delete('/posts/:id', postController.deletePost)
+
+// Shorts (tema → roteiro → montagem automática → revisão)
+router.get('/shorts/ai-status', shortsController.getAiStatus)
+router.get('/shorts/projects', shortsController.listProjects)
+router.post('/shorts/projects', shortsController.createProject)
+router.get('/shorts/projects/:id', shortsController.getProject)
+router.put('/shorts/projects/:id', shortsController.updateProject)
+router.delete('/shorts/projects/:id', shortsController.deleteProject)
+router.post('/shorts/projects/:id/assemble', shortsController.assemble)
+router.post('/shorts/projects/:id/adjust', shortsController.adjust)
+router.post('/shorts/projects/:id/undo', shortsController.undo)
+router.put('/shorts/projects/:id/beats/:beatId/image', shortsController.setBeatImage)
+router.post('/shorts/projects/:id/audio', ...shortsController.uploadAudio)
+router.use('/shorts/audio', express.static(AUDIO_DIR))
+
+router.get('/shorts/styles', shortsController.listStyles)
+router.post('/shorts/styles', shortsController.saveStyle)
+router.put('/shorts/styles/:id', shortsController.saveStyle)
+router.delete('/shorts/styles/:id', shortsController.deleteStyle)
+
+// Biblioteca de imagens
+router.get('/library', shortsController.listImages)
+router.post('/library/upload', ...shortsController.uploadImages)
+router.post('/library/import-url', shortsController.importImageUrl)
+router.put('/library/:id', shortsController.updateImage)
+router.post('/library/:id/recatalog', shortsController.recatalogImage)
+router.delete('/library/:id', shortsController.deleteImage)
+router.use('/library/files', express.static(LIBRARY_FILES_DIR, { maxAge: '7d' }))
+
+// Biblioteca de sons
+router.get('/sounds', shortsController.listSounds)
+router.post('/sounds/upload', ...shortsController.uploadSounds)
+router.post('/sounds/import-url', shortsController.importSoundUrl)
+router.put('/sounds/:id', shortsController.updateSound)
+router.delete('/sounds/:id', shortsController.deleteSound)
+router.use('/sounds/files', express.static(SOUND_FILES_DIR, { maxAge: '7d' }))
 
 // Scheduler
 router.get('/scheduler/status', schedulerController.getSchedulerStatus)

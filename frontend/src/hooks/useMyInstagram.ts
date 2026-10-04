@@ -124,7 +124,7 @@ export const useMyInstagram = () => {
       ]);
 
       // Verificar se alguma das chamadas essenciais falhou
-      const failures = results.filter((r, idx) => {
+      const failures = results.filter((r) => {
         // Só consideramos falha se for profile, media ou reels (não insights)
         return r.status === 'rejected';
       });

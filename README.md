@@ -45,12 +45,17 @@ Detalhes em [docs/AUTO_EDIT.md](docs/AUTO_EDIT.md) e o propósito completo em [d
 | Legenda do post gerada por IA a partir de frames do vídeo (Gemini) | ✅ Funciona |
 | Publicação direta de Reels (via Cloudinary + Graph API) | ✅ Funciona |
 | Agendamento com publicação automática | ✅ Funciona (o backend precisa estar rodando no horário) |
-| Gerador de prompts para IA de vídeo | ⚠️ Legado: vai virar o gerador de roteiro em cenas |
+| **Tema → roteiro (IA) → voz → montagem automática → prévia ao vivo (Remotion Player)** | ✅ Funciona ([guia](docs/USO.md)) |
+| A IA escolhe as imagens lendo o roteiro inteiro, ou escolha por palavras | ✅ Funciona |
+| "Peça um ajuste" em linguagem natural, com desfazer | ✅ Funciona |
+| Biblioteca: imagens e figurinhas catalogadas por IA, efeitos sonoros e músicas (áudio de Reels/TikTok/Shorts por link) | ✅ Funciona |
+| Setas, X, círculos, figurinhas, efeitos sonoros, música e legenda completa palavra por palavra | ✅ Funciona (tempo das palavras estimado até a transcrição entrar) |
+| Reserva de IA: Gemini → Claude Haiku 4.5 (API ou Claude Code do plano Pro/Max) | ✅ Funciona ([AI.md](docs/AI.md)) |
+| Salvar o vídeo para publicar depois | ✅ Funciona |
+| Render do MP4 e publicação direto do projeto | 📋 Próximo passo |
+| Gerador de prompts para IA de vídeo | ⚠️ Legado |
 | Análise de perfis de referência | 🚧 Interface existe, mas ainda não coleta dados (vai usar a Business Discovery API) |
 | Geração de ideias de conteúdo a partir de análises | 🚧 Endpoint ainda é um stub |
-| Tema → roteiro → voz → batidas → prévia ao vivo → render (Remotion) | 📋 Planejado (prioridade) |
-| Biblioteca de imagens com catalogação por IA e lista de busca | 📋 Planejado (prioridade) |
-| Setas, memes, emojis, efeitos sonoros e ajustes em linguagem natural | 📋 Planejado |
 | Modo gravado (corte de silêncios e takes) | 📋 Planejado |
 | Ciclo de aprendizado (métricas → ideias) | 📋 Planejado |
 
@@ -64,7 +69,8 @@ Status detalhado e próximos passos em [docs/ROADMAP.md](docs/ROADMAP.md).
 - FFmpeg instalado e no PATH
 - Conta Instagram **Business ou Creator** vinculada a uma Página do Facebook
 - App no [Meta for Developers](https://developers.facebook.com/)
-- Chave da API do [Google Gemini](https://aistudio.google.com/app/apikey) (há um nível gratuito com limites)
+- Chave da API do [Google Gemini](https://aistudio.google.com/app/apikey) (há um nível gratuito com limites). Opcional: [Claude Code](https://code.claude.com) logado com um plano Pro/Max, ou uma chave da API da Anthropic, como reserva quando a cota do Gemini acabar
+- Opcional: [yt-dlp](https://github.com/yt-dlp/yt-dlp) (`pip install yt-dlp`) para pegar áudio de Reels, TikToks e Shorts
 - Conta [Cloudinary](https://cloudinary.com/) (o plano gratuito basta para uso pessoal)
 
 ### Instalação
@@ -103,7 +109,7 @@ O motor de edição (Remotion, Whisper e FFmpeg locais) é **gratuito para uso p
 - **Backend:** Node.js, Express, TypeScript, armazenamento em arquivos JSON
 - **Frontend:** React 18, Vite, TypeScript, CSS puro
 - **Vídeo:** FFmpeg (fluent-ffmpeg) hoje; Remotion (composição em React, prévia ao vivo e render) para a edição automática
-- **IA:** Google Gemini, com plano de suportar outros provedores
+- **IA:** Google Gemini, com o Claude Haiku 4.5 de reserva (API ou Claude Code com o plano Pro/Max)
 - **Integrações:** Instagram Graph API, Cloudinary
 
 Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) e endpoints em [docs/API.md](docs/API.md).
@@ -117,9 +123,10 @@ Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) e endpoints em [docs
 | [SETUP.md](docs/SETUP.md) | Instalação, variáveis de ambiente e solução de problemas |
 | [INSTAGRAM.md](docs/INSTAGRAM.md) | Conectar a conta: app Meta, token, permissões e erros comuns |
 | [VIDEO_PIPELINE.md](docs/VIDEO_PIPELINE.md) | O que já funciona: upload, junção, legenda e publicação; modo gravado |
-| [AUTO_EDIT.md](docs/AUTO_EDIT.md) | **Especificação do fluxo tema → Short** (roteiro, batidas, biblioteca, tipos de cena, prévia, Remotion) |
+| [USO.md](docs/USO.md) | **Como usar o fluxo tema → Short**, tela por tela: roteiro, montagem, revisão, biblioteca, estilos |
+| [AUTO_EDIT.md](docs/AUTO_EDIT.md) | Especificação do fluxo tema → Short (roteiro, batidas, biblioteca, tipos de cena, prévia, Remotion) |
 | [SCHEDULER.md](docs/SCHEDULER.md) | Agendamento e publicação automática |
-| [AI.md](docs/AI.md) | Onde a IA é usada, configuração do Gemini e provedores futuros |
+| [AI.md](docs/AI.md) | Onde a IA é usada, Gemini e a reserva automática com o Claude Haiku 4.5 (API ou plano Pro) |
 | [COSTS.md](docs/COSTS.md) | O que é grátis, o que é pago e quanto custa |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Estrutura do código e decisões técnicas |
 | [API.md](docs/API.md) | Referência dos endpoints |

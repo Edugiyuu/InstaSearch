@@ -1,0 +1,108 @@
+.assembly .page-sub {
+  margin-bottom: 30px;
+}
+
+.as-body {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.as-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.as-steps li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.as-steps li.todo {
+  color: var(--muted);
+}
+
+.as-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--faint);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.as-steps li.done .as-dot {
+  background: var(--success);
+  border-color: var(--success);
+  color: #0f1115;
+}
+
+.as-steps li.doing .as-dot {
+  border-color: var(--accent);
+}
+
+.as-progress {
+  margin-top: 10px;
+}
+
+.as-progress .bar {
+  flex: 1;
+}
+
+.as-log {
+  padding: 20px 22px;
+  min-height: 320px;
+}
+
+.as-log ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.as-log li {
+  display: flex;
+  gap: 10px;
+  animation: as-in 0.2s ease-out;
+}
+
+.as-log li > span {
+  width: 14px;
+  font-weight: 800;
+}
+
+.as-match > span {
+  color: var(--success);
+}
+
+.as-similar > span {
+  color: var(--warning);
+}
+
+.as-missing > span {
+  color: var(--danger);
+}
+
+@keyframes as-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (max-width: 900px) {
+  .as-body {
+    grid-template-columns: 1fr;
+  }
+}

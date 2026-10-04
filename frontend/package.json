@@ -9,11 +9,13 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@remotion/player": "^4.0.532",
     "axios": "^1.6.5",
     "nanoid": "^5.1.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.0"
+    "react-router-dom": "^6.21.0",
+    "remotion": "^4.0.532"
   },
   "devDependencies": {
     "@types/react": "^18.2.47",

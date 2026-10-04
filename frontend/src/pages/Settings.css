@@ -1,419 +1,94 @@
-.settings-content {
-  max-width: 800px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
+.settings-page .page-sub {
+  margin-bottom: 24px;
 }
 
-.settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-}
-
-.settings-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-lg);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
-}
-
-.settings-item-info {
-  flex: 1;
-}
-
-.settings-item-label {
-  font-weight: 600;
-  margin-bottom: var(--spacing-xs);
-}
-
-.settings-item-description {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-/* Instagram Account Info */
-.instagram-account-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-lg);
-}
-
-.account-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.account-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--border-light);
-}
-
-.account-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: var(--text-primary);
-}
-
-.account-name {
-  margin: var(--spacing-xs) 0;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.status-badge.status-connected {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.status-badge.status-expired {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.status-badge.status-error {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.account-stats {
+.set-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background-color: var(--bg-secondary);
-  border-radius: var(--radius);
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
 }
 
-.stat {
-  text-align: center;
+.set-grid > :last-child {
+  grid-column: 1 / -1;
 }
 
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--primary);
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.account-details {
+.set-card {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  background-color: var(--bg-secondary);
-  border-radius: var(--radius);
+  min-height: 236px;
+  padding: 18px 20px 20px;
 }
 
-.detail-row {
+.set-card h2 {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 0.875rem;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 22px;
 }
 
-.detail-label {
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.detail-value {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.account-actions {
-  display: flex;
-  gap: var(--spacing-md);
-  justify-content: flex-end;
-}
-
-.alert {
-  padding: var(--spacing-md);
-  border-radius: var(--radius);
-  font-size: 0.875rem;
-}
-
-.alert-error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-.btn-danger {
-  background-color: #dc3545;
-  color: white;
-}
-
-.btn-danger:hover {
-  background-color: #c82333;
-}
-
-/* Toggle Switch */
-.toggle {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 24px;
-}
-
-.toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--border);
-  transition: 0.3s;
+.set-preview {
+  padding: 2px 8px;
   border-radius: var(--radius-full);
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
-}
-
-.toggle input:checked + .toggle-slider {
-  background-color: var(--primary);
-}
-
-.toggle input:checked + .toggle-slider:before {
-  transform: translateX(24px);
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  padding: 0;
-  max-width: 600px;
-  width: 90%;
-  max-height: 90vh;
-  overflow: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: modalSlideIn 0.3s ease-out;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.modal-header {
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  color: var(--text-primary);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--text-secondary);
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background-color: var(--background-light);
-  color: var(--text-primary);
-}
-
-.modal-body {
-  padding: var(--spacing-lg);
-}
-
-.modal-actions {
-  padding: var(--spacing-lg);
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: var(--spacing-md);
-  justify-content: flex-end;
-}
-
-.form-control {
-  margin-bottom: var(--spacing-lg);
-}
-
-.form-control label {
-  display: block;
-  margin-bottom: var(--spacing-sm);
-  font-weight: 500;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-}
-
-.form-control textarea {
-  width: 100%;
-  min-height: 120px;
-  padding: var(--spacing-md);
-  border: 2px solid var(--border);
-  border-radius: 8px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.85rem;
-  resize: vertical;
-  transition: all 0.2s;
-  background-color: var(--background-light);
-}
-
-.form-control textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-  background-color: white;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.form-hint {
-  display: block;
-  margin-top: var(--spacing-sm);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-
-.alert-info {
-  background-color: #e0f2fe;
-  border: 1px solid #7dd3fc;
-  border-radius: 8px;
-  padding: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-  color: #0369a1;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.alert-info strong {
+  background: var(--panel-3);
+  font-size: 10px;
   font-weight: 600;
-  display: block;
-  margin-bottom: var(--spacing-xs);
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
-.alert-info a {
-  color: #0369a1;
-  text-decoration: underline;
+.set-kv dd {
   font-weight: 500;
 }
 
-.alert-info a:hover {
-  color: #075985;
+.set-grid > :last-child .set-kv {
+  grid-template-columns: 240px 1fr;
 }
 
-.alert-danger {
-  background-color: #fee2e2;
-  border: 1px solid #fca5a5;
-  border-radius: 8px;
-  padding: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-  color: #dc2626;
-  font-size: 0.9rem;
-  line-height: 1.5;
+.set-actions {
+  margin-top: auto;
+  padding-top: 24px;
 }
 
-@media (max-width: 768px) {
-  .settings-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-  }
+.set-actions .meta {
+  font-size: 12px;
+}
 
-  .account-header {
-    flex-direction: column;
-    text-align: center;
-  }
+.set-token h2 {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
 
-  .account-stats {
+.set-token .meta {
+  margin-bottom: 16px;
+}
+
+.set-token textarea {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.set-token-error {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.set-token-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+@media (max-width: 1000px) {
+  .set-grid {
     grid-template-columns: 1fr;
   }
 
-  .account-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .account-actions .btn {
-    width: 100%;
-  }
-
-  .modal-content {
-    width: 95%;
-    max-height: 95vh;
-  }
-
-  .modal-actions {
-    flex-direction: column-reverse;
-  }
-
-  .modal-actions .btn {
-    width: 100%;
+  .set-kv,
+  .set-grid > :last-child .set-kv {
+    grid-template-columns: 140px 1fr;
   }
 }

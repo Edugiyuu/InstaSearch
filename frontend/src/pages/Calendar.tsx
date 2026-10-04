@@ -1,338 +1,268 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { usePosts } from '../hooks/usePosts'
 import { useContent } from '../hooks/useContent'
 import ScheduleModal, { ScheduleData } from '../components/ScheduleModal'
+import api from '../services/api'
+import type { Post } from '../types'
 import './Calendar.css'
 
-type ViewMode = 'calendar' | 'list'
+const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+const SUGGESTED_HOUR = { h: 19, m: 30 }
 
-interface CalendarDay {
-  date: Date
-  isCurrentMonth: boolean
-  isToday: boolean
-  posts: any[]
+interface SchedulerStatus {
+  running: boolean
+  nextScheduled: string | null
+}
+
+const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString()
+
+function hhmm(d: Date) {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function postTitle(post: Post) {
+  return post.caption.split('\n')[0].slice(0, 30) || 'Sem legenda'
+}
+
+function postDate(post: Post) {
+  return new Date(post.status === 'published' && post.publishedAt ? post.publishedAt : post.scheduledFor)
 }
 
 function Calendar() {
-  const { posts, loading, error, fetchUpcoming, schedulePost, deletePost, updatePost } = usePosts()
+  const { posts, loading, error, schedulePost, deletePost, refetch } = usePosts()
   const { content: contentList, fetchContent } = useContent()
-  const [viewMode, setViewMode] = useState<ViewMode>('calendar')
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedPost, setSelectedPost] = useState<any>(null)
-  const [schedulerStatus, setSchedulerStatus] = useState<any>(null)
+  const [month, setMonth] = useState(() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), 1)
+  })
+  const [view, setView] = useState<'mes' | 'lista'>('mes')
+  const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null)
+  const [openPost, setOpenPost] = useState<Post | null>(null)
+  const [scheduleFor, setScheduleFor] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const fetchScheduler = () =>
+    api
+      .get('/scheduler/status')
+      .then(({ data }) => setScheduler(data.data))
+      .catch(() => setScheduler(null))
 
   useEffect(() => {
-    fetchUpcoming(50)
+    fetchScheduler()
     fetchContent()
-    fetchSchedulerStatus()
   }, [])
 
-  const fetchSchedulerStatus = async () => {
-    try {
-      const response = await fetch('http://localhost:3000/api/scheduler/status')
-      const data = await response.json()
-      if (data.success) {
-        setSchedulerStatus(data.data)
-      }
-    } catch (err) {
-      console.error('Erro ao buscar status do scheduler:', err)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const days = useMemo(() => {
+    const start = new Date(month)
+    start.setDate(1 - ((month.getDay() + 6) % 7)) // segunda-feira
+    const last = new Date(month.getFullYear(), month.getMonth() + 1, 0)
+    const cells: Date[] = []
+    for (let d = new Date(start); d <= last || cells.length % 7 !== 0; d.setDate(d.getDate() + 1)) {
+      cells.push(new Date(d))
     }
-  }
+    return cells
+  }, [month])
+
+  // Primeiro fim de semana livre a partir de hoje: é onde aparece o horário sugerido.
+  const suggestedDay = useMemo(
+    () =>
+      days.find(
+        d => d >= today && [0, 5, 6].includes(d.getDay()) && !posts.some(p => sameDay(postDate(p), d)),
+      ),
+    [days, posts],
+  )
 
   const handleSchedule = async (data: ScheduleData) => {
+    await schedulePost(data)
+    await refetch()
+    fetchScheduler()
+  }
+
+  const publishNow = async (post: Post) => {
+    setBusy(true)
     try {
-      await schedulePost(data)
-      await fetchUpcoming(50)
-      await fetchSchedulerStatus()
-    } catch (err) {
-      throw err
+      await api.post(`/scheduler/publish/${post.id}`)
+      await refetch()
+      setOpenPost(null)
+    } catch (err: any) {
+      alert(err.response?.data?.error?.message || 'Erro ao publicar')
+    } finally {
+      setBusy(false)
     }
   }
 
-  const handlePublishNow = async (postId: string) => {
-    if (!confirm('Deseja publicar este post agora?')) return
-
+  const cancel = async (post: Post) => {
+    if (!confirm('Cancelar este agendamento?')) return
+    setBusy(true)
     try {
-      const response = await fetch(`http://localhost:3000/api/scheduler/publish/${postId}`, {
-        method: 'POST',
-      })
-      const data = await response.json()
-      
-      if (data.success) {
-        alert('Post publicado com sucesso!')
-        await fetchUpcoming(50)
-      } else {
-        alert('Erro ao publicar post')
-      }
-    } catch (err) {
-      console.error('Erro:', err)
-      alert('Erro ao publicar post')
+      await deletePost(post.id)
+      setOpenPost(null)
+      fetchScheduler()
+    } finally {
+      setBusy(false)
     }
   }
 
-  const handleDeletePost = async (postId: string) => {
-    if (!confirm('Deseja mesmo cancelar este agendamento?')) return
-
-    try {
-      await deletePost(postId)
-      await fetchUpcoming(50)
-      await fetchSchedulerStatus()
-    } catch (err) {
-      alert('Erro ao cancelar agendamento')
-    }
+  const openScheduleAt = (day: Date) => {
+    const d = new Date(day)
+    d.setHours(SUGGESTED_HOUR.h, SUGGESTED_HOUR.m, 0, 0)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    setScheduleFor(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`)
   }
 
-  // Gerar dias do calendário
-  const generateCalendarDays = (): CalendarDay[] => {
-    const year = currentDate.getFullYear()
-    const month = currentDate.getMonth()
-    
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const startDate = new Date(firstDay)
-    startDate.setDate(startDate.getDate() - firstDay.getDay()) // Começa no domingo
-    
-    const days: CalendarDay[] = []
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    
-    for (let i = 0; i < 42; i++) { // 6 semanas
-      const date = new Date(startDate)
-      date.setDate(startDate.getDate() + i)
-      
-      const dayPosts = posts.filter(post => {
-        const postDate = new Date(post.scheduledFor || post.publishedAt)
-        return postDate.toDateString() === date.toDateString()
-      })
-      
-      days.push({
-        date,
-        isCurrentMonth: date.getMonth() === month,
-        isToday: date.toDateString() === today.toDateString(),
-        posts: dayPosts,
-      })
-    }
-    
-    return days
+  // Memoizado: o ScheduleModal reaplica initialData sempre que a referência muda.
+  const scheduleInitial = useMemo(() => (scheduleFor ? { scheduledFor: scheduleFor } : undefined), [scheduleFor])
+
+  const next = scheduler?.nextScheduled ? new Date(scheduler.nextScheduled) : null
+  const sortedPosts = [...posts].sort((a, b) => postDate(a).getTime() - postDate(b).getTime())
+
+  const chip = (post: Post) => {
+    const d = postDate(post)
+    if (post.status === 'published') return <>✓ {postTitle(post)}</>
+    if (post.status === 'failed') return <>✕ Falhou · repetir</>
+    if (post.status === 'publishing') return <>⟳ Publicando…</>
+    return (
+      <>
+        {hhmm(d)} · {postTitle(post)}
+      </>
+    )
   }
-
-  const groupByDate = (posts: any[]) => {
-    const groups: Record<string, any[]> = {}
-    posts.forEach(post => {
-      const date = new Date(post.scheduledFor || post.publishedAt).toLocaleDateString('pt-BR')
-      if (!groups[date]) groups[date] = []
-      groups[date].push(post)
-    })
-    return groups
-  }
-
-  const goToPreviousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
-  }
-
-  const goToNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))
-  }
-
-  const goToToday = () => {
-    setCurrentDate(new Date())
-  }
-
-  const monthNames = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ]
-
-  const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-
-  const calendarDays = viewMode === 'calendar' ? generateCalendarDays() : []
-  const groupedPosts = viewMode === 'list' ? groupByDate(posts) : {}
 
   return (
-    <div className="calendar">
-      <div className="page-header">
-        <div>
-          <h1>📅 Calendário</h1>
-          <p className="page-subtitle">Gerencie suas postagens agendadas</p>
-        </div>
-        <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-          + Agendar Postagem
-        </button>
+    <div className="page cal">
+      <h1 className="page-title">Calendário</h1>
+
+      <div className="cal-bar">
+        <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>‹</button>
+        <h2>{month.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(' de ', ' ')}</h2>
+        <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>›</button>
+        <span className="spacer" />
+        {scheduler ? (
+          <span className={`status ${scheduler.running ? 'c-success' : 'c-danger'}`}>
+            {scheduler.running ? 'Agendador ativo' : 'Agendador parado'}
+            {next && (
+              <>
+                <span className="meta-sep" />
+                próximo: {next.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}{' '}
+                {hhmm(next)}
+              </>
+            )}
+          </span>
+        ) : (
+          <span className="status c-muted">Agendador indisponível</span>
+        )}
+        <span className="cal-views">
+          <button className={view === 'mes' ? 'on' : ''} onClick={() => setView('mes')}>
+            Mês
+          </button>
+          <span>|</span>
+          <button className={view === 'lista' ? 'on' : ''} onClick={() => setView('lista')}>
+            Lista
+          </button>
+        </span>
       </div>
 
-      {schedulerStatus && (
-        <div className="scheduler-status">
-          <div className="scheduler-info">
-            <div className={`scheduler-indicator ${schedulerStatus.running ? '' : 'offline'}`}></div>
-            <div>
-              <div className="scheduler-text">
-                <strong>Scheduler:</strong> {schedulerStatus.running ? 'Ativo' : 'Inativo'}
+      {error && <p className="cal-error">Não deu para carregar os posts: {error}</p>}
+
+      {view === 'mes' ? (
+        <div className="cal-grid">
+          {WEEKDAYS.map(w => (
+            <span key={w} className="cal-weekday">
+              {w}
+            </span>
+          ))}
+          {days.map(day => {
+            const dayPosts = posts.filter(p => sameDay(postDate(p), day))
+            const isToday = sameDay(day, today)
+            const outside = day.getMonth() !== month.getMonth()
+            return (
+              <div
+                key={day.toISOString()}
+                className={`cal-day ${isToday ? 'today' : ''} ${outside ? 'outside' : ''}`}
+                onDoubleClick={() => day >= today && openScheduleAt(day)}
+              >
+                <span className="cal-num">{day.getDate()}</span>
+                {dayPosts.map(post => (
+                  <button key={post.id} className={`cal-post ${post.status}`} onClick={() => setOpenPost(post)}>
+                    {chip(post)}
+                  </button>
+                ))}
+                {suggestedDay && sameDay(day, suggestedDay) && (
+                  <button className="cal-post suggested" onClick={() => openScheduleAt(day)}>
+                    19:30 · sugerido ✨
+                  </button>
+                )}
               </div>
-              {schedulerStatus.upcomingPosts > 0 && (
-                <div className="scheduler-text">
-                  {schedulerStatus.upcomingPosts} post(s) agendado(s)
-                </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="cal-list">
+          {loading && <p className="c-muted">Carregando…</p>}
+          {!loading && sortedPosts.length === 0 && <p className="c-muted">Nenhum post ainda.</p>}
+          {sortedPosts.map(post => (
+            <button key={post.id} className="panel cal-list-row" onClick={() => setOpenPost(post)}>
+              <strong>
+                {postDate(post).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}{' '}
+                {hhmm(postDate(post))}
+              </strong>
+              <span>{postTitle(post)}</span>
+              <span className={`cal-post ${post.status}`}>{chip(post)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="cal-legend">
+        <span className="status c-scheduled">Agendado</span>
+        <span className="status c-success">Publicado</span>
+        <span className="status c-danger">Falhou</span>
+        <span className="c-muted">○ Horário sugerido pelos seus insights</span>
+        <span className="c-muted">⚠ O backend precisa estar rodando no horário agendado</span>
+        <span className="c-muted">· Clique duas vezes num dia para agendar</span>
+      </div>
+
+      {openPost && (
+        <div className="overlay" onClick={() => setOpenPost(null)}>
+          <div className="modal cal-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setOpenPost(null)}>
+              ✕
+            </button>
+            <span className={`cal-post ${openPost.status}`}>{chip(openPost)}</span>
+            <p className="meta cal-modal-date">
+              {postDate(openPost).toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' })}
+            </p>
+            <pre className="cal-modal-caption">{openPost.caption}</pre>
+            {openPost.error && <p className="cal-error">{openPost.error}</p>}
+            {openPost.metrics && (
+              <p className="meta">
+                {openPost.metrics.views} plays · {openPost.metrics.likes} curtidas · {openPost.metrics.saves} salvos
+              </p>
+            )}
+            <div className="cal-modal-actions">
+              {openPost.status === 'scheduled' && (
+                <button className="btn-g" disabled={busy} onClick={() => cancel(openPost)}>
+                  Cancelar agendamento
+                </button>
+              )}
+              {(openPost.status === 'scheduled' || openPost.status === 'failed') && (
+                <button className="btn-y" disabled={busy} onClick={() => publishNow(openPost)}>
+                  {openPost.status === 'failed' ? 'Tentar de novo' : 'Publicar agora'}
+                </button>
               )}
             </div>
           </div>
-          <button className="btn-sm btn-secondary-sm" onClick={fetchSchedulerStatus}>
-            Atualizar
-          </button>
         </div>
-      )}
-
-      {loading && <div className="loading">⏳ Carregando...</div>}
-      {error && <div className="error">❌ Erro: {error}</div>}
-
-      {!loading && posts.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-state-icon">📅</div>
-          <div className="empty-state-title">Nenhuma postagem encontrada</div>
-          <div className="empty-state-description">
-            Agende suas postagens para publicação automática.<br />
-            <span style={{ fontSize: '0.9rem', color: '#666' }}>
-              💡 Dica: Posts agendados para o passado são publicados automaticamente!
-            </span>
-          </div>
-          <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-            + Agendar Primeira Postagem
-          </button>
-        </div>
-      )}
-
-      {!loading && posts.length > 0 && (
-        <>
-          <div className="calendar-controls">
-            <div className="view-toggle">
-              <button
-                className={viewMode === 'calendar' ? 'active' : ''}
-                onClick={() => setViewMode('calendar')}
-              >
-                📅 Calendário
-              </button>
-              <button
-                className={viewMode === 'list' ? 'active' : ''}
-                onClick={() => setViewMode('list')}
-              >
-                📋 Lista
-              </button>
-            </div>
-
-            {viewMode === 'calendar' && (
-              <div className="month-navigation">
-                <button onClick={goToPreviousMonth}>‹</button>
-                <span>{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
-                <button onClick={goToNextMonth}>›</button>
-                <button onClick={goToToday} style={{ marginLeft: '1rem' }}>Hoje</button>
-              </div>
-            )}
-          </div>
-
-          {viewMode === 'calendar' && (
-            <div className="calendar-grid">
-              <div className="calendar-weekdays">
-                {weekdays.map(day => (
-                  <div key={day} className="calendar-weekday">{day}</div>
-                ))}
-              </div>
-              <div className="calendar-days">
-                {calendarDays.map((day, index) => (
-                  <div
-                    key={index}
-                    className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${day.isToday ? 'today' : ''}`}
-                    onClick={() => {
-                      if (day.posts.length > 0) {
-                        // Mostrar detalhes do primeiro post
-                        setSelectedPost(day.posts[0])
-                      }
-                    }}
-                  >
-                    <div className="day-number">{day.date.getDate()}</div>
-                    <div className="day-posts">
-                      {day.posts.slice(0, 3).map(post => (
-                        <div
-                          key={post.id}
-                          className={`day-post-item ${post.status}`}
-                          title={post.caption}
-                        >
-                          <div className="post-time">
-                            {new Date(post.scheduledFor || post.publishedAt).toLocaleTimeString('pt-BR', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                      {day.posts.length > 3 && (
-                        <div className="day-post-item" style={{ fontSize: '0.7rem' }}>
-                          +{day.posts.length - 3} mais
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {viewMode === 'list' && (
-            <div className="calendar-list">
-              {Object.entries(groupedPosts).map(([date, datePosts]) => (
-                <div key={date} className="calendar-day-list">
-                  <h3 className="day-header">{date}</h3>
-                  <div className="day-posts-list">
-                    {datePosts.map((post) => (
-                      <div key={post.id} className="calendar-post">
-                        <div className="post-time-large">
-                          {new Date(post.scheduledFor || post.publishedAt).toLocaleTimeString('pt-BR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </div>
-                        <div className="post-content">
-                          <p className="post-caption">
-                            {post.caption.substring(0, 150)}
-                            {post.caption.length > 150 && '...'}
-                          </p>
-                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            <span className={`status-badge ${post.status}`}>
-                              {post.status === 'scheduled' && '⏰ Agendado'}
-                              {post.status === 'published' && '✅ Publicado'}
-                              {post.status === 'failed' && '❌ Falhou'}
-                            </span>
-                            {post.status === 'scheduled' && (
-                              <div className="post-actions">
-                                <button
-                                  className="btn-sm btn-primary-sm"
-                                  onClick={() => handlePublishNow(post.id)}
-                                >
-                                  🚀 Publicar Agora
-                                </button>
-                                <button
-                                  className="btn-sm btn-danger-sm"
-                                  onClick={() => handleDeletePost(post.id)}
-                                >
-                                  🗑️ Cancelar
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
       )}
 
       <ScheduleModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={scheduleFor !== null}
+        onClose={() => setScheduleFor(null)}
         onSchedule={handleSchedule}
+        initialData={scheduleInitial}
         contentList={contentList.filter(c => c.status === 'approved')}
       />
     </div>
