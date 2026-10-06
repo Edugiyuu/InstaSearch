@@ -23,14 +23,14 @@
           + SchedulerService (setInterval de 1 min, dentro do mesmo processo do backend)
 ```
 
-Decisões principais:
+Decisões principais (o porquê completo de cada uma está nos [ADRs](decisions/README.md)):
 
 | Decisão | Motivo | Custo |
 |---|---|---|
-| **Armazenamento em JSON**, sem banco | Zero configuração para self-hosted | Sem consultas, sem transações; lento com milhares de itens. Migrar para SQLite quando o histórico de métricas (Fase 3) crescer |
+| **Armazenamento em JSON**, sem banco ([ADR 0002](decisions/0002-armazenamento-em-json.md)) | Zero configuração para self-hosted | Sem consultas, sem transações; lento com milhares de itens. Migrar para SQLite quando o histórico de métricas (Fase 3) crescer |
 | **Agendador no mesmo processo** | Simplicidade | Só publica com o backend rodando |
 | **FFmpeg via `fluent-ffmpeg`** | Padrão da indústria, gratuito | Exige o FFmpeg instalado no sistema |
-| **Cloudinary para a URL pública** | A Graph API só aceita vídeo por URL | Dependência externa; alternativa futura é um túnel para o próprio backend |
+| **Cloudinary para a URL pública** ([ADR 0003](decisions/0003-cloudinary-para-url-publica.md)) | A Graph API só aceita vídeo por URL | Dependência externa; alternativa futura é um túnel para o próprio backend |
 | **Monousuário** (`default_user`) | Feito para uso pessoal | Usa sempre a primeira conta conectada |
 
 ## Backend
@@ -166,6 +166,6 @@ Princípios da evolução:
 
 | Decisão | Motivo | Custo |
 |---|---|---|
-| **Remotion** para compor e renderizar | Prévia ao vivo, componentes React, mesma stack | Licença paga para empresas com mais de 3 funcionários; o render usa Chrome headless (baixado automaticamente) |
-| **Biblioteca local catalogada por visão** | Resolve o gargalo de imagens (25 a 40 por Short de até 40s) | Chamadas de visão na primeira catalogação de cada arquivo |
+| **Remotion** para compor e renderizar ([ADR 0009](decisions/0009-remotion-para-composicao.md)) | Prévia ao vivo, componentes React, mesma stack | Licença paga para empresas com mais de 3 funcionários; o render usa Chrome headless (baixado automaticamente) |
+| **Biblioteca local catalogada por visão** ([ADR 0010](decisions/0010-biblioteca-de-imagens-em-vez-de-geracao.md)) | Resolve o gargalo de imagens (25 a 40 por Short de até 40s) | Chamadas de visão na primeira catalogação de cada arquivo |
 | **Batidas de 2 a 4 palavras** | Ritmo do formato de referência | Muitas imagens por vídeo, compensadas pela biblioteca e pelas variantes de recorte |
