@@ -42,3 +42,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0010](0010-biblioteca-de-imagens-em-vez-de-geracao.md) | Biblioteca pessoal de imagens em vez de gerar imagens por IA | Aceita |
 | [0011](0011-editor-automatico.md) | Editor automático, não editor manual | Aceita |
 | [0012](0012-render-em-processo-separado.md) | Render em MP4 num processo separado, com o código do frontend | Aceita |
+| [0013](0013-workflow-kanban-github-projects.md) | Workflow Kanban no GitHub Projects | Aceita |
