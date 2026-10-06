@@ -74,7 +74,7 @@ function Review() {
   const ask = (text: string) => {
     if (!text.trim() || working) return
     setRequest('')
-    run(text, () => shortsApi.adjust(project.id, text))
+    run(text, () => shortsApi.adjust(project.id, text, current + 1))
   }
 
   const setPace = (pace: Pace) =>

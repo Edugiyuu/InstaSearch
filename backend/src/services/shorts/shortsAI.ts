@@ -1,5 +1,6 @@
 import { AppError } from '../../middleware/errorHandler.js'
 import { askJson, askJsonMeta } from './llm.js'
+import { citedScenes, describeChanges, diffBeats, hasChanges, keepOnlyCited, scenesText } from './sceneEdits.js'
 import type { AiCredit, Beat, Effect, LibraryImage, Motion, ProjectSettings, SceneKind, ShortStyle } from './types.js'
 
 const PACE_SECONDS: Record<ShortStyle['pace'], number> = {
@@ -177,11 +178,15 @@ export async function adjustBeats(input: {
   style: ShortStyle
   /** efeitos sonoros da biblioteca, para o chat pôr nas cenas pelo nome */
   sounds?: SoundOption[]
+  /** Cena aberta na prévia, como na tela (a primeira é 1): é a "esta cena" do pedido. */
+  openScene?: number
 }): Promise<{ reply: string; beats: Beat[]; narration: string; settings: ProjectSettings; ai: AiCredit }> {
   const { request, beats, narration, settings, style, sounds = [] } = input
+  const openScene = input.openScene && input.openScene <= beats.length ? input.openScene : undefined
   const soundName = (id?: string) => sounds.find(s => s.id === id)?.name ?? 'nenhum'
-  const compact = beats.map(({ id, say, text, query, searchTags, characters, scene, effect, emoji, sticker, sfx, sfxId, motion, focus }) => ({
-    id, say, text, query, tags: searchTags, characters, scene, effect, emoji, sticker, sfx, sound: soundName(sfxId), motion, focus,
+  // "cena" é o número que o usuário vê; sem ele a IA contava a posição na lista e errava por uma
+  const compact = beats.map(({ id, say, text, query, searchTags, characters, scene, effect, emoji, sticker, sfx, sfxId, motion, focus }, i) => ({
+    cena: i + 1, id, say, text, query, tags: searchTags, characters, scene, effect, emoji, sticker, sfx, sound: soundName(sfxId), motion, focus,
   }))
 
   const prompt = `Você edita um Short vertical em português do Brasil. O vídeo é uma lista de batidas; em cada batida o vídeo corta para uma imagem nova.
@@ -195,8 +200,10 @@ ${JSON.stringify(compact)}
 Pedido do usuário: "${request}"
 
 Aplique o pedido. Regras:
+- O campo "cena" é o número que o usuário vê na tela (a primeira é 1). "Cena 6" no pedido é a batida com "cena": 6; não conte posições na lista.${openScene ? `
+- A cena aberta na prévia agora é a cena ${openScene}: "esta cena", "essa cena" e "aqui" se referem a ela.` : ''}
 - Mantenha o "id" das batidas que continuam; batidas novas vêm sem id.
-- Só mude o que o pedido pede.
+- Só mude o que o pedido pede. Se o pedido cita cenas, não mexa nas outras.
 - Se o pedido for sobre ritmo, efeitos ou legenda do vídeo inteiro, mude "settings" (pace: calmo|normal|rapido|frenetico, effects: poucos|medida|muitos, caption: quadrinho|completa|limpa|sem).
 - "narration" é a junção dos "say".
 - "sound" é o efeito sonoro que toca na batida. Para trocar, use o nome exato de um destes: ${sounds.length ? sounds.map(s => `"${s.name}"`).join(', ') : '(a biblioteca não tem efeitos sonoros)'}; para tirar, "nenhum". Não mude o "sound" das batidas que o pedido não cita.
@@ -207,14 +214,46 @@ Responda só com JSON:
 { "reply": "uma frase dizendo o que você mudou, começando com um verbo no passado (ex.: 'Encurtei o gancho…')", "settings": {...}, "beats": [ ... ] }`
 
   const { data: out, ai } = await askJsonMeta<{ reply?: string; beats?: RawBeat[]; settings?: Partial<ProjectSettings> }>(prompt)
-  const next = out.beats?.length ? cleanBeats(out.beats, beats, sounds) : beats
+  let next = out.beats?.length ? cleanBeats(out.beats, beats, sounds) : beats
+
+  // pedido que cita cenas: o que a IA mudou fora delas volta como estava
+  const cited = citedScenes(request, beats.length, openScene)
+  let reverted = false
+  if (cited.length && next !== beats) {
+    const kept = keepOnlyCited(beats, next, new Set(cited.map(n => beats[n - 1].id)))
+    next = kept.beats
+    reverted = kept.reverted
+  }
+
+  const changes = diffBeats(beats, next)
+  if (!hasChanges(changes)) next = beats
+  const nextSettings = { ...settings, ...pickSettings(out.settings) }
   return {
-    reply: out.reply?.trim() || 'Pronto.',
+    reply: chatReply({ aiReply: out.reply?.trim() || 'Pronto.', changes, cited, reverted, settingsChanged: settingsDiffer(settings, nextSettings) }),
     beats: next,
     narration: next === beats ? narration : next.map(b => b.say).join(' '),
-    settings: { ...settings, ...pickSettings(out.settings) },
+    settings: nextSettings,
     ai,
   }
+}
+
+const settingsDiffer = (a: ProjectSettings, b: ProjectSettings) => a.pace !== b.pace || a.effects !== b.effects || a.caption !== b.caption
+
+/**
+ * A resposta do chat diz o que de fato mudou (ADR 0017). O texto da IA só aparece quando
+ * ninguém desfez nada: se a IA mexeu na cena errada, o texto dela descreveria a mudança errada.
+ */
+function chatReply(input: { aiReply: string; changes: ReturnType<typeof diffBeats>; cited: number[]; reverted: boolean; settingsChanged: boolean }) {
+  const { aiReply, changes, cited, reverted, settingsChanged } = input
+  const what = describeChanges(changes)
+  if (reverted) {
+    const asked = scenesText(cited)
+    return what
+      ? `${what} A IA também mexeu em outras cenas; desfiz, porque o pedido era só ${asked}.`
+      : `Não mudei nada: a IA errou de cena e eu desfiz. O pedido era só ${asked}; tente de novo.`
+  }
+  if (!what) return settingsChanged ? aiReply : `${aiReply} (Nada mudou nas cenas.)`
+  return `${aiReply} ${what}`
 }
 
 function pickSettings(s?: Partial<ProjectSettings>): Partial<ProjectSettings> {

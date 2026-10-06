@@ -34,6 +34,10 @@ app.use('/api', apiRoutes)
 const { schedulerService } = await import('./services/schedulerService.js')
 schedulerService.start()
 
+// Imagens que ficaram na fila da catalogação quando o servidor parou
+const { resumeCataloguing } = await import('./services/shorts/library.js')
+resumeCataloguing().catch(error => logger.warn(`⚠️ Não consegui retomar a catalogação: ${error.message}`))
+
 // Root route
 app.get('/', (req: Request, res: Response) => {
   res.json({

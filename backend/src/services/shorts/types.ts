@@ -181,6 +181,8 @@ export interface LibraryImage {
   /** Projetos em que a imagem foi usada. */
   usedIn: string[]
   catalogued: boolean
+  /** Na fila da catalogação em segundo plano (a imagem já pode ser usada). */
+  cataloguing?: boolean
   source?: string
   createdAt: string
 }

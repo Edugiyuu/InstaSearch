@@ -76,8 +76,11 @@ export interface ImageHint {
   characters?: string[]
   tags?: string[]
   description?: string
-  /** false = não chama a IA para catalogar (economiza; dá para catalogar depois na biblioteca) */
-  catalog?: boolean
+  /**
+   * false = não chama a IA para catalogar (economiza; dá para catalogar depois na biblioteca).
+   * 'background' = salva já e cataloga em segundo plano: quem troca a imagem de uma cena não espera a IA.
+   */
+  catalog?: boolean | 'background'
 }
 
 /** hint: o que a origem já informa (nome, personagens…); vale se a IA não catalogar. */
@@ -110,6 +113,14 @@ export async function addImage(
     catalogued: false,
     source,
     createdAt: new Date().toISOString(),
+  }
+
+  if (hint.catalog === 'background') {
+    if (kind) base.kind = kind
+    base.cataloguing = true
+    const saved = await storage.save(base)
+    enqueueCatalog(id)
+    return saved
   }
 
   if (hint.catalog !== false) {
@@ -181,7 +192,54 @@ export async function recatalog(id: string) {
   const file = img.thumb ?? img.file
   const data = await fs.readFile(path.join(LIBRARY_FILES_DIR, file))
   const info = await catalogImage(data, MIME[path.extname(file)] ?? 'image/jpeg')
-  return storage.save({ ...img, ...info, kind: img.kind === 'cena' ? 'cena' : info.kind, catalogued: true })
+  return storage.save({ ...img, ...info, kind: img.kind === 'cena' ? 'cena' : info.kind, catalogued: true, cataloguing: false })
+}
+
+// ── Catalogação em segundo plano ─────────────────────────
+// Fila em memória, uma imagem por vez: não estoura o limite por minuto do Gemini.
+
+const catalogQueue: string[] = []
+let draining = false
+
+function enqueueCatalog(id: string) {
+  if (!catalogQueue.includes(id)) catalogQueue.push(id)
+  void drainCatalogQueue()
+}
+
+async function drainCatalogQueue() {
+  if (draining) return
+  draining = true
+  try {
+    for (let id = catalogQueue.shift(); id; id = catalogQueue.shift()) await catalogInBackground(id)
+  } finally {
+    draining = false
+  }
+}
+
+async function catalogInBackground(id: string) {
+  const img = await storage.findById(id)
+  if (!img?.cataloguing) return // apagada, ou já catalogada pelo botão da biblioteca
+  try {
+    const data = await fs.readFile(path.join(LIBRARY_FILES_DIR, img.file))
+    const info = await catalogImage(data, MIME[path.extname(img.file)] ?? 'image/jpeg')
+    // relê: a imagem pode ter sido apagada enquanto a IA olhava
+    const fresh = await storage.findById(id)
+    if (!fresh) return
+    const kind = fresh.kind === 'figurinha' ? 'figurinha' : info.kind
+    await storage.save({ ...fresh, ...info, kind, catalogued: true, cataloguing: false })
+    logger.info(`🏷️ Imagem ${id} catalogada: ${info.name}`)
+  } catch (error: any) {
+    // igual a quando a IA não responde no envio: fica salva, sem catalogação, e dá para tentar de novo
+    logger.warn(`⚠️ Imagem ${id} ficou sem catalogação: ${error.message}`)
+    await storage.update(id, { cataloguing: false })
+  }
+}
+
+/** Ao subir o servidor: volta para a fila o que ficou pela metade. */
+export async function resumeCataloguing() {
+  const pending = (await storage.findAll()).filter(i => i.cataloguing)
+  if (pending.length) logger.info(`🏷️ Retomando a catalogação de ${pending.length} imagem(ns)`)
+  pending.forEach(i => enqueueCatalog(i.id))
 }
 
 export async function updateImage(id: string, changes: Partial<LibraryImage>) {

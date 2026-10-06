@@ -152,7 +152,8 @@ export async function assemble(id: string) {
 }
 
 /** "Peça um ajuste": a IA muda as batidas e a montagem procura imagens para as novas. */
-export async function adjust(id: string, request: string) {
+/** openScene: a cena aberta na prévia (a primeira é 1), para o chat entender "esta cena". */
+export async function adjust(id: string, request: string, openScene?: number) {
   if (!request?.trim()) throw new AppError('Escreva o que quer mudar', 400, 'VALIDATION')
   const project = await getProject(id)
   const style = await getStyle(project.styleId)
@@ -164,6 +165,7 @@ export async function adjust(id: string, request: string) {
     settings: project.settings,
     style,
     sounds: sfx.map(s => ({ id: s.id, name: s.name })),
+    openScene,
   })
 
   const changed = out.beats !== project.beats

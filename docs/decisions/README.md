@@ -46,3 +46,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0014](0014-board-em-arquivo-e-commit-por-tarefa.md) | Board em arquivo e um commit por tarefa, sem branches nem PRs | Aceita |
 | [0015](0015-framework-de-testes.md) | Framework de testes: Jest | Aceita |
 | [0016](0016-bordoes-de-abertura-e-final.md) | Bordões de abertura e de final na biblioteca | Aceita |
+| [0017](0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md) | Troca de imagem rápida e chat que acerta a cena | Aceita |

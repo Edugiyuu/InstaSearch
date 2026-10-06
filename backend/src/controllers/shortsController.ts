@@ -84,7 +84,8 @@ export const assemble = asyncHandler(async (req: Request, res: Response) => {
 })
 
 export const adjust = asyncHandler(async (req: Request, res: Response) => {
-  res.json({ success: true, data: await projects.adjust(req.params.id, req.body.request) })
+  const scene = Number(req.body.scene)
+  res.json({ success: true, data: await projects.adjust(req.params.id, req.body.request, Number.isInteger(scene) && scene > 0 ? scene : undefined) })
 })
 
 export const undo = asyncHandler(async (req: Request, res: Response) => {
@@ -136,21 +137,24 @@ export const uploadImages = [
     const saved = []
     // em sequência para não estourar o limite por minuto do Gemini
     const kind = req.body.kind === 'figurinha' ? 'figurinha' : undefined
-    for (const f of files) saved.push(await library.addImage(f.buffer, f.mimetype, f.originalname, 'upload', kind))
+    const catalog = req.body.background === 'true' ? 'background' : undefined
+    for (const f of files) saved.push(await library.addImage(f.buffer, f.mimetype, f.originalname, 'upload', kind, { catalog }))
     res.status(201).json({ success: true, data: saved })
   }),
 ]
 
 /**
- * Body: { url, fallbackUrl?, name?, characters? }. fallbackUrl (a miniatura) é usada se o site
+ * Body: { url, fallbackUrl?, name?, characters?, background? }. fallbackUrl (a miniatura) é usada se o site
  * bloquear a imagem grande; name e characters vêm da sugestão e valem se a IA não catalogar.
+ * background: true responde assim que a imagem baixa e cataloga depois (troca de imagem de uma cena).
  */
 export const importImageUrl = asyncHandler(async (req: Request, res: Response) => {
   const url = String(req.body.url ?? '').trim()
   const characters = Array.isArray(req.body.characters) ? req.body.characters.map(String).slice(0, 6) : undefined
   const name = typeof req.body.name === 'string' && req.body.name.trim() ? req.body.name.trim() : undefined
   const fallbackUrl = String(req.body.fallbackUrl ?? '').trim() || undefined
-  const image = await library.importImageFromUrl(url, { fallbackUrl, name, characters })
+  const catalog = req.body.background === true ? 'background' : undefined
+  const image = await library.importImageFromUrl(url, { fallbackUrl, name, characters, catalog })
   res.status(201).json({ success: true, data: image })
 })
 

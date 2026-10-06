@@ -203,6 +203,8 @@ export interface LibraryImage {
   regions: Region[]
   usedIn: string[]
   catalogued: boolean
+  /** Na fila da catalogação em segundo plano (a imagem já pode ser usada). */
+  cataloguing?: boolean
   source?: string
   createdAt: string
 }
@@ -255,7 +257,8 @@ export const shortsApi = {
   updateProject: (id: string, changes: Partial<ShortProject>) => data<ShortProject>(api.put(`/shorts/projects/${id}`, changes)),
   deleteProject: (id: string) => api.delete(`/shorts/projects/${id}`),
   assemble: (id: string) => data<{ project: ShortProject; log: AssemblyLogEntry[] }>(api.post(`/shorts/projects/${id}/assemble`)),
-  adjust: (id: string, request: string) => data<ShortProject>(api.post(`/shorts/projects/${id}/adjust`, { request })),
+  /** scene: a cena aberta na prévia (a primeira é 1), para o chat entender "esta cena". */
+  adjust: (id: string, request: string, scene?: number) => data<ShortProject>(api.post(`/shorts/projects/${id}/adjust`, { request, scene })),
   undo: (id: string) => data<ShortProject>(api.post(`/shorts/projects/${id}/undo`)),
   setBeatImage: (id: string, beatId: string, imageId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/image`, { imageId })),
@@ -310,9 +313,11 @@ export const shortsApi = {
   deleteStyle: (id: string) => api.delete(`/shorts/styles/${id}`),
 
   listImages: (q = '') => data<LibraryImage[]>(api.get('/library', { params: q ? { q } : {} })),
-  uploadImages: (files: File[], kind?: MediaKind) => {
+  /** background: responde sem esperar a IA catalogar (ela cataloga depois, no servidor). */
+  uploadImages: (files: File[], kind?: MediaKind, background = false) => {
     const form = new FormData()
     if (kind) form.append('kind', kind)
+    if (background) form.append('background', 'true')
     files.forEach(f => form.append('images', f, f.name || 'colada.png'))
     return data<LibraryImage[]>(
       api.post('/library/upload', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 300000 }),
@@ -332,7 +337,7 @@ export const shortsApi = {
     )
   },
   reprocessVideo: (id: string) => data<LibraryImage>(api.post(`/library/${id}/reprocess`)),
-  importImageUrl: (url: string, extra: { fallbackUrl?: string; name?: string; characters?: string[] } = {}) =>
+  importImageUrl: (url: string, extra: { fallbackUrl?: string; name?: string; characters?: string[]; background?: boolean } = {}) =>
     data<LibraryImage>(api.post('/library/import-url', { url, ...extra }, { timeout: 120000 })),
   searchWebImages: (q: string, opts: { characters?: string[]; tags?: string[]; context?: string; page?: number; projectId?: string } = {}) =>
     data<WebSearchResult>(

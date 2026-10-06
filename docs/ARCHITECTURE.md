@@ -59,8 +59,9 @@ backend/
 │   │   ├── shorts/                     # fluxo tema → Short (ver USO.md)
 │   │   │   ├── llm.ts                  # provedores de IA: Gemini → Claude API → Claude Code (Sonnet 5.5)
 │   │   │   ├── shortsAI.ts             # prompts: roteiro, ajustes, escolha de imagens, catalogação
+│   │   │   ├── sceneEdits.ts           # chat: cenas citadas no pedido, desfaz o resto, descreve a mudança
 │   │   │   ├── projects.ts             # projetos, montagem, ajustes, desfazer, música
-│   │   │   ├── library.ts              # imagens e figurinhas: busca, escolha por cena, uso
+│   │   │   ├── library.ts              # imagens e figurinhas: busca, escolha por cena, uso, fila de catalogação
 │   │   │   ├── sounds.ts               # efeitos sonoros e músicas, importação por link (yt-dlp)
 │   │   │   ├── styles.ts               # estilos embutidos + os do usuário
 │   │   │   └── types.ts                # ShortProject, Beat, LibraryImage, SoundItem…

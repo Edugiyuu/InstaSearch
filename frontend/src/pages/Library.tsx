@@ -110,15 +110,16 @@ function ImageLibrary({ mode }: { mode: Mode }) {
   const pool = useMemo(() => images.filter(i => inMode(i, mode)), [images, mode])
   const videoList = useMemo(() => images.filter(i => i.kind === 'video'), [images])
   const processing = videoList.some(busy)
+  const cataloguing = images.some(i => i.cataloguing)
 
-  // enquanto um vídeo é dividido em cenas, atualiza a lista
+  // enquanto um vídeo é dividido em cenas ou a IA cataloga imagens novas, atualiza a lista
   useEffect(() => {
-    if (!videos || !processing) return
+    if (!(videos && processing) && !cataloguing) return
     const t = setInterval(() => {
       shortsApi.listImages().then(setImages).catch(() => undefined)
     }, 3000)
     return () => clearInterval(t)
-  }, [videos, processing, setImages])
+  }, [videos, processing, cataloguing, setImages])
 
   const characters = useMemo(() => {
     const count = new Map<string, number>()
@@ -403,7 +404,7 @@ function ImageLibrary({ mode }: { mode: Mode }) {
                     {img.clip && <em className="lib-clip-len">▶ {seconds(img.clip.end - img.clip.start)}</em>}
                   </span>
                   <strong>{img.name}</strong>
-                  <span>{usage(img)}</span>
+                  <span>{img.cataloguing ? 'catalogando…' : usage(img)}</span>
                 </button>
               ))}
             </div>
@@ -436,7 +437,9 @@ function ImageLibrary({ mode }: { mode: Mode }) {
             <TagEditor label="Do que se trata" values={selected.tags} onChange={tags => update(selected, { tags })} />
 
             {selected.regions.length > 0 && <p className="meta lib-zoom-hint">As caixas mostram onde o vídeo dá zoom.</p>}
-            {!selected.catalogued && (
+            {selected.cataloguing ? (
+              <p className="meta"><Spinner /> A IA está catalogando esta imagem…</p>
+            ) : !selected.catalogued && (
               <button className="act" onClick={() => recatalog(selected)}>✨ Catalogar com a IA</button>
             )}
 

@@ -109,7 +109,13 @@ function ReplaceImage() {
       const img = Array.isArray(out) ? out[0] : out
       setImages(prev => [img, ...prev])
       await choose(img.id)
-      toast.show(img.catalogued ? `Imagem salva na biblioteca como “${img.name}”` : 'Imagem salva (sem catalogação da IA)')
+      toast.show(
+        img.cataloguing
+          ? 'Imagem salva na biblioteca. A IA cataloga em segundo plano.'
+          : img.catalogued
+            ? `Imagem salva na biblioteca como “${img.name}”`
+            : 'Imagem salva (sem catalogação da IA)',
+      )
       return true
     } catch (e) {
       toast.show(errorMessage(e))
@@ -127,6 +133,7 @@ function ReplaceImage() {
         fallbackUrl: img.thumb !== img.url ? img.thumb : undefined,
         name: img.title,
         characters: img.characters,
+        background: true,
       }),
     )
     setImporting(null)
@@ -135,7 +142,7 @@ function ReplaceImage() {
 
   const addFiles = (files: File[]) => {
     const images = files.filter(f => f.type.startsWith('image/'))
-    if (images.length) addAndChoose(shortsApi.uploadImages(images.slice(0, 1)))
+    if (images.length) addAndChoose(shortsApi.uploadImages(images.slice(0, 1), undefined, true))
   }
 
   // Ctrl+V em qualquer lugar da tela: imagem copiada ou link
@@ -151,7 +158,7 @@ function ReplaceImage() {
       const text = e.clipboardData?.getData('text')?.trim()
       if (text && /^https?:\/\//.test(text)) {
         e.preventDefault()
-        addAndChoose(shortsApi.importImageUrl(text))
+        addAndChoose(shortsApi.importImageUrl(text, { background: true }))
       }
     }
     window.addEventListener('paste', onPaste)
@@ -342,13 +349,13 @@ function ReplaceImage() {
                 setDragOver(false)
                 const url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text')
                 if (e.dataTransfer.files.length) addFiles(Array.from(e.dataTransfer.files))
-                else if (/^https?:\/\//.test(url)) addAndChoose(shortsApi.importImageUrl(url.trim()))
+                else if (/^https?:\/\//.test(url)) addAndChoose(shortsApi.importImageUrl(url.trim(), { background: true }))
               }}
             >
               {busy && !importing ? (
                 <>
                   <Spinner />
-                  <strong>Salvando e catalogando…</strong>
+                  <strong>Salvando…</strong>
                 </>
               ) : (
                 <>

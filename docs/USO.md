@@ -47,6 +47,8 @@ A tela mostra cada decisão ("“NARUTO” → naruto e sakura · Naruto e Sakur
 - **Prévia ao vivo** (Remotion Player): é a composição final, com zoom, setas, X, círculos, figurinhas, legenda, efeitos sonoros e música. Cenas sem imagem aparecem como **FALTA IMAGEM**.
 - A barra abaixo do vídeo mostra as cenas: vermelho = sem imagem, laranja = imagem parecida. Clique para pular. Para abrir direto numa cena: `/projeto/:id?cena=3`.
 - **✨ Peça um ajuste**: escreva o que quer mudar. A IA altera as cenas e a montagem preenche só as cenas novas. **Desfazer** volta a versão anterior.
+  - Cite cenas pelo número que aparece na tela ("na cena 6 põe um X", "cenas 3 e 4", "sexta cena", "última cena"); "esta cena" é a que está aberta na prévia. Quando o pedido cita cenas, só elas mudam: se a IA mexer em outra, o app desfaz.
+  - A resposta termina dizendo o que de fato mudou ("Mudei a cena 6."), conferido pelo app, e não só o que a IA diz que fez ([ADR 0017](decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md)).
 - **Precisa de você**: cenas sem imagem ou com imagem parecida → **Resolver agora**.
 - **Ajustes rápidos:**
 
@@ -84,7 +86,7 @@ A legenda completa usa um tempo **estimado** por palavra (proporcional ao tamanh
 Uma cena por vez ("Cena 1 de 3"):
 
 - À esquerda, como a cena está agora.
-- À direita, **Sugestões para esta cena**: a tela já abre com imagens da internet buscadas a partir do que a cena precisa mostrar e dos personagens dela. **Clique em uma** e pronto: ela é baixada, vai para a biblioteca (catalogada pela IA), entra na cena e a tela passa para a próxima.
+- À direita, **Sugestões para esta cena**: a tela já abre com imagens da internet buscadas a partir do que a cena precisa mostrar e dos personagens dela. **Clique em uma** e pronto: ela é baixada, entra na cena e a tela passa para a próxima, em poucos segundos. A IA cataloga a imagem na biblioteca depois, em segundo plano ([ADR 0017](decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md)); enquanto isso, ela aparece como "catalogando…".
   - **Mangá**: painéis reais do mangá achados na internet (Bing Imagens, sem chave). A busca usa o nome completo do personagem, a série e as etiquetas da cena em inglês ("Satoru Gojou jujutsu kaisen smile blindfold manga panel"). Em estilos de mangá (ex.: Comentário de anime) eles aparecem **primeiro**; nos outros, depois dos resultados gerais.
   - **Internet**: resultados gerais do Bing Imagens (sem chave) para o texto da cena: prints, wallpapers, fanarts, sites de notícia.
   - **Danbooru**: ilustrações, páginas de mangá e prints, **só as classificadas como "geral"**, sem crossovers com outras séries. A busca é **específica da cena**: a IA escreve no roteiro etiquetas para cada cena (`hands_in_pockets`, `smirk`, `from_below`…) e as palavras do texto também viram filtros ("mão no bolso", "calmo", "de costas", "olhos de perto", "mangá"…; "sem venda" não vira "venda"). As imagens que batem com a cena aparecem primeiro.
@@ -95,7 +97,7 @@ Uma cena por vez ("Cena 1 de 3"):
 - **✨ Preencher as N cenas automaticamente** (no topo): busca e coloca a melhor sugestão em cada cena que falta, de uma vez. Prefere imagens que batem com a cena, em pé (vídeo vertical), com boa resolução, sem personagens a mais e sem repetir. Não gasta IA: as imagens entram na biblioteca com os personagens e a descrição da cena, e você pode catalogá-las depois. O mesmo botão está no cartão "Precisa de você" da revisão.
 - **Tem outra imagem? Cole aqui**: Ctrl+V de uma imagem copiada, arrastar um arquivo, colar um link ou clicar para escolher. **Google ↗** abre o Google Imagens numa aba.
 - Embaixo, imagens da sua biblioteca que combinam.
-- Toda imagem nova vai para a biblioteca, já catalogada, e serve para os próximos vídeos.
+- Toda imagem nova vai para a biblioteca e é catalogada em segundo plano; serve para os próximos vídeos.
 - **Manter a parecida** aceita a imagem provisória; **Próxima cena →** segue.
 
 A busca não gasta IA (só a catalogação da imagem escolhida gasta 1 chamada). Bing, AniList e Danbooru funcionam sem chave.

@@ -19,6 +19,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 - [ ] Configurar o Jest no frontend (timeline do vídeo)
 - [ ] Whisper local para a legenda palavra por palavra (começar por um ADR em Proposta)
+- [ ] IA: desistir do Gemini mais cedo quando a rede falha (hoje espera ~60 s antes de passar para o Claude; alternativa 1B do [ADR 0017](docs/decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md))
 - [ ] Migrar `@google/generative-ai` → `@google/genai`
 - [ ] Remover os logs que imprimem `INSTAGRAM_CLIENT_ID`
 - [ ] Criptografar os tokens em `data/instagram_accounts/`
@@ -27,6 +28,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-06 · Troca de imagem sem esperar a catalogação e chat que acerta a cena ([ADR 0017](docs/decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md))
 - [x] 2026-10-06 · Jest no backend, com os primeiros testes ([ADR 0015](docs/decisions/0015-framework-de-testes.md))
 - [x] 2026-10-06 · Bordões de abertura e de final na biblioteca, escolhidos na edição ([ADR 0016](docs/decisions/0016-bordoes-de-abertura-e-final.md))
 - [x] 2026-10-05 · Workflow: board em arquivo e commit por tarefa (ADR 0014)
