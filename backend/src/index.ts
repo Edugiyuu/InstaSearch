@@ -37,6 +37,9 @@ schedulerService.start()
 // Imagens que ficaram na fila da catalogação quando o servidor parou
 const { resumeCataloguing } = await import('./services/shorts/library.js')
 resumeCataloguing().catch(error => logger.warn(`⚠️ Não consegui retomar a catalogação: ${error.message}`))
+// ...e áudios que ficaram na fila da transcrição
+const { resumeTranscriptions } = await import('./services/shorts/projects.js')
+resumeTranscriptions().catch(error => logger.warn(`⚠️ Não consegui retomar a transcrição: ${error.message}`))
 
 // Root route
 app.get('/', (req: Request, res: Response) => {

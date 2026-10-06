@@ -135,8 +135,37 @@ export interface ShortProject {
   /** Qual IA escreveu o roteiro e qual escolheu as imagens. */
   ai?: { script?: AiCredit; images?: AiCredit }
   undo: Beat[][]
+  /** O que o Whisper ouviu na voz, com o tempo de cada palavra (ADR 0018). */
+  transcript?: Transcript
   createdAt: string
   updatedAt: string
+}
+
+/** Uma palavra ouvida pelo Whisper; tempos em segundos desde o começo do áudio. */
+export interface TranscriptWord {
+  text: string
+  start: number
+  end: number
+}
+
+export interface Transcript {
+  /** O áudio transcrito; se for outro que o do projeto, a transcrição não vale mais. */
+  audioFile: string
+  status: 'pendente' | 'transcrevendo' | 'pronto' | 'erro'
+  stage?: 'baixando' | 'transcrevendo'
+  progress?: number
+  words?: TranscriptWord[]
+  error?: string
+  model?: string
+  at?: string
+}
+
+export interface WhisperStatus {
+  state: 'ausente' | 'baixando' | 'pronto' | 'erro'
+  progress?: number
+  error?: string
+  model: string
+  sizeMb: number
 }
 
 export interface Region {
@@ -260,6 +289,10 @@ export const shortsApi = {
   /** scene: a cena aberta na prévia (a primeira é 1), para o chat entender "esta cena". */
   adjust: (id: string, request: string, scene?: number) => data<ShortProject>(api.post(`/shorts/projects/${id}/adjust`, { request, scene })),
   undo: (id: string) => data<ShortProject>(api.post(`/shorts/projects/${id}/undo`)),
+  /** Transcreve (de novo) a voz em segundo plano; acompanhe pelo project.transcript. */
+  transcribe: (id: string) => data<ShortProject>(api.post(`/shorts/projects/${id}/transcribe`)),
+  whisperStatus: () => data<WhisperStatus>(api.get('/shorts/whisper')),
+  installWhisper: () => data<WhisperStatus>(api.post('/shorts/whisper/install')),
   setBeatImage: (id: string, beatId: string, imageId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/image`, { imageId })),
   /** Efeito sonoro de uma cena: id de um som, null = sem som, 'auto' = a montagem escolhe. */

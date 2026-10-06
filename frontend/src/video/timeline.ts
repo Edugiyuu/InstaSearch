@@ -1,5 +1,6 @@
 import type { Beat, Catchphrase, LibraryImage, ProjectSettings, Region, ShortProject, SoundItem } from '../api/shorts'
 import { audioUrl, catchphraseFileUrl, imageUrl, mediaUrl, soundUrl } from '../api/shorts'
+import { alignWords, type WordTime } from './align'
 
 export const FPS = 30
 export const WIDTH = 1080
@@ -25,6 +26,8 @@ export interface TimedBeat {
   stickerSrc?: string
   /** Efeito sonoro que toca no corte. */
   sfxSrc?: string
+  /** Com a voz transcrita: em que quadro (desde o início da batida) cada palavra da fala começa. */
+  wordStarts?: number[]
 }
 
 /** Abertura ou final (ADR 0016): o que a composição precisa de um bordão. */
@@ -44,7 +47,34 @@ export interface ShortVideoProps extends Record<string, unknown> {
   outro?: CatchphraseProps
 }
 
-const words = (text: string) => text.split(/\s+/).filter(Boolean).length
+const splitWords = (text: string) => text.split(/\s+/).filter(Boolean)
+const words = (text: string) => splitWords(text).length
+
+/** Tempo de cada palavra de cada batida, vindo da voz. */
+export interface VoiceTiming {
+  beats: WordTime[][]
+  /** Palavras do roteiro que bateram com o que o Whisper ouviu. */
+  matched: number
+  total: number
+}
+
+/**
+ * Casa o roteiro com a transcrição da voz (ADR 0018). null = sem transcrição pronta para o áudio
+ * atual, ou nada bateu: o vídeo usa o tempo estimado.
+ */
+export function voiceTiming(project: ShortProject): VoiceTiming | null {
+  const t = project.transcript
+  if (!t || t.status !== 'pronto' || !t.words?.length || !project.audioFile || t.audioFile !== project.audioFile) return null
+  const perBeat = project.beats.map(b => splitWords(b.say))
+  const times = alignWords(perBeat.flat(), t.words)
+  if (!times) return null
+  let at = 0
+  const beats = perBeat.map(list => times.slice(at, (at += list.length)))
+  return { beats, matched: times.filter(w => w.matched).length, total: times.length }
+}
+
+/** Menor batida possível com a voz: uma fala muito rápida não some da tela. */
+const MIN_VOICE_FRAMES = 4
 
 const libraryMedia = (img: LibraryImage): MediaProps =>
   img.kind === 'cena' && img.clip
@@ -52,20 +82,43 @@ const libraryMedia = (img: LibraryImage): MediaProps =>
     : { src: imageUrl(img), regions: img.regions }
 
 /**
- * Distribui o tempo do vídeo entre as batidas pelo número de palavras faladas.
+ * Quadro (desde o começo da narração) em que cada batida começa, pela voz: quando a primeira
+ * palavra dela é falada. A primeira batida começa no 0, para o vídeo não abrir sem imagem.
+ * Os quadros são arredondados a partir do tempo absoluto, então o erro não se acumula.
+ */
+function voiceStarts(voice: VoiceTiming) {
+  const starts: number[] = []
+  voice.beats.forEach((list, i) => {
+    const wanted = i === 0 ? 0 : Math.round((list[0]?.start ?? 0) * FPS)
+    starts.push(i === 0 ? 0 : Math.max(starts[i - 1] + MIN_VOICE_FRAMES, wanted))
+  })
+  return starts
+}
+
+/**
+ * Distribui o tempo do vídeo entre as batidas.
+ * - Com a voz transcrita (ADR 0018): cada batida começa quando a primeira palavra dela é falada.
+ * - Sem: pelo número de palavras faladas (estimado).
  * Com áudio, o total é a duração do áudio; sem áudio, a duração escolhida no tema.
  * `start` é onde a primeira batida entra (depois da abertura); os `from` já saem somados.
  */
 export function buildTimeline(project: ShortProject, images: Map<string, LibraryImage>, sounds: Map<string, SoundItem> = new Map(), start = 0) {
-  const seconds = project.audioDuration || project.duration
+  const voice = voiceTiming(project)
+  const lastWordEnd = voice ? Math.max(0, ...voice.beats.flat().map(w => w.end)) : 0
+  const seconds = Math.max(project.audioDuration || project.duration, lastWordEnd)
   const total = Math.max(FPS, Math.round(seconds * FPS))
   const weights = project.beats.map(b => Math.max(2, words(b.say)))
   const sum = weights.reduce((a, b) => a + b, 0) || 1
+  const starts = voice ? voiceStarts(voice) : null
 
   let from = start
   const beats: TimedBeat[] = project.beats.map((beat, index) => {
     const isLast = index === project.beats.length - 1
-    const frames = isLast ? Math.max(8, total - (from - start)) : Math.max(8, Math.round((weights[index] / sum) * total))
+    const frames = starts
+      ? Math.max(MIN_VOICE_FRAMES, (isLast ? total : starts[index + 1]) - starts[index])
+      : isLast
+        ? Math.max(8, total - (from - start))
+        : Math.max(8, Math.round((weights[index] / sum) * total))
     const img = beat.imageId ? images.get(beat.imageId) : undefined
     const sticker = beat.stickerId ? images.get(beat.stickerId) : undefined
     const sfx = beat.sfxId ? sounds.get(beat.sfxId) : undefined
@@ -77,6 +130,7 @@ export function buildTimeline(project: ShortProject, images: Map<string, Library
       image: img ? libraryMedia(img) : undefined,
       stickerSrc: sticker ? imageUrl(sticker) : undefined,
       sfxSrc: sfx ? soundUrl(sfx) : undefined,
+      wordStarts: starts && voice ? voice.beats[index].map(w => Math.max(0, Math.round(w.start * FPS) - starts[index])) : undefined,
     }
     from += frames
     return timed

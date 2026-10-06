@@ -68,7 +68,7 @@ function BeatScene({ timed, settings }: { timed: TimedBeat; settings: ProjectSet
       {image && <BeatEffect timed={timed} region={beat.scene === 'evidence' ? undefined : region} />}
 
       {settings.caption === 'completa' ? (
-        <FullCaption say={beat.say} frames={timed.frames} />
+        <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} />
       ) : (
         settings.caption !== 'sem' && <Caption text={beat.text} mode={settings.caption} />
       )}
@@ -591,10 +591,10 @@ function Caption({ text, mode }: { text: string; mode: ProjectSettings['caption'
 
 /**
  * Legenda completa: todas as palavras da fala, em blocos de até 4,
- * com a palavra falada acendendo em amarelo. O tempo de cada palavra é
- * proporcional ao tamanho dela dentro da batida (sem transcrição ainda).
+ * com a palavra falada acendendo em amarelo. Com a voz transcrita, cada palavra acende
+ * quando é falada (wordStarts, ADR 0018); sem, o tempo é proporcional ao tamanho dela.
  */
-function FullCaption({ say, frames }: { say: string; frames: number }) {
+function FullCaption({ say, frames, wordStarts }: { say: string; frames: number; wordStarts?: number[] }) {
   const frame = useCurrentFrame()
   const words = say.split(/\s+/).filter(Boolean)
   if (words.length === 0) return null
@@ -602,11 +602,12 @@ function FullCaption({ say, frames }: { say: string; frames: number }) {
   const weights = words.map(w => w.replace(/[^\p{L}\p{N}]/gu, '').length + 2)
   const total = weights.reduce((a, b) => a + b, 0)
   let acc = 0
-  const starts = weights.map(w => {
+  const estimated = weights.map(w => {
     const start = (acc / total) * frames
     acc += w
     return start
   })
+  const starts = wordStarts?.length === words.length ? wordStarts : estimated
   let current = starts.findIndex((s, i) => frame >= s && (i === words.length - 1 || frame < starts[i + 1]))
   if (current < 0) current = words.length - 1
 

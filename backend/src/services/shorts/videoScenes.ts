@@ -266,6 +266,11 @@ export async function mediaDuration(file: string) {
   return Number(JSON.parse(out).format?.duration ?? 0) || 0
 }
 
+/** Converte um áudio para WAV mono de 16 kHz e 16 bits, o único formato que o Whisper lê. */
+export async function toWav16k(input: string, output: string) {
+  await run('ffmpeg', ['-y', '-v', 'error', '-i', input, '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le', output])
+}
+
 /**
  * Guarda um vídeo curto inteiro (o clipe de um bordão) em `dir/base.mp4`, convertendo se o
  * navegador não tocar o arquivo. Diferente do episódio, não vira cenas e o som é mantido.

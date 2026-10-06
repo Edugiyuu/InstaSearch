@@ -32,3 +32,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Whisper e modelos baixados pelo app (ADR 0018)
+tools/

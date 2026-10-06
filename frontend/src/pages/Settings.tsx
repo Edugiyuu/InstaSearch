@@ -1,4 +1,4 @@
-import { AiStatus, errorMessage, shortsApi, YouTubeStatus } from '../api/shorts'
+import { AiStatus, errorMessage, shortsApi, WhisperStatus, YouTubeStatus } from '../api/shorts'
 import { FormEvent, ReactNode, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useInstagram } from '../hooks/useInstagram'
@@ -71,6 +71,19 @@ function Settings() {
   useEffect(() => {
     shortsApi.aiStatus().then(setAiInfo).catch(() => setAiError(true))
   }, [])
+
+  // Whisper (ADR 0018): estado real; enquanto baixa, atualiza o andamento
+  const [whisper, setWhisper] = useState<WhisperStatus | null>(null)
+  const whisperBusy = whisper?.state === 'baixando'
+  useEffect(() => {
+    shortsApi.whisperStatus().then(setWhisper).catch(() => undefined)
+  }, [])
+  useEffect(() => {
+    if (!whisperBusy) return
+    const t = setInterval(() => shortsApi.whisperStatus().then(setWhisper).catch(() => undefined), 2000)
+    return () => clearInterval(t)
+  }, [whisperBusy])
+  const installWhisper = () => shortsApi.installWhisper().then(setWhisper).catch(e => setWhisper(w => w && { ...w, state: 'erro', error: errorMessage(e) }))
 
   // YouTube: o Google volta para /configuracoes?youtube=ok|erro depois da autorização
   const [params, setParams] = useSearchParams()
@@ -332,7 +345,39 @@ function Settings() {
         </Card>
 
         <Card
-          title="Voz e transcrição"
+          title="Transcrição da voz"
+          actions={
+            whisper?.state === 'pronto' ? (
+              <span className="c-muted">Roda sozinho quando você envia a voz de um vídeo.</span>
+            ) : (
+              <button className="act" onClick={installWhisper} disabled={!whisper || whisperBusy}>
+                ↓ Baixar o Whisper ({whisper?.sizeMb ?? 488} MB)
+              </button>
+            )
+          }
+        >
+          <dt>Whisper</dt>
+          <dd>
+            {!whisper ? (
+              '…'
+            ) : whisper.state === 'pronto' ? (
+              <span className="status c-success">{whisper.model} · pronto</span>
+            ) : whisper.state === 'baixando' ? (
+              <span className="status">baixando · {Math.round((whisper.progress ?? 0) * 100)}%</span>
+            ) : whisper.state === 'erro' ? (
+              <span className="status c-danger">o download falhou: {whisper.error}</span>
+            ) : (
+              <span className="c-muted">{whisper.model} · não instalado (baixa sozinho no primeiro áudio)</span>
+            )}
+          </dd>
+          <dt>Idioma</dt>
+          <dd>português (Brasil)</dd>
+          <dt>Para quê</dt>
+          <dd>legenda e cortes no tempo da sua voz; o texto continua o do roteiro</dd>
+        </Card>
+
+        <Card
+          title="Voz"
           preview
           actions={
             <>
@@ -341,10 +386,6 @@ function Settings() {
             </>
           }
         >
-          <dt>Whisper</dt>
-          <dd>small · ainda não instalado</dd>
-          <dt>Idioma</dt>
-          <dd>português (Brasil)</dd>
           <dt>ElevenLabs (API)</dt>
           <dd>opcional · não configurada</dd>
           <dt>Piper (local)</dt>

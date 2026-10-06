@@ -12,7 +12,8 @@ import { searchWebImages, type WebImage } from './imageSearch.js'
 import { adjustBeats, generateScript } from './shortsAI.js'
 import { listSounds, syncSoundUsage } from './sounds.js'
 import { normalize } from './library.js'
-import type { Beat, ProjectSettings, ShortProject } from './types.js'
+import { transcribeAudio, WHISPER_MODEL } from './transcription.js'
+import type { Beat, ProjectSettings, ShortProject, Transcript } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const AUDIO_DIR = path.join(__dirname, '../../../data/short_projects/audio')
@@ -320,8 +321,84 @@ export async function saveAudio(id: string, data: Buffer, ext: string) {
   if (project.audioFile) await fs.unlink(path.join(AUDIO_DIR, project.audioFile)).catch(() => undefined)
   project.audioFile = `${id}_${Date.now()}${ext}`
   project.audioDuration = undefined
+  project.transcript = { audioFile: project.audioFile, status: 'pendente' }
   await fs.writeFile(path.join(AUDIO_DIR, project.audioFile), data)
-  return save(project)
+  const saved = await save(project)
+  queueTranscription(id)
+  return saved
+}
+
+// ── Transcrição da voz (ADR 0018) ─────────────────────────
+// Fila em memória, um áudio por vez: o Whisper ocupa todos os núcleos do processador.
+
+const transcribeQueue: string[] = []
+let transcribing = false
+
+/** Transcreve (de novo) o áudio do projeto em segundo plano. */
+export async function requestTranscription(id: string) {
+  const project = await getProject(id)
+  if (!project.audioFile) throw new AppError('Envie a sua voz primeiro', 400, 'NO_AUDIO')
+  project.transcript = { audioFile: project.audioFile, status: 'pendente' }
+  await storage.save(project)
+  queueTranscription(id)
+  return project
+}
+
+function queueTranscription(id: string) {
+  if (!transcribeQueue.includes(id)) transcribeQueue.push(id)
+  void drainTranscriptions()
+}
+
+async function drainTranscriptions() {
+  if (transcribing) return
+  transcribing = true
+  try {
+    for (let id = transcribeQueue.shift(); id; id = transcribeQueue.shift()) await runTranscription(id)
+  } finally {
+    transcribing = false
+  }
+}
+
+/**
+ * Grava o andamento relendo o projeto antes: o usuário pode ter editado enquanto o Whisper
+ * trabalhava. Se o áudio mudou (ou o projeto foi apagado), a transcrição não vale e nada é gravado.
+ * Usa o storage direto: não é uma edição do usuário, então o updatedAt não muda.
+ */
+async function setTranscript(id: string, audioFile: string, changes: Partial<Transcript>) {
+  const project = await storage.findById(id)
+  if (!project || project.audioFile !== audioFile) return
+  project.transcript = { ...project.transcript, ...changes, audioFile } as Transcript
+  await storage.save(project)
+}
+
+async function runTranscription(id: string) {
+  const project = await storage.findById(id)
+  const audioFile = project?.audioFile
+  if (!project || !audioFile) return
+  // as gravações em fila, uma depois da outra: um aviso de andamento atrasado não sobrescreve o resultado
+  let writing = Promise.resolve()
+  const write = (changes: Partial<Transcript>) => (writing = writing.then(() => setTranscript(id, audioFile, changes)))
+  const started = Date.now()
+  try {
+    write({ status: 'transcrevendo', stage: undefined, progress: undefined, error: undefined })
+    const words = await transcribeAudio(path.join(AUDIO_DIR, audioFile), (stage, progress) => write({ stage, progress }))
+    if (words.length === 0) throw new Error('o Whisper não ouviu nenhuma palavra no áudio')
+    write({ status: 'pronto', stage: undefined, progress: undefined, words, model: WHISPER_MODEL, at: new Date().toISOString() })
+    logger.info(`🎙️ Voz de ${id} transcrita: ${words.length} palavras em ${((Date.now() - started) / 1000).toFixed(1)}s`)
+  } catch (error: any) {
+    logger.error(`❌ Transcrição de ${id}: ${error.message}`)
+    write({ status: 'erro', stage: undefined, progress: undefined, error: String(error.message ?? error).slice(0, 300) })
+  }
+  await writing
+}
+
+/** Ao subir o servidor: volta para a fila o que ficou pela metade. */
+export async function resumeTranscriptions() {
+  const pending = (await storage.findAll()).filter(
+    p => p.audioFile && p.transcript?.audioFile === p.audioFile && (p.transcript.status === 'pendente' || p.transcript.status === 'transcrevendo'),
+  )
+  if (pending.length) logger.info(`🎙️ Retomando a transcrição de ${pending.length} projeto(s)`)
+  pending.forEach(p => queueTranscription(p.id))
 }
 
 export async function deleteProject(id: string) {

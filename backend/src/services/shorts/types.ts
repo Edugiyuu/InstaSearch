@@ -132,8 +132,31 @@ export interface ShortProject {
   ai?: { script?: AiCredit; images?: AiCredit }
   /** Versões anteriores das batidas para o "Desfazer". */
   undo: Beat[][]
+  /** O que o Whisper ouviu na voz, com o tempo de cada palavra (ADR 0018). */
+  transcript?: Transcript
   createdAt: string
   updatedAt: string
+}
+
+/** Uma palavra ouvida pelo Whisper; tempos em segundos desde o começo do áudio. */
+export interface TranscriptWord {
+  text: string
+  start: number
+  end: number
+}
+
+export interface Transcript {
+  /** O áudio transcrito; se o áudio do projeto mudar, esta transcrição não vale mais. */
+  audioFile: string
+  status: 'pendente' | 'transcrevendo' | 'pronto' | 'erro'
+  /** Na primeira vez, o Whisper e o modelo são baixados antes de transcrever. */
+  stage?: 'baixando' | 'transcrevendo'
+  /** 0 a 1, da etapa atual. */
+  progress?: number
+  words?: TranscriptWord[]
+  error?: string
+  model?: string
+  at?: string
 }
 
 export interface Region {

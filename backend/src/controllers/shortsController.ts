@@ -18,6 +18,7 @@ import * as render from '../services/shorts/render.js'
 import * as publish from '../services/shorts/publish.js'
 import * as catchphrases from '../services/shorts/catchphrases.js'
 import { fetchThumb, searchWebImages } from '../services/shorts/imageSearch.js'
+import { ensureWhisper, whisperStatus } from '../services/shorts/transcription.js'
 
 const MAX_IMAGE = 15 * 1024 * 1024
 
@@ -105,6 +106,22 @@ export const uploadAudio = [
     res.json({ success: true, data: await projects.saveAudio(req.params.id, req.file.buffer, ext) })
   }),
 ]
+
+/** POST /shorts/projects/:id/transcribe → transcreve (de novo) a voz em segundo plano (ADR 0018). */
+export const transcribe = asyncHandler(async (req: Request, res: Response) => {
+  res.status(202).json({ success: true, data: await projects.requestTranscription(req.params.id) })
+})
+
+/** GET /shorts/whisper → o Whisper está instalado? */
+export const getWhisper = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ success: true, data: whisperStatus() })
+})
+
+/** POST /shorts/whisper/install → começa o download e responde na hora (acompanhe pelo GET). */
+export const installWhisper = asyncHandler(async (_req: Request, res: Response) => {
+  ensureWhisper().catch(() => undefined) // o erro fica no whisperStatus()
+  res.status(202).json({ success: true, data: whisperStatus() })
+})
 
 // ── Biblioteca ────────────────────────────────────────────
 

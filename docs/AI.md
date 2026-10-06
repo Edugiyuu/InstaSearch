@@ -14,7 +14,7 @@ Onde a IA é usada, como configurar o Gemini e como o app passa para o **Claude 
 | Catalogar efeitos sonoros e músicas | ✅ (só Gemini) | áudio → nome e etiquetas | `shortsAI.catalogSound` |
 | Legenda do post | ✅ | título + narração → legenda + hashtags (com reserva no Claude, via `llm.askJson`) | `aiService.generateCaption` |
 | Legenda a partir de frames, análise de perfil, hashtags | ✅ legado | ver "Ferramentas antigas" | `aiService.ts` |
-| Transcrição da voz (Whisper) | 📋 | áudio → palavras com tempo | planejado; hoje o tempo das cenas é estimado |
+| Transcrição da voz (Whisper) | ✅ (local) | áudio → palavras com tempo; o roteiro é casado com elas no frontend ([ADR 0018](decisions/0018-legenda-sincronizada-com-a-voz.md)) | `transcription.ts`, `video/align.ts` |
 
 Regra de projeto: **a IA sugere e o usuário aprova.** Nada é publicado sem passar pela revisão.
 
@@ -160,7 +160,7 @@ O app usa o SDK oficial (`@anthropic-ai/sdk`), modelo `claude-sonnet-5-5` com `o
 | Tipo | Hoje | Planejado |
 |---|---|---|
 | LLM | Gemini → Claude Sonnet 5.5 (API ou plano) | Ollama local como reserva grátis |
-| Transcrição | estimada pelo número de palavras | whisper.cpp local, para a legenda completa sincronizar palavra por palavra |
+| Transcrição | whisper.cpp 1.5.5 local, modelo `small`, em segundo plano ao enviar a voz | tempo por palavra vindo do TTS, se a voz passar a ser gerada |
 | Voz | upload do seu áudio | ElevenLabs via API, Piper local |
 | Geração de imagem | desligada (você envia as imagens) | opcional, plugável |
 

@@ -12,7 +12,7 @@ Legenda: ✅ pronto · ⚠️ funciona com ressalvas · 🚧 incompleto/stub · 
 | Novo vídeo (`/novo`) | ✅ | Tema, estilo, duração e tom; o Gemini escreve o roteiro e divide em cenas. Aceita narração pronta |
 | Roteiro e voz (`/projeto/:id/roteiro`) | ✅ | Cenas editáveis, pedidos à IA, copiar narração, upload do áudio (a duração do áudio dita os cortes) |
 | Montagem (`/projeto/:id/montagem`) | ✅ | Escolhe imagens, figurinhas, efeitos sonoros e música da biblioteca e mostra as decisões |
-| Revisão (`/projeto/:id`) | ⚠️ | Prévia no `@remotion/player`, "Peça um ajuste", desfazer, ajustes rápidos (ritmo, efeitos, legenda quadrinho/completa/limpa, música, bordão de abertura e do final), salvar para depois. Legenda completa com tempo estimado (sem Whisper) |
+| Revisão (`/projeto/:id`) | ⚠️ | Prévia no `@remotion/player`, "Peça um ajuste", desfazer, ajustes rápidos (ritmo, efeitos, legenda quadrinho/completa/limpa, música, bordão de abertura e do final), salvar para depois. Legenda e cortes no tempo da voz (Whisper local, [ADR 0018](decisions/0018-legenda-sincronizada-com-a-voz.md)) |
 | Trocar imagem (`/projeto/:id/imagens`) | ✅ | Uma cena por vez: sugestões da internet já buscadas (clique e usa), colar, arrastar, link, Google ou biblioteca |
 | Publicar (modal) | ✅ | Legenda do post pela IA, render MP4 no Remotion com progresso, baixar MP4, publicar no Instagram (Reels) e no YouTube (Shorts) |
 | Projetos (`/projetos`) | ✅ | Filtros: no roteiro, faltam imagens, prontos, salvos, publicados |
@@ -55,7 +55,7 @@ Dados do fluxo novo ficam em `backend/data/`: `short_projects/`, `library/` (ima
 
 Especificação: [AUTO_EDIT.md](AUTO_EDIT.md)
 
-- [ ] **M1: protótipo Remotion.** ⚠️ Prévia pronta: `frontend/src/video/` (FullImage, Evidence, legendas, setas/X/círculos, figurinhas, sons, música) no `@remotion/player`, com estilos como configuração. Render MP4 pronto (`frontend/scripts/render.mjs`, chamado por `backend/src/services/shorts/render.ts`). Falta a transcrição (Whisper).
+- [ ] **M1: protótipo Remotion.** ⚠️ Prévia pronta: `frontend/src/video/` (FullImage, Evidence, legendas, setas/X/círculos, figurinhas, sons, música) no `@remotion/player`, com estilos como configuração. Render MP4 pronto (`frontend/scripts/render.mjs`, chamado por `backend/src/services/shorts/render.ts`). Transcrição com whisper.cpp local: legenda e cortes no tempo da voz ([ADR 0018](decisions/0018-legenda-sincronizada-com-a-voz.md)).
   - Original: pacote `video/` com `FullImage`, `Evidence` e `Caption`, e **estilos como arquivo de configuração desde o início** (o `comentario-anime` primeiro); áudio + pasta de imagens → Whisper → batidas de 2 a 4 palavras → **prévia no `@remotion/player`** + render MP4 no backend. Sem LLM.
 - [x] Estrutura de **projetos** (`data/short_projects/`, com histórico de ajustes e desfazer). Jobs em background ainda não.
   - Original: (`data/projects/<id>/`) com versões do plano e jobs em background.

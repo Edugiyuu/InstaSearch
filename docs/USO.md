@@ -74,7 +74,12 @@ O que você escolhe fica travado: montar de novo ou pedir ajustes não troca. Na
 
 O chat também troca: "põe o fahhh no X", "tira o som da cena 3", "vine boom no final". Ele recebe a lista dos seus efeitos e usa o nome exato.
 
-A legenda completa usa um tempo **estimado** por palavra (proporcional ao tamanho da palavra dentro da cena). Ela fica exata quando a transcrição (Whisper) entrar.
+**Legenda e cortes no tempo da sua voz** ([ADR 0018](decisions/0018-legenda-sincronizada-com-a-voz.md)): quando você envia a voz, o app transcreve o áudio com o Whisper, no seu computador e em segundo plano, e casa o que ouviu com o roteiro. Cada cena começa quando a primeira palavra dela é falada, e na legenda completa cada palavra acende quando é dita. O texto continua o do roteiro, então nomes saem com a grafia certa mesmo que o Whisper ouça "Sucuna".
+
+- Na primeira vez, o app baixa o Whisper e o modelo `small` (~490 MB) para `backend/tools/whisper/`. Dá para baixar antes em Configurações → Transcrição da voz.
+- Transcrever leva mais ou menos o tempo do áudio (no processador). Enquanto isso, e se falhar, o vídeo usa o tempo **estimado** (proporcional ao número de palavras), e a revisão diz isso em "O que a IA montou".
+- Se você improvisar e a fala não bater com o roteiro, a revisão diz quantas palavras ficaram com tempo estimado.
+- Projetos de antes: em "O que a IA montou", **sincronizar com a voz**.
 
 ### Quem escolhe as imagens
 

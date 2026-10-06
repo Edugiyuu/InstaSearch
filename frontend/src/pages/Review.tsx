@@ -22,12 +22,45 @@ import { AiBadge, Segmented, Spinner, useToast } from '../components/flow'
 import PublishModal from '../components/PublishModal'
 import { useCatchphrases, useLibrary, useProject, useSounds, useStyles } from '../hooks/useShorts'
 import { ShortPlayer, ShortPlayerHandle } from '../video/ShortPlayer'
+import { voiceTiming } from '../video/timeline'
 import './Review.css'
 
 /** "se ligaa · clipe pronto · 3,2s" na lista de bordões (sem repetir o tipo quando o nome já é ele) */
 const catchphraseLabel = (c: Catchphrase) => {
   const kind = CATCHPHRASE_KIND_LABEL[c.kind].toLowerCase()
   return [c.name, c.name.toLowerCase() === kind ? null : kind, `${c.duration.toFixed(1).replace('.', ',')}s`].filter(Boolean).join(' · ')
+}
+
+/**
+ * A legenda está no tempo da voz? (ADR 0018) Diz a verdade sobre o tempo usado no vídeo:
+ * sincronizado, sincronizando ou estimado, e quantas palavras não bateram com o roteiro.
+ */
+function VoiceSync({ project, onSync }: { project: ShortProject; onSync: () => void }) {
+  if (!project.audioFile) return null
+  const t = project.transcript?.audioFile === project.audioFile ? project.transcript : undefined
+  const retry = (label: string) => <button className="act" onClick={onSync}>{label}</button>
+
+  if (t?.status === 'pendente' || t?.status === 'transcrevendo') {
+    const pct = t.progress ? ` · ${Math.round(t.progress * 100)}%` : ''
+    return (
+      <li>
+        <Spinner /> {t.stage === 'baixando' ? `Baixando o Whisper (só na primeira vez)${pct}` : 'Sincronizando a legenda com a sua voz…'}
+      </li>
+    )
+  }
+  if (t?.status === 'erro') return <li>Legenda com tempo estimado: a sincronia falhou ({t.error}) · {retry('tentar de novo')}</li>
+  if (t?.status === 'pronto') {
+    const voice = voiceTiming(project)
+    if (!voice) return <li>A voz não bateu com o roteiro; legenda com tempo estimado · {retry('sincronizar de novo')}</li>
+    const missing = voice.total - voice.matched
+    return (
+      <li>
+        Legenda no tempo da voz <span className="c-success">✓</span>
+        {missing > 0 && <span className="c-muted"> · {missing} {missing === 1 ? 'palavra não bateu' : 'palavras não bateram'} com o roteiro (tempo estimado)</span>}
+      </li>
+    )
+  }
+  return <li>Legenda com tempo estimado · {retry('sincronizar com a voz')}</li>
 }
 
 const SUGGESTIONS = ['Gancho mais curto', 'Final mais polêmico', 'Mais setas e X', 'Tira uma cena do meio', 'Legenda menor']
@@ -56,6 +89,21 @@ function Review() {
   }, [project?.history.length, working])
 
   const onBeatChange = useCallback((i: number) => setCurrent(i), [])
+
+  // enquanto a voz é transcrita, acompanha o andamento; só o transcript muda, para não
+  // desfazer o que o usuário estiver editando na tela
+  const syncing = project?.transcript?.status === 'pendente' || project?.transcript?.status === 'transcrevendo'
+  const projectId = project?.id
+  useEffect(() => {
+    if (!syncing || !projectId) return
+    const t = setInterval(() => {
+      shortsApi
+        .getProject(projectId)
+        .then(fresh => setProject(p => (p ? { ...p, transcript: fresh.transcript } : p)))
+        .catch(() => undefined)
+    }, 3000)
+    return () => clearInterval(t)
+  }, [syncing, projectId, setProject])
 
   if (loading) return <div className="page"><Spinner /></div>
   if (!project) return <div className="page"><p className="form-error">{error}</p></div>
@@ -295,6 +343,15 @@ function Review() {
                   <>Sem voz ainda · <Link to={`/projeto/${project.id}/roteiro`} className="act">subir áudio</Link></>
                 )}
               </li>
+              <VoiceSync
+                project={project}
+                onSync={() =>
+                  shortsApi
+                    .transcribe(project.id)
+                    .then(fresh => setProject(p => (p ? { ...p, transcript: fresh.transcript } : p)))
+                    .catch(e => toast.show(errorMessage(e)))
+                }
+              />
             </ul>
           </div>
 

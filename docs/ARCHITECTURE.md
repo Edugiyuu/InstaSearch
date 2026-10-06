@@ -60,6 +60,7 @@ backend/
 │   │   │   ├── llm.ts                  # provedores de IA: Gemini → Claude API → Claude Code (Sonnet 5.5)
 │   │   │   ├── shortsAI.ts             # prompts: roteiro, ajustes, escolha de imagens, catalogação
 │   │   │   ├── sceneEdits.ts           # chat: cenas citadas no pedido, desfaz o resto, descreve a mudança
+│   │   │   ├── transcription.ts        # whisper.cpp local: instala, converte o áudio e devolve as palavras com tempo
 │   │   │   ├── projects.ts             # projetos, montagem, ajustes, desfazer, música
 │   │   │   ├── library.ts              # imagens e figurinhas: busca, escolha por cena, uso, fila de catalogação
 │   │   │   ├── sounds.ts               # efeitos sonoros e músicas, importação por link (yt-dlp)
@@ -100,7 +101,7 @@ Respostas de sucesso seguem o formato `{ "success": true, "data": ... }`.
 frontend/src/
 ├── App.tsx              # rotas (React Router 6, layout routes)
 ├── api/shorts.ts        # tipos e cliente do fluxo tema → Short (espelha backend/src/services/shorts/types.ts)
-├── video/               # composição Remotion: ShortVideo (cenas, efeitos, figurinhas, legendas, sons), timeline, ShortPlayer
+├── video/               # composição Remotion: ShortVideo (cenas, efeitos, figurinhas, legendas, sons), timeline, ShortPlayer, align (roteiro × voz)
 ├── components/          # AppShell (menu lateral), PublishModal, TagEditor, flow.tsx (stepper, miniaturas, botões segmentados)...
 ├── pages/               # uma página por rota (ver ROADMAP.md, "Estado atual por tela")
 ├── hooks/               # useShorts (projetos, biblioteca, sons, estilos), useVideoPublish, usePosts, useMyInstagram...
