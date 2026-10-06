@@ -1,6 +1,6 @@
 # 0015 — Framework de testes
 
-**Status:** Proposta · **Data:** 2026-10-05
+**Status:** Aceita · **Data:** 2026-10-05
 
 ## Contexto
 
@@ -13,7 +13,9 @@ O que pesa na escolha:
 
 ## Decisão
 
-_A decidir pelo usuário._ Opções abaixo; a recomendação do Claude é a **B**.
+Usar o **Jest** (opção A), escolhido pelo usuário, que está começando do zero em testes unitários. A recomendação do Claude era o Vitest (opção B), pela configuração mais simples com ESM e TypeScript; o custo dessa configuração extra foi aceito.
+
+Começa pelo **backend**, com `ts-jest` no modo ESM e testes ao lado do arquivo testado (`arquivo.test.ts`). O frontend fica para uma tarefa seguinte.
 
 ## Alternativas consideradas
 

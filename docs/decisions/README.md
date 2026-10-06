@@ -44,5 +44,5 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0012](0012-render-em-processo-separado.md) | Render em MP4 num processo separado, com o código do frontend | Aceita |
 | [0013](0013-workflow-kanban-github-projects.md) | Workflow Kanban no GitHub Projects | Substituída por 0014 |
 | [0014](0014-board-em-arquivo-e-commit-por-tarefa.md) | Board em arquivo e um commit por tarefa, sem branches nem PRs | Aceita |
-| [0015](0015-framework-de-testes.md) | Framework de testes (Jest ou Vitest) | Proposta |
+| [0015](0015-framework-de-testes.md) | Framework de testes: Jest | Aceita |
 | [0016](0016-bordoes-de-abertura-e-final.md) | Bordões de abertura e de final na biblioteca | Aceita |

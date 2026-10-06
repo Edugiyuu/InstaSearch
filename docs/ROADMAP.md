@@ -47,7 +47,7 @@ Dados do fluxo novo ficam em `backend/data/`: `short_projects/`, `library/` (ima
 **Código**
 - [ ] Migrar `@google/generative-ai` → `@google/genai`; remover a dependência `openai`, que não é usada.
 - [ ] Remover ou decidir o destino de `backend/data/virtual_characters/` (sobra de uma funcionalidade abandonada).
-- [ ] Configurar testes de verdade (Vitest); hoje `npm test` só imprime uma mensagem.
+- [ ] ⚠️ Testes com Jest ([ADR 0015](decisions/0015-framework-de-testes.md)): configurado no backend (`npm test`), com os primeiros testes em `text.test.ts`. Falta o frontend e cobrir a lógica principal.
 - [x] Documentação reescrita com o novo propósito.
 - [x] `.env.example` corrigido (Gemini e Cloudinary; sem OpenAI).
 

@@ -57,6 +57,7 @@ npm --prefix frontend run dev    # app em localhost:5173
 npx tsc --noEmit -p backend      # checagem de tipos
 npx tsc --noEmit -p frontend
 npm --prefix frontend run lint
+npm --prefix backend test       # testes (Jest; ver ADR 0015)
 ```
 
-Problema conhecido: o `tsc` do backend acusa variáveis não usadas (`noUnusedLocals`) em arquivos antigos; não são erros novos.
+Problema conhecido: o `tsc` do backend acusa 18 erros antigos (variáveis não usadas e funções sem `return` em todos os caminhos); não são erros novos. Está no BOARD.
