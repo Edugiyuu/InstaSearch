@@ -39,6 +39,8 @@ export interface Beat {
   text: string
   /** O que a imagem precisa mostrar, em linguagem natural. */
   query: string
+  /** Etiquetas do Danbooru em inglês para achar a imagem na internet (hands_in_pockets, smile…). */
+  searchTags?: string[]
   characters: string[]
   scene: SceneKind
   effect: Effect
@@ -54,6 +56,8 @@ export interface Beat {
   /** Efeito sonoro pedido pela IA (ex.: "whoosh", "boom"). */
   sfx?: string
   sfxId?: string
+  /** true quando o usuário (no editor ou pelo chat) escolheu o som; a montagem não troca mais. */
+  sfxLocked?: boolean
   /** true quando o usuário escolheu a imagem; a montagem não troca mais. */
   locked?: boolean
 }
@@ -64,6 +68,21 @@ export interface ProjectSettings {
   caption: CaptionMode
   /** Quem escolhe as imagens: a IA lendo o roteiro (padrão) ou a busca por palavras. */
   imagePicker?: 'ia' | 'palavras'
+  /** Final com a foto do perfil, o nome e o bordão de "se inscreve" (ver Seu canal em Configurações). */
+  outro?: boolean
+}
+
+export type AiProvider = 'gemini' | 'claude' | 'claude-code'
+
+/** Quem respondeu um pedido de IA; aparece na tela. */
+export interface AiCredit {
+  provider: AiProvider
+  model: string
+  /** true quando o primeiro da fila falhou e esta IA entrou de reserva */
+  fallback: boolean
+  /** buscas na web feitas antes de responder */
+  searches?: number
+  at: string
 }
 
 export interface AdjustEntry {
@@ -71,6 +90,8 @@ export interface AdjustEntry {
   request: string
   reply: string
   at: string
+  /** IA que fez o ajuste */
+  ai?: AiCredit
 }
 
 /** salvo = pronto, guardado para publicar depois */
@@ -94,7 +115,16 @@ export interface ShortProject {
   /** Duração real do áudio, medida no navegador. */
   audioDuration?: number
   postCaption?: string
+  /** Último MP4 renderizado; key = hash da composição (muda quando o vídeo muda). */
+  render?: { file: string; key: string; at: string }
+  /** Onde o vídeo já foi publicado. */
+  published?: {
+    instagram?: { id: string; url?: string; at: string }
+    youtube?: { id: string; url: string; at: string }
+  }
   history: AdjustEntry[]
+  /** Qual IA escreveu o roteiro e qual escolheu as imagens. */
+  ai?: { script?: AiCredit; images?: AiCredit }
   /** Versões anteriores das batidas para o "Desfazer". */
   undo: Beat[][]
   createdAt: string
@@ -110,11 +140,33 @@ export interface Region {
   h: number
 }
 
-export type MediaKind = 'imagem' | 'meme' | 'print' | 'logo' | 'figurinha'
+/** video = episódio ou trecho enviado; cena = um momento desse vídeo (o que entra nas batidas). */
+export type MediaKind = 'imagem' | 'meme' | 'print' | 'logo' | 'figurinha' | 'video' | 'cena'
+
+/** Andamento da divisão de um vídeo em cenas. */
+export interface VideoProcessing {
+  stage: 'preparando' | 'cortes' | 'catalogando' | 'pronto' | 'erro'
+  /** 0 a 1 */
+  progress: number
+  error?: string
+}
 
 export interface LibraryImage {
   id: string
+  /** Arquivo da imagem; no vídeo e nas cenas, o vídeo (as cenas dividem o arquivo do vídeo). */
   file: string
+  /** Miniatura (jpg) do vídeo e das cenas. */
+  thumb?: string
+  /** Trecho do vídeo, em segundos (só nas cenas). */
+  clip?: { start: number; end: number }
+  /** Vídeo de onde a cena saiu. */
+  videoId?: string
+  /** Duração do vídeo, em segundos. */
+  duration?: number
+  /** Só no vídeo, enquanto é dividido em cenas. */
+  processing?: VideoProcessing
+  /** De qual anime/episódio é (ajuda a IA a reconhecer os personagens). */
+  hint?: string
   name: string
   kind: MediaKind
   characters: string[]
@@ -133,6 +185,8 @@ export interface AssemblyLogEntry {
   beatId: string
   message: string
   status: ImageStatus
+  /** Na linha 'ia': qual IA escolheu as imagens */
+  ai?: AiCredit
 }
 
 export type SoundKind = 'sfx' | 'musica'

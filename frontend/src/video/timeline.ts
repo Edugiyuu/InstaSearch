@@ -1,9 +1,11 @@
-import type { Beat, LibraryImage, ProjectSettings, Region, ShortProject, SoundItem } from '../api/shorts'
-import { imageUrl, soundUrl } from '../api/shorts'
+import type { Beat, Channel, LibraryImage, ProjectSettings, Region, ShortProject, SoundItem } from '../api/shorts'
+import { audioUrl, channelPhotoUrl, imageUrl, mediaUrl, soundUrl } from '../api/shorts'
 
 export const FPS = 30
 export const WIDTH = 1080
 export const HEIGHT = 1920
+/** Duração do final com o bordão (2,5 s). */
+export const OUTRO_FRAMES = 75
 
 /** O que a composição precisa de cada batida: o texto, a imagem e quando entra. */
 export interface TimedBeat {
@@ -11,11 +13,20 @@ export interface TimedBeat {
   index: number
   from: number
   frames: number
-  image?: { src: string; regions: Region[] }
+  /** clip: a batida usa uma cena de vídeo; src é o vídeo e o trecho vai de clip.start a clip.end. */
+  image?: { src: string; regions: Region[]; clip?: { start: number; end: number }; poster?: string }
   /** Figurinha no lugar do emoji. */
   stickerSrc?: string
   /** Efeito sonoro que toca no corte. */
   sfxSrc?: string
+}
+
+/** Final do vídeo: foto do perfil, nome, bordão e botão. */
+export interface OutroProps {
+  photoSrc?: string
+  name: string
+  text: string
+  button: string
 }
 
 export interface ShortVideoProps extends Record<string, unknown> {
@@ -23,6 +34,7 @@ export interface ShortVideoProps extends Record<string, unknown> {
   settings: ProjectSettings
   audioSrc?: string
   musicSrc?: string
+  outro?: OutroProps
 }
 
 const words = (text: string) => text.split(/\s+/).filter(Boolean).length
@@ -49,7 +61,11 @@ export function buildTimeline(project: ShortProject, images: Map<string, Library
       index,
       from,
       frames,
-      image: img ? { src: imageUrl(img), regions: img.regions } : undefined,
+      image: img
+        ? img.kind === 'cena' && img.clip
+          ? { src: mediaUrl(img), regions: img.regions, clip: img.clip, poster: imageUrl(img) }
+          : { src: imageUrl(img), regions: img.regions }
+        : undefined,
       stickerSrc: sticker ? imageUrl(sticker) : undefined,
       sfxSrc: sfx ? soundUrl(sfx) : undefined,
     }
@@ -58,6 +74,30 @@ export function buildTimeline(project: ShortProject, images: Map<string, Library
   })
 
   return { beats, durationInFrames: Math.max(1, from) }
+}
+
+/** Props da composição: as mesmas na prévia e no render em MP4. O final entra depois da última cena. */
+export function shortVideoProps(
+  project: ShortProject,
+  images: Map<string, LibraryImage>,
+  sounds?: Map<string, SoundItem>,
+  channel?: Channel | null,
+) {
+  const timeline = buildTimeline(project, images, sounds)
+  const music = project.musicId ? sounds?.get(project.musicId) : undefined
+  const outro: OutroProps | undefined =
+    project.settings.outro && channel
+      ? { photoSrc: channelPhotoUrl(channel), name: channel.name, text: channel.text, button: channel.button }
+      : undefined
+  const props: ShortVideoProps = {
+    beats: timeline.beats,
+    settings: project.settings,
+    audioSrc: audioUrl(project),
+    musicSrc: music ? soundUrl(music) : undefined,
+    ...(outro ? { outro } : {}),
+  }
+  const durationInFrames = timeline.durationInFrames + (outro ? OUTRO_FRAMES : 0)
+  return { timeline, props, durationInFrames }
 }
 
 const normalize = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')

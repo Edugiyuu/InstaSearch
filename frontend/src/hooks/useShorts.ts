@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { errorMessage, LibraryImage, ShortProject, shortsApi, ShortStyle, SoundItem } from '../api/shorts'
+import { Channel, errorMessage, LibraryImage, ShortProject, shortsApi, ShortStyle, SoundItem } from '../api/shorts'
 
 export function useProject(id: string | undefined) {
   const [project, setProject] = useState<ShortProject | null>(null)
@@ -120,4 +120,34 @@ export function useSounds() {
 
   const byId = useMemo(() => new Map(sounds.map(s => [s.id, s])), [sounds])
   return { sounds, setSounds, byId, loading, error, reload }
+}
+
+// "Seu canal" é um só para o app inteiro: um cache compartilhado, e quem muda avisa os outros
+let channelCache: Channel | null = null
+let channelLoad: Promise<Channel | null> | null = null
+const channelListeners = new Set<(c: Channel | null) => void>()
+
+function publishChannel(c: Channel | null) {
+  channelCache = c
+  channelListeners.forEach(fn => fn(c))
+}
+
+export function useChannel() {
+  const [channel, setChannel] = useState<Channel | null>(channelCache)
+
+  useEffect(() => {
+    channelListeners.add(setChannel)
+    if (!channelCache) {
+      channelLoad ??= shortsApi.getChannel().catch(() => null)
+      channelLoad.then(c => {
+        channelLoad = null
+        if (c) publishChannel(c)
+      })
+    }
+    return () => {
+      channelListeners.delete(setChannel)
+    }
+  }, [])
+
+  return { channel, setChannel: publishChannel }
 }

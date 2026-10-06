@@ -3,6 +3,7 @@ import * as shortsController from '../controllers/shortsController.js'
 import { AUDIO_DIR } from '../services/shorts/projects.js'
 import { LIBRARY_FILES_DIR } from '../services/shorts/library.js'
 import { SOUND_FILES_DIR } from '../services/shorts/sounds.js'
+import { CHANNEL_FILES_DIR } from '../services/shorts/channel.js'
 import * as profileController from '../controllers/profileController.js'
 import * as analysisController from '../controllers/analysisController.js'
 import * as contentController from '../controllers/contentController.js'
@@ -16,6 +17,7 @@ import * as videoPromptController from '../controllers/videoPromptController.js'
 import * as videoController from '../controllers/videoController.js'
 import * as schedulerController from '../controllers/schedulerController.js'
 import * as videoAnalysisController from '../controllers/videoAnalysisController.js'
+import * as youtubeController from '../controllers/youtubeController.js'
 
 const router = Router()
 
@@ -50,6 +52,12 @@ router.get('/instagram/account', instagramAuthController.getConnectedAccount)
 router.delete('/instagram/account', instagramAuthController.disconnectAccount)
 router.post('/instagram/account/refresh', instagramAuthController.refreshAccountData)
 router.post('/instagram/connect-token', instagramTokenController.connectWithToken)
+
+// YouTube (OAuth do Google + envio de Shorts)
+router.get('/youtube/status', youtubeController.getStatus)
+router.get('/youtube/auth-url', youtubeController.getAuthUrl)
+router.get('/youtube/callback', youtubeController.handleCallback)
+router.delete('/youtube/account', youtubeController.disconnect)
 
 // Instagram Data (Graph API)
 router.get('/instagram/data/profile', instagramDataController.getInstagramProfile)
@@ -105,8 +113,22 @@ router.post('/shorts/projects/:id/assemble', shortsController.assemble)
 router.post('/shorts/projects/:id/adjust', shortsController.adjust)
 router.post('/shorts/projects/:id/undo', shortsController.undo)
 router.put('/shorts/projects/:id/beats/:beatId/image', shortsController.setBeatImage)
+router.put('/shorts/projects/:id/beats/:beatId/sfx', shortsController.setBeatSfx)
+router.post('/shorts/projects/:id/auto-images', shortsController.autoImages)
 router.post('/shorts/projects/:id/audio', ...shortsController.uploadAudio)
+router.post('/shorts/projects/:id/render', shortsController.startRender)
+router.get('/shorts/projects/:id/render', shortsController.getRender)
+router.get('/shorts/projects/:id/video', shortsController.downloadVideo)
+router.post('/shorts/projects/:id/publish/instagram', shortsController.publishInstagram)
+router.post('/shorts/projects/:id/publish/youtube', shortsController.publishYouTube)
 router.use('/shorts/audio', express.static(AUDIO_DIR))
+
+// Seu canal: foto, nome e bordão do final dos vídeos
+router.get('/channel', shortsController.getChannel)
+router.put('/channel', shortsController.updateChannel)
+router.post('/channel/photo', ...shortsController.uploadChannelPhoto)
+router.post('/channel/photo/instagram', shortsController.channelPhotoFromInstagram)
+router.use('/channel/files', express.static(CHANNEL_FILES_DIR, { maxAge: '7d' }))
 
 router.get('/shorts/styles', shortsController.listStyles)
 router.post('/shorts/styles', shortsController.saveStyle)
@@ -116,7 +138,11 @@ router.delete('/shorts/styles/:id', shortsController.deleteStyle)
 // Biblioteca de imagens
 router.get('/library', shortsController.listImages)
 router.post('/library/upload', ...shortsController.uploadImages)
+router.post('/library/upload-video', ...shortsController.uploadVideo)
+router.post('/library/:id/reprocess', shortsController.reprocessVideo)
 router.post('/library/import-url', shortsController.importImageUrl)
+router.get('/library/web-search', shortsController.webImageSearch)
+router.get('/library/web-thumb', shortsController.webThumb)
 router.put('/library/:id', shortsController.updateImage)
 router.post('/library/:id/recatalog', shortsController.recatalogImage)
 router.delete('/library/:id', shortsController.deleteImage)

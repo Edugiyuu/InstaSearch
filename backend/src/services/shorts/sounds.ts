@@ -8,6 +8,7 @@ import { generateId } from '../../utils/idGenerator.js'
 import { logger } from '../../utils/logger.js'
 import { catalogSound, SFX } from './shortsAI.js'
 import type { SoundItem, SoundKind } from './types.js'
+import { normalize } from './text.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const SOUND_FILES_DIR = path.join(__dirname, '../../../data/sounds/files')
@@ -166,4 +167,25 @@ export async function syncSoundUsage(projectId: string, used: Set<string>) {
     if (used.has(s.id) && !has) await storage.update(s.id, { usedIn: [...s.usedIn, projectId] })
     if (!used.has(s.id) && has) await storage.update(s.id, { usedIn: s.usedIn.filter(p => p !== projectId) })
   }
+}
+
+// ── Efeitos sonoros: tipos ───────────────────────────────
+
+/** Palavras do nome/etiquetas que fazem um som contar como cada tipo de efeito. */
+export const SFX_WORDS: Record<string, string[]> = {
+  whoosh: ['whoosh', 'swoosh', 'swish', 'woosh', 'transicao', 'vento'],
+  boom: ['boom', 'explos', 'bass', 'grave', 'impacto'],
+  impacto: ['impacto', 'impact', 'hit', 'punch', 'soco', 'boom'],
+  pop: ['pop', 'bolha', 'bubble', 'plop'],
+  ding: ['ding', 'bell', 'sino', 'plim'],
+  erro: ['erro', 'error', 'wrong', 'fail', 'buzz', 'errado'],
+  risada: ['risada', 'laugh', 'rindo', 'haha', 'sitcom'],
+  suspense: ['suspense', 'tensao', 'riser', 'drone', 'tenso'],
+  glitch: ['glitch', 'estatica', 'static', 'distor'],
+  click: ['click', 'clique', 'camera', 'shutter', 'foto'],
+}
+
+export function soundIsType(sound: SoundItem, type: string) {
+  const hay = normalize(`${sound.name} ${sound.tags.join(' ')}`)
+  return (SFX_WORDS[type] ?? [type]).some(w => hay.includes(w))
 }

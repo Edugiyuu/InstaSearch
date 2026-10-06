@@ -31,6 +31,8 @@ export interface Beat {
   say: string
   text: string
   query: string
+  /** Etiquetas do Danbooru que a IA escreveu para achar a imagem na internet */
+  searchTags?: string[]
   characters: string[]
   scene: SceneKind
   effect: Effect
@@ -43,6 +45,8 @@ export interface Beat {
   stickerId?: string
   sfx?: string
   sfxId?: string
+  /** o usuário escolheu o som (editor ou chat); a montagem não troca */
+  sfxLocked?: boolean
   locked?: boolean
 }
 
@@ -54,6 +58,42 @@ export interface ProjectSettings {
   caption: CaptionMode
   /** Quem escolhe as imagens: a IA lendo o roteiro (padrão) ou a busca por palavras. */
   imagePicker?: ImagePicker
+  /** Final com a foto do perfil, o nome e o bordão (Seu canal, em Configurações). */
+  outro?: boolean
+}
+
+/** Quem respondeu um pedido de IA (salvo no projeto pelo backend). */
+export interface AiCredit {
+  provider: 'gemini' | 'claude' | 'claude-code'
+  model: string
+  /** o primeiro da fila falhou e esta IA entrou de reserva */
+  fallback: boolean
+  /** buscas na web feitas antes de responder */
+  searches?: number
+  at: string
+}
+
+/** "claude-sonnet-5-5" → "Claude Sonnet 5.5"; "gemini-2.5-flash" → "Gemini 2.5 Flash" */
+export function aiName(ai: AiCredit) {
+  const pretty = ai.model
+    .replace(/^claude-/, 'Claude ')
+    .replace(/-(\d+)-(\d+)$/, ' $1.$2')
+    .replace(/^gemini-/, 'Gemini ')
+    .split(/[\s-]+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+  const where = ai.provider === 'claude-code' ? ' (seu plano)' : ai.provider === 'claude' ? ' (API)' : ''
+  return pretty + where
+}
+
+/** Detalhes que aparecem junto do nome: reserva e buscas na web. */
+export function aiDetails(ai: AiCredit) {
+  const parts: string[] = []
+  if (ai.fallback) parts.push('reserva, o Gemini estava fora')
+  if (ai.searches !== undefined) {
+    parts.push(ai.searches === 0 ? 'sem pesquisar na web' : `${ai.searches} ${ai.searches === 1 ? 'busca' : 'buscas'} na web`)
+  }
+  return parts
 }
 
 export interface AdjustEntry {
@@ -61,6 +101,7 @@ export interface AdjustEntry {
   request: string
   reply: string
   at: string
+  ai?: AiCredit
 }
 
 export type ProjectStatus = 'roteiro' | 'revisao' | 'salvo' | 'agendado' | 'publicado'
@@ -81,7 +122,16 @@ export interface ShortProject {
   musicId?: string | null
   audioDuration?: number
   postCaption?: string
+  /** Último MP4 renderizado; key = hash da composição (muda quando o vídeo muda). */
+  render?: { file: string; key: string; at: string }
+  /** Onde o vídeo já foi publicado. */
+  published?: {
+    instagram?: { id: string; url?: string; at: string }
+    youtube?: { id: string; url: string; at: string }
+  }
   history: AdjustEntry[]
+  /** Qual IA escreveu o roteiro e qual escolheu as imagens. */
+  ai?: { script?: AiCredit; images?: AiCredit }
   undo: Beat[][]
   createdAt: string
   updatedAt: string
@@ -95,11 +145,54 @@ export interface Region {
   h: number
 }
 
-export type MediaKind = 'imagem' | 'meme' | 'print' | 'logo' | 'figurinha'
+/** video = episódio ou trecho enviado; cena = um momento desse vídeo (o que entra nas batidas). */
+export type MediaKind = 'imagem' | 'meme' | 'print' | 'logo' | 'figurinha' | 'video' | 'cena'
+
+export interface VideoProcessing {
+  stage: 'preparando' | 'cortes' | 'catalogando' | 'pronto' | 'erro'
+  progress: number
+  error?: string
+}
+
+/** Sugestão da internet para uma cena (GET /library/web-search). */
+export interface WebImage {
+  id: string
+  thumb: string
+  url: string
+  width?: number
+  height?: number
+  source: 'google' | 'web' | 'manga' | 'anilist' | 'danbooru'
+  title: string
+  page?: string
+  characters?: string[]
+}
+
+export interface WebSearchResult {
+  images: WebImage[]
+  searched: string[]
+  google: boolean
+}
+
+export const WEB_SOURCE_LABEL: Record<WebImage['source'], string> = {
+  google: 'Google',
+  web: 'Internet',
+  manga: 'Mangá',
+  anilist: 'Arte oficial',
+  danbooru: 'Danbooru',
+}
 
 export interface LibraryImage {
   id: string
+  /** Arquivo da imagem; no vídeo e nas cenas, o vídeo. */
   file: string
+  /** Miniatura do vídeo e das cenas. */
+  thumb?: string
+  /** Trecho do vídeo, em segundos (só nas cenas). */
+  clip?: { start: number; end: number }
+  videoId?: string
+  duration?: number
+  processing?: VideoProcessing
+  hint?: string
   name: string
   kind: MediaKind
   characters: string[]
@@ -125,13 +218,22 @@ export interface SoundItem {
   createdAt: string
 }
 
+
 export interface AssemblyLogEntry {
   beatId: string
   message: string
   status: ImageStatus
+  /** Na linha 'ia': qual IA escolheu as imagens */
+  ai?: AiCredit
 }
 
-export const imageUrl = (img: Pick<LibraryImage, 'file'>) => `/api/library/files/${img.file}`
+/** O que se mostra como imagem: a miniatura nos vídeos e cenas, o próprio arquivo nas imagens. */
+export const imageUrl = (img: Pick<LibraryImage, 'file' | 'thumb'>) => `/api/library/files/${img.thumb ?? img.file}`
+/** O arquivo em si (o vídeo, nas cenas). */
+export const mediaUrl = (img: Pick<LibraryImage, 'file'>) => `/api/library/files/${img.file}`
+export const isClip = (img: Pick<LibraryImage, 'kind'>) => img.kind === 'cena'
+/** Miniatura de uma sugestão da internet, carregada pelo backend (o CDN do Danbooru recusa o navegador). */
+export const webThumbUrl = (img: Pick<WebImage, 'thumb'>) => `/api/library/web-thumb?url=${encodeURIComponent(img.thumb)}`
 export const soundUrl = (s: Pick<SoundItem, 'file'>) => `/api/sounds/files/${s.file}`
 export const audioUrl = (p: Pick<ShortProject, 'audioFile'>) => (p.audioFile ? `/api/shorts/audio/${p.audioFile}` : undefined)
 
@@ -155,11 +257,40 @@ export const shortsApi = {
   undo: (id: string) => data<ShortProject>(api.post(`/shorts/projects/${id}/undo`)),
   setBeatImage: (id: string, beatId: string, imageId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/image`, { imageId })),
+  /** Efeito sonoro de uma cena: id de um som, null = sem som, 'auto' = a montagem escolhe. */
+  setBeatSfx: (id: string, beatId: string, sfxId: string | null) =>
+    data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sfx`, { sfxId })),
+  /** Busca na internet e coloca imagem em todas as cenas que precisam (sem gastar IA). */
+  autoImages: (id: string) =>
+    data<{ project: ShortProject; added: number; total: number; results: { beatId: string; ok: boolean; message: string }[] }>(
+      api.post(`/shorts/projects/${id}/auto-images`, {}, { timeout: 300000 }),
+    ),
   uploadAudio: (id: string, file: File) => {
     const form = new FormData()
     form.append('audio', file)
     return data<ShortProject>(api.post(`/shorts/projects/${id}/audio`, form, { headers: { 'Content-Type': 'multipart/form-data' } }))
   },
+
+  /** Começa o render em MP4 com as props da prévia (ou devolve o MP4 que já bate com elas). */
+  startRender: (id: string, props: Record<string, unknown>) => data<RenderJob>(api.post(`/shorts/projects/${id}/render`, { props })),
+  getRender: (id: string, key?: string) => data<RenderJob | null>(api.get(`/shorts/projects/${id}/render`, { params: key ? { key } : {} })),
+  publishInstagram: (id: string, caption: string) =>
+    data<ShortProject>(api.post(`/shorts/projects/${id}/publish/instagram`, { caption }, { timeout: 600000 })),
+  publishYouTube: (id: string, input: { title: string; description: string; privacy: YouTubePrivacy }) =>
+    data<ShortProject>(api.post(`/shorts/projects/${id}/publish/youtube`, input, { timeout: 1200000 })),
+
+  getChannel: () => data<Channel>(api.get('/channel')),
+  updateChannel: (changes: Partial<Channel>) => data<Channel>(api.put('/channel', changes)),
+  uploadChannelPhoto: (file: File) => {
+    const form = new FormData()
+    form.append('photo', file)
+    return data<Channel>(api.post('/channel/photo', form, { headers: { 'Content-Type': 'multipart/form-data' } }))
+  },
+  channelPhotoFromInstagram: () => data<Channel>(api.post('/channel/photo/instagram', {}, { timeout: 30000 })),
+
+  youtubeStatus: () => data<YouTubeStatus>(api.get('/youtube/status')),
+  youtubeAuthUrl: () => data<{ url: string }>(api.get('/youtube/auth-url')),
+  youtubeDisconnect: () => api.delete('/youtube/account'),
 
   aiStatus: () => data<AiStatus>(api.get('/shorts/ai-status')),
   listStyles: () => data<ShortStyle[]>(api.get('/shorts/styles')),
@@ -176,7 +307,36 @@ export const shortsApi = {
       api.post('/library/upload', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 300000 }),
     )
   },
-  importImageUrl: (url: string) => data<LibraryImage>(api.post('/library/import-url', { url })),
+  /** Envia um episódio ou trecho; a divisão em cenas continua no servidor (acompanhe por listImages). */
+  uploadVideo: (file: File, hint: string, onProgress?: (p: number) => void) => {
+    const form = new FormData()
+    form.append('hint', hint)
+    form.append('video', file, file.name)
+    return data<LibraryImage>(
+      api.post('/library/upload-video', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 0,
+        onUploadProgress: e => onProgress?.(e.total ? e.loaded / e.total : 0),
+      }),
+    )
+  },
+  reprocessVideo: (id: string) => data<LibraryImage>(api.post(`/library/${id}/reprocess`)),
+  importImageUrl: (url: string, extra: { fallbackUrl?: string; name?: string; characters?: string[] } = {}) =>
+    data<LibraryImage>(api.post('/library/import-url', { url, ...extra }, { timeout: 120000 })),
+  searchWebImages: (q: string, opts: { characters?: string[]; tags?: string[]; context?: string; page?: number; projectId?: string } = {}) =>
+    data<WebSearchResult>(
+      api.get('/library/web-search', {
+        params: {
+          q,
+          characters: (opts.characters ?? []).join(','),
+          tags: (opts.tags ?? []).join(','),
+          context: opts.context ?? '',
+          page: opts.page ?? 1,
+          projectId: opts.projectId ?? '',
+        },
+        timeout: 45000,
+      }),
+    ),
   updateImage: (id: string, changes: Partial<LibraryImage>) => data<LibraryImage>(api.put(`/library/${id}`, changes)),
   recatalogImage: (id: string) => data<LibraryImage>(api.post(`/library/${id}/recatalog`)),
   deleteImage: (id: string) => api.delete(`/library/${id}`),
@@ -192,6 +352,35 @@ export const shortsApi = {
     data<SoundItem>(api.post('/sounds/import-url', { url, kind }, { timeout: 240000 })),
   updateSound: (id: string, changes: Partial<SoundItem>) => data<SoundItem>(api.put(`/sounds/${id}`, changes)),
   deleteSound: (id: string) => api.delete(`/sounds/${id}`),
+}
+
+/** Link de download do MP4 renderizado. */
+export const videoDownloadUrl = (projectId: string, key: string) => `/api/shorts/projects/${projectId}/video?v=${key}`
+
+/** Seu canal: o final dos vídeos. */
+export interface Channel {
+  name: string
+  text: string
+  button: string
+  photoFile?: string
+  outroDefault: boolean
+}
+
+export const channelPhotoUrl = (c: Pick<Channel, 'photoFile'>) => (c.photoFile ? `/api/channel/files/${c.photoFile}` : undefined)
+
+export interface RenderJob {
+  key: string
+  stage: 'bundle' | 'render' | 'done' | 'error'
+  /** 0 a 1 */
+  progress: number
+  error?: string
+}
+
+export type YouTubePrivacy = 'public' | 'unlisted' | 'private'
+
+export interface YouTubeStatus {
+  configured: boolean
+  account: { channelId: string; channelTitle: string; thumbnail?: string; connectedAt: string } | null
 }
 
 export interface AiStatus {

@@ -1,6 +1,6 @@
 # Inteligência Artificial no InstaSearch
 
-Onde a IA é usada, como configurar o Gemini e como o app passa para o **Claude Haiku 4.5** quando o Gemini cai ou acaba a cota grátis. Substitui o antigo `GEMINI_SETUP.md`.
+Onde a IA é usada, como configurar o Gemini e como o app passa para o **Claude Sonnet 5.5** (esforço médio) quando o Gemini cai ou acaba a cota grátis. Substitui o antigo `GEMINI_SETUP.md`.
 
 ## Onde a IA é usada
 
@@ -12,7 +12,7 @@ Onde a IA é usada, como configurar o Gemini e como o app passa para o **Claude 
 | Escolher as imagens das cenas | ✅ | roteiro inteiro + catálogo da biblioteca → uma imagem por cena, com motivo e área de zoom | `shortsAI.pickImagesWithAI` |
 | Catalogar imagens e figurinhas | ✅ | imagem → nome, personagens, etiquetas, descrição, áreas (rosto, mão…) | `shortsAI.catalogImage` |
 | Catalogar efeitos sonoros e músicas | ✅ (só Gemini) | áudio → nome e etiquetas | `shortsAI.catalogSound` |
-| Legenda do post | ✅ | título + narração → legenda + hashtags | `aiService.generateCaption` |
+| Legenda do post | ✅ | título + narração → legenda + hashtags (com reserva no Claude, via `llm.askJson`) | `aiService.generateCaption` |
 | Legenda a partir de frames, análise de perfil, hashtags | ✅ legado | ver "Ferramentas antigas" | `aiService.ts` |
 | Transcrição da voz (Whisper) | 📋 | áudio → palavras com tempo | planejado; hoje o tempo das cenas é estimado |
 
@@ -20,19 +20,45 @@ Regra de projeto: **a IA sugere e o usuário aprova.** Nada é publicado sem pas
 
 Gasto típico por vídeo: 1 chamada para o roteiro, 1 para escolher as imagens, 1 por "Peça um ajuste" e 1 por imagem nova catalogada (só uma vez por imagem).
 
+### Pesquisa na web (só no roteiro)
+
+Ao escrever um roteiro do zero, a IA pode **confirmar fatos na web antes de escrever**, para não inventar nomes, idades, capítulos ou acontecimentos. A pesquisa é mínima para economizar tokens:
+
+- Só no **roteiro escrito do zero**. Com "Já tenho o texto da narração", nos ajustes, na catalogação e na escolha de imagens, não pesquisa.
+- No máximo **2 buscas** (`MAX_SEARCHES` em `llm.ts`), e só do que a IA não tem certeza. Muitas vezes ela não busca nada.
+- Só a busca; a IA não abre páginas inteiras.
+
+| Provedor | Como pesquisa | Limite |
+|---|---|---|
+| Gemini | Busca do Google embutida (*grounding*) | o Gemini decide; a instrução pede no máximo 2 |
+| Claude API | ferramenta `web_search_20260209` | `max_uses: 2` |
+| Claude Code | ferramenta `WebSearch` (sem `WebFetch`) | `--max-turns 4`; se passar do limite, responde de novo sem pesquisar |
+
+Exemplo real ("Qual é a verdadeira idade do Gojo?"): 1 busca, ~28 s, e o roteiro saiu com a idade e o aniversário certos.
+
+### Quem fez cada parte
+
+O app guarda qual IA respondeu e mostra na tela:
+
+- **Roteiro:** selo abaixo do título ("Roteiro: Claude Sonnet 5.5 (seu plano) · 1 busca na web").
+- **Revisão:** cartão "Quem fez", com quem escreveu o roteiro e quem escolheu as imagens. Cada resposta do "Peça um ajuste" tem o nome da IA embaixo.
+- **Montagem:** as etapas dizem quem escreveu e quem escolheu as imagens.
+
+O selo é azul para o Gemini e laranja para o Claude, e diz "reserva, o Gemini estava fora" quando o Claude entrou no lugar dele. Os dados ficam no projeto em `ai.script`, `ai.images` e em `history[].ai` (`provider`, `model`, `fallback`, `searches`, `at`). Vídeos criados antes disso não têm selo.
+
 ## Provedores e reserva automática
 
 Todas as chamadas do fluxo de Shorts passam por um único módulo, [`backend/src/services/shorts/llm.ts`](../backend/src/services/shorts/llm.ts). Ele tenta os provedores em ordem e, se um falhar por **cota (429), sobrecarga (5xx) ou rede**, passa o mesmo pedido para o próximo:
 
 ```
-Gemini (grátis)  ──falhou──►  Claude API (Haiku 4.5, com chave)  ──falhou──►  Claude Code (Haiku 4.5, seu plano Pro/Max)
+Gemini (grátis)  ──falhou──►  Claude API (Sonnet 5.5, com chave)  ──falhou──►  Claude Code (Sonnet 5.5, seu plano Pro/Max)
 ```
 
 | Provedor | Quando entra | Modelo | Custo | Precisa de |
 |---|---|---|---|---|
 | **Gemini** | sempre primeiro | `GEMINI_MODEL` (padrão `gemini-2.5-flash`) | grátis com limite diário (em out/2026: 20 pedidos/dia no `gemini-2.5-flash`) | `GEMINI_API_KEY` |
-| **Claude API** | se o Gemini falhar | `claude-haiku-4-5` (fixo) | pago por uso, centavos por vídeo | `ANTHROPIC_API_KEY` (créditos no Console, separado do plano Pro) |
-| **Claude Code** | se os anteriores falharem | `claude-haiku-4-5` (fixo) | conta no limite do seu plano Pro/Max, sem cobrança extra | Claude Code instalado e logado, `CLAUDE_CODE=on` |
+| **Claude API** | se o Gemini falhar | `claude-sonnet-5-5` (fixo), esforço médio | pago por uso, centavos por vídeo | `ANTHROPIC_API_KEY` (créditos no Console, separado do plano Pro) |
+| **Claude Code** | se os anteriores falharem | `claude-sonnet-5-5` (fixo), esforço médio | conta no limite do seu plano Pro/Max, sem cobrança extra | Claude Code instalado e logado, `CLAUDE_CODE=on` |
 
 Detalhes do comportamento:
 
@@ -42,8 +68,8 @@ Detalhes do comportamento:
 - **Log.** O terminal do backend mostra quem respondeu cada pedido, por exemplo:
   ```
   ⚠️ Gemini indisponível (...) Usando o Claude.
-  Claude Code: 11.8s na IA · 1426 tokens de entrada, 1559 de saída
-  🤖 Respondido por Claude Code do plano (claude-haiku-4-5) — reserva
+  Claude Code: 26.4s na IA · 2 tokens de entrada, 4036 de saída
+  🤖 Respondido por Claude Code do plano (claude-sonnet-5-5) — reserva
   ```
 - **Configurações.** A tela mostra o estado de cada provedor (com a hora em que a cota do Gemini volta) sem gastar nenhuma chamada. O botão "Testar conexão" é o único que chama o Gemini.
 
@@ -94,8 +120,8 @@ Como cada pedido roda (`askClaudeCode` em `llm.ts`):
 
 | Opção | Por quê |
 |---|---|
-| `--model claude-haiku-4-5` | O modelo que menos gasta do limite do plano |
-| `MAX_THINKING_TOKENS=0` | Sem "raciocínio": antes o Haiku gastava ~10 mil tokens para entregar um roteiro de ~1.500; agora ~1.500 e ~15 s em vez de ~70 s |
+| `--model claude-sonnet-5-5` | Sabe muito mais sobre animes e erra menos fatos que o Haiku 4.5, que às vezes inventava coisas sem noção no roteiro |
+| `--effort medium` (`low` ao catalogar e escolher imagens) | O Sonnet 5.5 pensa antes de responder; o esforço médio é o equilíbrio entre qualidade e gasto do plano. Um roteiro de 30 s leva ~30 s e ~4 mil tokens de saída (o raciocínio conta junto) |
 | `--system-prompt` curto | O prompt padrão do Claude Code é feito para programar e é grande; o curto deixa cada pedido com ~1.500 tokens de entrada |
 | `--tools ""` (ou só `Read` na catalogação) | Sem acesso a arquivos, terminal ou internet |
 | `--strict-mcp-config`, `--disable-slash-commands`, `--disallowedTools mcp__*` | Não carrega MCP, skills nem comandos |
@@ -107,14 +133,15 @@ Cuidados:
 
 - **Uso pessoal.** O plano é individual. Se o app um dia atender outras pessoas, use a chave de API.
 - **Conta no seu limite.** Os pedidos dividem o limite de uso com o claude.ai e o Claude Code.
-- **Mais lento que o Gemini:** ~6 s para o programa iniciar mais o tempo da resposta.
+- **Mais lento que o Gemini:** ~6 s para o programa iniciar mais o tempo da resposta (~30 s num roteiro).
+- **Gasta mais do plano que o Haiku:** o Sonnet consome o limite mais rápido. Para economizar, troque `DEFAULT_EFFORT` para `'low'` em `llm.ts`.
 
 ## Usando a Claude API
 
 1. Crie a chave e compre créditos em [platform.claude.com](https://platform.claude.com) (Settings → API Keys / Billing).
 2. Coloque `ANTHROPIC_API_KEY` no `backend/.env` e reinicie o backend.
 
-O app usa o SDK oficial (`@anthropic-ai/sdk`), modelo `claude-haiku-4-5`, sem parâmetros de esforço (o Haiku 4.5 não tem níveis de esforço). Se o Claude recusar um pedido por segurança, o app mostra uma mensagem pedindo para reformular o tema.
+O app usa o SDK oficial (`@anthropic-ai/sdk`), modelo `claude-sonnet-5-5` com `output_config.effort: "medium"` (`low` ao catalogar e escolher imagens), em streaming para respostas longas não estourarem o tempo limite. O Sonnet 5.5 custa US$ 2 / US$ 10 por milhão de tokens de entrada / saída: alguns centavos por roteiro. Se o Claude recusar um pedido por segurança, o app mostra uma mensagem pedindo para reformular o tema.
 
 ## Erros comuns
 
@@ -132,7 +159,7 @@ O app usa o SDK oficial (`@anthropic-ai/sdk`), modelo `claude-haiku-4-5`, sem pa
 
 | Tipo | Hoje | Planejado |
 |---|---|---|
-| LLM | Gemini → Claude Haiku (API ou plano) | Ollama local como reserva grátis |
+| LLM | Gemini → Claude Sonnet 5.5 (API ou plano) | Ollama local como reserva grátis |
 | Transcrição | estimada pelo número de palavras | whisper.cpp local, para a legenda completa sincronizar palavra por palavra |
 | Voz | upload do seu áudio | ElevenLabs via API, Piper local |
 | Geração de imagem | desligada (você envia as imagens) | opcional, plugável |

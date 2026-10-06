@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { AssemblyLogEntry, errorMessage, ShortProject, shortsApi } from '../api/shorts'
+import { aiName, AssemblyLogEntry, errorMessage, ShortProject, shortsApi } from '../api/shorts'
 import { Spinner, Stepper } from '../components/flow'
 import './Assembly.css'
 
@@ -43,15 +43,19 @@ function Assembly() {
   }, [done, id, navigate])
 
   const decisions = log.filter(l => l.beatId !== 'ia')
+  const pickedBy = log.find(l => l.beatId === 'ia')?.ai
+  const scriptBy = project?.ai?.script
   const missing = decisions.filter(l => l.status === 'missing').length
   const similar = decisions.filter(l => l.status === 'similar').length
   const effects = project?.beats.filter(b => b.effect !== 'none').length ?? 0
   const pct = project ? Math.round(40 + (60 * shown) / Math.max(1, log.length)) : 20
 
   const steps = [
-    { label: `Roteiro dividido em cenas`, state: 'done' },
+    { label: scriptBy ? `Roteiro dividido em cenas (${aiName(scriptBy)})` : 'Roteiro dividido em cenas', state: 'done' },
     {
-      label: project ? `Imagens: ${decisions.length - missing - similar} certas, ${similar} parecidas, ${missing} faltando` : 'Procurando imagens na sua biblioteca',
+      label: project
+        ? `Imagens: ${decisions.length - missing - similar} certas, ${similar} parecidas, ${missing} faltando${pickedBy ? ` (escolhidas por ${aiName(pickedBy)})` : ''}`
+        : 'Procurando imagens na sua biblioteca',
       state: done ? 'done' : 'doing',
     },
     { label: project ? `${effects} efeitos (setas, X, emojis) e legendas` : 'Efeitos e legendas', state: done ? 'done' : 'todo' },

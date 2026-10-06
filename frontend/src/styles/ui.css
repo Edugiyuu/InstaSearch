@@ -563,3 +563,40 @@ textarea.field {
     padding: 24px 16px;
   }
 }
+
+/* Qual IA fez (roteiro, imagens, ajustes) */
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.ai-badge strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ai-badge .ai-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--info);
+  flex-shrink: 0;
+}
+
+.ai-badge.claude .ai-dot {
+  background: #d97757;
+}
+
+.ai-badge.compact {
+  padding: 2px 8px;
+  font-size: 11px;
+}

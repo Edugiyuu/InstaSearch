@@ -1,12 +1,17 @@
 import fs from 'fs/promises'
 import path from 'path'
+import axios from 'axios'
+import { AppError } from '../../middleware/errorHandler.js'
 import { fileURLToPath } from 'url'
 import { FileStorage } from '../storage/FileStorage.js'
 import { generateId } from '../../utils/idGenerator.js'
 import { logger } from '../../utils/logger.js'
 import { catalogImage, ImageChoice, pickImagesWithAI } from './shortsAI.js'
-import { listSounds } from './sounds.js'
-import type { AssemblyLogEntry, Beat, ImageStatus, LibraryImage, MediaKind, SoundItem } from './types.js'
+import { listSounds, soundIsType } from './sounds.js'
+import { normalize } from './text.js'
+
+export { normalize }
+import type { AiCredit, AssemblyLogEntry, Beat, ImageStatus, LibraryImage, MediaKind, SoundItem } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const LIBRARY_FILES_DIR = path.join(__dirname, '../../../data/library/files')
@@ -31,9 +36,6 @@ const STOPWORDS = new Set(
   'a o as os um uma de da do das dos em no na nos nas e ou com sem por para pra que quem the of and com sua seu dele dela imagem foto cena'.split(' '),
 )
 
-export function normalize(text: string): string {
-  return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-}
 
 function tokens(text: string): string[] {
   return normalize(text)
@@ -69,7 +71,24 @@ export async function searchImages(query: string): Promise<LibraryImage[]> {
     .map(r => r.img)
 }
 
-export async function addImage(data: Buffer, mimeType: string, originalName: string, source?: string, kind?: MediaKind) {
+export interface ImageHint {
+  name?: string
+  characters?: string[]
+  tags?: string[]
+  description?: string
+  /** false = não chama a IA para catalogar (economiza; dá para catalogar depois na biblioteca) */
+  catalog?: boolean
+}
+
+/** hint: o que a origem já informa (nome, personagens…); vale se a IA não catalogar. */
+export async function addImage(
+  data: Buffer,
+  mimeType: string,
+  originalName: string,
+  source?: string,
+  kind?: MediaKind,
+  hint: ImageHint = {},
+) {
   await fs.mkdir(LIBRARY_FILES_DIR, { recursive: true })
   const id = generateId('img')
   const ext = IMAGE_EXTENSIONS.includes(path.extname(originalName).toLowerCase())
@@ -81,11 +100,11 @@ export async function addImage(data: Buffer, mimeType: string, originalName: str
   const base: LibraryImage = {
     id,
     file,
-    name: path.parse(originalName).name.replace(/[_-]+/g, ' ').slice(0, 40) || 'imagem',
+    name: (hint.name || path.parse(originalName).name.replace(/[_-]+/g, ' ')).slice(0, 40) || 'imagem',
     kind: 'imagem',
-    characters: [],
-    tags: [],
-    description: '',
+    characters: hint.characters ?? [],
+    tags: hint.tags ?? [],
+    description: hint.description ?? '',
     regions: [],
     usedIn: [],
     catalogued: false,
@@ -93,24 +112,76 @@ export async function addImage(data: Buffer, mimeType: string, originalName: str
     createdAt: new Date().toISOString(),
   }
 
-  try {
-    const info = await catalogImage(data, MIME[ext] ?? mimeType)
-    Object.assign(base, info, { catalogued: true })
-    if (kind) base.kind = kind
-  } catch (error: any) {
-    // sem catalogação a imagem fica na biblioteca e pode ser etiquetada à mão
-    logger.warn(`⚠️ Imagem ${id} salva sem catalogação: ${error.message}`)
+  if (hint.catalog !== false) {
+    try {
+      const info = await catalogImage(data, MIME[ext] ?? mimeType)
+      Object.assign(base, info, { catalogued: true })
+      if (kind) base.kind = kind
+    } catch (error: any) {
+      // sem catalogação a imagem fica na biblioteca e pode ser etiquetada à mão
+      logger.warn(`⚠️ Imagem ${id} salva sem catalogação: ${error.message}`)
+    }
   }
   if (kind) base.kind = kind
   return storage.save(base)
 }
 
+const MAX_IMAGE = 15 * 1024 * 1024
+
+const fetchImage = (url: string, userAgent: string) =>
+  axios.get<ArrayBuffer>(url, {
+    responseType: 'arraybuffer',
+    maxContentLength: MAX_IMAGE,
+    timeout: 20000,
+    headers: { 'User-Agent': userAgent, Accept: 'image/*' },
+  })
+
+// O CDN do Danbooru recusa um "Mozilla" falso e aceita um nome honesto; outros sites só aceitam "Mozilla".
+async function downloadImage(url: string) {
+  try {
+    return await fetchImage(url, 'InstaSearch/1.0 (uso pessoal)')
+  } catch (error: any) {
+    if (error.response?.status !== 403) throw error
+    return fetchImage(url, 'Mozilla/5.0 InstaSearch')
+  }
+}
+
+/**
+ * Baixa uma imagem de um link e salva na biblioteca. fallbackUrl (a miniatura) é usada se o site
+ * bloquear a grande.
+ */
+export async function importImageFromUrl(url: string, opts: ImageHint & { fallbackUrl?: string } = {}) {
+  if (!/^https?:\/\//i.test(url)) throw new AppError('Cole um link que comece com http', 400, 'VALIDATION')
+  let response
+  try {
+    response = await downloadImage(url)
+  } catch (error: any) {
+    if (!opts.fallbackUrl || !/^https?:\/\//i.test(opts.fallbackUrl)) {
+      throw new AppError(`Não consegui baixar a imagem: ${error.message}`, 400, 'DOWNLOAD_FAILED')
+    }
+    try {
+      response = await downloadImage(opts.fallbackUrl)
+    } catch {
+      throw new AppError(`O site bloqueou o download dessa imagem (${error.message}). Escolha outra.`, 400, 'DOWNLOAD_FAILED')
+    }
+  }
+  const mime = String(response.headers['content-type'] ?? '').split(';')[0]
+  if (!mime.startsWith('image/')) {
+    throw new AppError('Esse link não é de uma imagem. Abra a imagem e copie o endereço dela.', 400, 'NOT_IMAGE')
+  }
+  const fileName = decodeURIComponent(new URL(url).pathname.split('/').pop() || 'imagem')
+  return addImage(Buffer.from(response.data), mime, fileName, url, undefined, opts)
+}
+
 export async function recatalog(id: string) {
   const img = await storage.findById(id)
   if (!img) return null
-  const data = await fs.readFile(path.join(LIBRARY_FILES_DIR, img.file))
-  const info = await catalogImage(data, MIME[path.extname(img.file)] ?? 'image/jpeg')
-  return storage.save({ ...img, ...info, catalogued: true })
+  if (img.kind === 'video') throw new AppError('Para catalogar o vídeo de novo, divida em cenas outra vez', 400, 'VALIDATION')
+  // nas cenas, a IA olha a miniatura (o arquivo é o vídeo inteiro)
+  const file = img.thumb ?? img.file
+  const data = await fs.readFile(path.join(LIBRARY_FILES_DIR, file))
+  const info = await catalogImage(data, MIME[path.extname(file)] ?? 'image/jpeg')
+  return storage.save({ ...img, ...info, kind: img.kind === 'cena' ? 'cena' : info.kind, catalogued: true })
 }
 
 export async function updateImage(id: string, changes: Partial<LibraryImage>) {
@@ -119,14 +190,29 @@ export async function updateImage(id: string, changes: Partial<LibraryImage>) {
   if (Array.isArray(changes.tags)) allowed.tags = changes.tags.map(t => String(t).toLowerCase())
   if (Array.isArray(changes.characters)) allowed.characters = changes.characters.map(String)
   if (Array.isArray(changes.regions)) allowed.regions = changes.regions
-  if (changes.kind) allowed.kind = changes.kind
+  // vídeo e cena não viram imagem (nem imagem vira cena)
+  const fixed = (k?: MediaKind) => k === 'video' || k === 'cena'
+  if (changes.kind && !fixed(changes.kind)) {
+    const current = await storage.findById(id)
+    if (current && !fixed(current.kind)) allowed.kind = changes.kind
+  }
   return storage.update(id, allowed)
 }
 
+const unlinkFile = (file?: string) => (file ? fs.unlink(path.join(LIBRARY_FILES_DIR, file)).catch(() => undefined) : undefined)
+
+/** Apagar um vídeo apaga as cenas dele; apagar uma cena não mexe no arquivo do vídeo. */
 export async function deleteImage(id: string) {
   const img = await storage.findById(id)
   if (!img) return false
-  await fs.unlink(path.join(LIBRARY_FILES_DIR, img.file)).catch(() => undefined)
+  if (img.kind === 'video') {
+    for (const scene of (await storage.findAll()).filter(i => i.kind === 'cena' && i.videoId === id)) {
+      await unlinkFile(scene.thumb)
+      await storage.delete(scene.id)
+    }
+  }
+  if (img.kind !== 'cena') await unlinkFile(img.file)
+  await unlinkFile(img.thumb)
   return storage.delete(id)
 }
 
@@ -188,7 +274,8 @@ export interface MatchOptions {
  */
 export async function matchBeats(beats: Beat[], projectId: string, opts: MatchOptions = {}) {
   const all = await storage.findAll()
-  const images = all.filter(i => i.kind !== 'figurinha' && (i.catalogued || i.tags.length || i.characters.length))
+  // o vídeo inteiro não entra numa batida: as cenas dele, sim
+  const images = all.filter(i => i.kind !== 'figurinha' && i.kind !== 'video' && (i.catalogued || i.tags.length || i.characters.length))
   const stickers = all.filter(i => i.kind === 'figurinha')
   const sfx = await listSounds('sfx')
   const stickerUses = new Map<string, number>()
@@ -201,20 +288,22 @@ export async function matchBeats(beats: Beat[], projectId: string, opts: MatchOp
 
   // escolha pela IA, com a escolha por palavras como reserva
   let aiChoices: Map<string, ImageChoice> | null = null
+  let ai: AiCredit | undefined
   const open = beats.filter(b => !keep(b))
   if (opts.ai && open.length && images.length) {
     try {
       const candidates = images.length <= 120 ? images : shortlist(open, images, 10)
       const usedElsewhere = new Map(candidates.map(i => [i.id, i.usedIn.filter(p => p !== projectId).length]))
-      const choices = await pickImagesWithAI({
+      const picked = await pickImagesWithAI({
         title: opts.title ?? '',
         narration: opts.narration ?? beats.map(b => b.say).join(' '),
         beats: open,
         images: candidates,
         usedElsewhere,
       })
-      aiChoices = new Map(choices.map(c => [c.beatId, c]))
-      log.push({ beatId: 'ia', status: 'match', message: '✨ A IA leu o roteiro e escolheu as imagens' })
+      aiChoices = new Map(picked.choices.map(c => [c.beatId, c]))
+      ai = picked.ai
+      log.push({ beatId: 'ia', status: 'match', message: '✨ A IA leu o roteiro e escolheu as imagens', ai })
     } catch (error: any) {
       log.push({ beatId: 'ia', status: 'similar', message: `A IA não respondeu (${String(error.message).slice(0, 80)}); escolhi pelas palavras` })
     }
@@ -287,14 +376,13 @@ export async function matchBeats(beats: Beat[], projectId: string, opts: MatchOp
     return { ...beat, imageId, imageStatus: status }
   })
     // figurinhas e efeitos sonoros (não dependem de a imagem estar travada)
-    .map((beat, index) => ({
-      ...beat,
-      stickerId: pickSticker(beat, stickers, stickerUses),
-      sfxId: pickSfx(beat, index, sfx, sfxUses),
-    }))
+    .map((beat, index) => {
+      const withSticker = { ...beat, stickerId: pickSticker(beat, stickers, stickerUses) }
+      return { ...withSticker, sfxId: pickSfx(withSticker, index, sfx, sfxUses) }
+    })
 
   await syncUsage(projectId, result)
-  return { beats: result, log }
+  return { beats: result, log, ai }
 }
 
 /** Reações parecidas: "chocado" acha uma figurinha etiquetada "surpreso". */
@@ -315,7 +403,7 @@ function expandReaction(words: string[]) {
   return [...out]
 }
 
-/** Figurinha para batidas com reação (effect = emoji); sem uma que combine, fica o emoji. */
+/** Figurinha para batidas com reação (effect = emoji); sem uma que combine, a cena fica sem reação. */
 function pickSticker(beat: Beat, stickers: LibraryImage[], uses: Map<string, number>) {
   if (beat.effect !== 'emoji' || stickers.length === 0) return undefined
   if (beat.stickerId && stickers.some(s => s.id === beat.stickerId)) return beat.stickerId
@@ -333,18 +421,6 @@ function pickSticker(beat: Beat, stickers: LibraryImage[], uses: Map<string, num
 }
 
 /** Palavras que identificam cada tipo de efeito sonoro no nome ou nas etiquetas. */
-const SFX_WORDS: Record<string, string[]> = {
-  whoosh: ['whoosh', 'swoosh', 'swish', 'woosh', 'transicao', 'vento'],
-  boom: ['boom', 'explos', 'bass', 'grave', 'impacto'],
-  impacto: ['impacto', 'impact', 'hit', 'punch', 'soco', 'boom'],
-  pop: ['pop', 'bolha', 'bubble', 'plop'],
-  ding: ['ding', 'bell', 'sino', 'plim'],
-  erro: ['erro', 'error', 'wrong', 'fail', 'buzz', 'errado'],
-  risada: ['risada', 'laugh', 'rindo', 'haha', 'sitcom'],
-  suspense: ['suspense', 'tensao', 'riser', 'drone', 'tenso'],
-  glitch: ['glitch', 'estatica', 'static', 'distor'],
-  click: ['click', 'clique', 'camera', 'shutter', 'foto'],
-}
 
 function defaultSfx(beat: Beat, index: number) {
   if (index === 0) return 'boom'
@@ -356,16 +432,23 @@ function defaultSfx(beat: Beat, index: number) {
   return undefined
 }
 
-function pickSfx(beat: Beat, index: number, sounds: SoundItem[], uses: Map<string, number>) {
+/**
+ * Efeito sonoro da batida. O que o usuário escolheu no editor (ou pediu no chat) fica;
+ * no resto, a montagem procura um som do tipo pedido pelo nome e pelas etiquetas.
+ */
+export function pickSfx(beat: Beat, index: number, sounds: SoundItem[], uses: Map<string, number>) {
+  if (beat.sfxLocked) return beat.sfxId && sounds.some(s => s.id === beat.sfxId) ? beat.sfxId : undefined
   const wanted = beat.sfx ?? defaultSfx(beat, index)
-  if (!wanted || sounds.length === 0) return undefined
-  if (beat.sfxId && sounds.some(s => s.id === beat.sfxId)) return beat.sfxId
-  const words = SFX_WORDS[wanted] ?? [wanted]
-  const matches = sounds.filter(s => {
-    const hay = normalize(`${s.name} ${s.tags.join(' ')}`)
-    return words.some(w => hay.includes(w))
-  })
+  if (!wanted) return undefined
+  // reação sem figurinha não aparece no vídeo: o "pop" tocaria sem nada na tela
+  if (beat.effect === 'emoji' && !beat.stickerId && wanted === 'pop') return undefined
+  const matches = sounds.filter(s => soundIsType(s, wanted))
   if (matches.length === 0) return undefined
+  // mantém o som que a batida já tinha, se ele ainda vale para o tipo
+  if (beat.sfxId && matches.some(s => s.id === beat.sfxId)) {
+    uses.set(beat.sfxId, (uses.get(beat.sfxId) ?? 0) + 1)
+    return beat.sfxId
+  }
   // alterna entre os sons do mesmo tipo para não repetir sempre o mesmo
   const pick = matches.reduce((a, b) => ((uses.get(b.id) ?? 0) < (uses.get(a.id) ?? 0) ? b : a))
   uses.set(pick.id, (uses.get(pick.id) ?? 0) + 1)

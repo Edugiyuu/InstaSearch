@@ -59,9 +59,10 @@ cp .env.example .env
 | `LOG_LEVEL` | não (padrão `info`) | Nível de log do Winston |
 | `GEMINI_API_KEY` | **sim**, para recursos de IA (ou uma das reservas abaixo) | Chave do Google AI Studio |
 | `GEMINI_MODEL` | não (padrão `gemini-2.5-flash`) | Modelo usado. Confira os nomes atuais na [documentação do Gemini](https://ai.google.dev/gemini-api/docs/models) |
-| `ANTHROPIC_API_KEY` | não | Claude Haiku 4.5 pela API (pago por uso) como reserva do Gemini. Ver [AI.md](AI.md) |
-| `CLAUDE_CODE` | não (padrão `off`) | `on` usa o Claude Code logado com o seu plano Pro/Max (Haiku 4.5) como reserva. Ver [AI.md](AI.md#usando-o-claude-code-com-o-plano-promax) |
+| `ANTHROPIC_API_KEY` | não | Claude Sonnet 5.5 pela API (pago por uso) como reserva do Gemini. Ver [AI.md](AI.md) |
+| `CLAUDE_CODE` | não (padrão `off`) | `on` usa o Claude Code logado com o seu plano Pro/Max (Sonnet 5.5) como reserva. Ver [AI.md](AI.md#usando-o-claude-code-com-o-plano-promax) |
 | `CLAUDE_CODE_PATH` | não | Caminho do `claude` se ele não estiver no PATH |
+| `SERPER_API_KEY` | não | Inclui resultados do Google Imagens nas sugestões da tela "Trocar imagem" ([serper.dev](https://serper.dev), 2.500 buscas grátis). Sem ela, as sugestões vêm do Bing Imagens (internet e painéis de mangá), do AniList e do Danbooru |
 | `LLM_PROVIDER` | não (padrão `auto`) | `auto` = Gemini → Claude API → Claude Code; `gemini`, `claude` ou `claude-code` usa só aquele |
 | `CLOUDINARY_CLOUD_NAME` | **sim**, para publicar | Dashboard do Cloudinary |
 | `CLOUDINARY_API_KEY` | **sim**, para publicar | Dashboard do Cloudinary |

@@ -35,20 +35,6 @@
   color: var(--muted);
 }
 
-.pub-render-note {
-  margin-top: 20px;
-  padding: 12px 14px;
-  border-radius: var(--radius);
-  background: var(--panel-2);
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--muted);
-}
-
-.pub-render-note strong {
-  color: var(--text);
-}
-
 .pub-notice {
   margin-top: 12px;
   font-size: 13px;
@@ -64,6 +50,128 @@
 
 @media (max-width: 600px) {
   .pub-top {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── MP4 ── */
+.pub-render {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  font-size: 13px;
+}
+
+.pub-render.done {
+  background: var(--success-soft);
+}
+
+.pub-render.error {
+  background: var(--danger-soft);
+}
+
+.pub-render-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+}
+
+.pub-render-head > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.pub-pct {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.pub-download {
+  text-decoration: none;
+}
+
+.pub-bar {
+  height: 6px;
+  margin-top: 10px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  overflow: hidden;
+}
+
+.pub-bar > div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+.pub-error {
+  margin-top: 8px;
+  color: var(--danger);
+  word-break: break-word;
+}
+
+/* ── Destinos ── */
+.pub-dest {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.pub-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pub-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pub-who {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pub-hint {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.pub-hint a,
+.pub-done a {
+  color: var(--accent);
+}
+
+.pub-done {
+  font-size: 13px;
+  color: var(--success);
+}
+
+.pub-card .btn-y {
+  margin-top: auto;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 600px) {
+  .pub-dest {
     grid-template-columns: 1fr;
   }
 }

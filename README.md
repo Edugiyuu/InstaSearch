@@ -18,7 +18,7 @@ Você dá um assunto, por exemplo *"Sukuna nunca teve energia vermelha?"*, e gra
 | Roteiro (editável) e botão "copiar narração" para o ElevenLabs | IA |
 | Voz | **Você**: ElevenLabs, microfone ou TTS local opcional |
 | Transcrição e divisão em batidas visuais, no ritmo do estilo (ex.: uma troca a cada 0,7 a 1,5s) | App (Whisper local) |
-| Escolher imagem, recorte, tipo de cena (tela cheia, "prova", meme, versus), setas, emojis e efeitos sonoros | App + IA, usando a **sua biblioteca** |
+| Escolher imagem, recorte, tipo de cena (tela cheia, "prova", meme, versus), setas, figurinhas de reação e efeitos sonoros | App + IA, usando a **sua biblioteca** |
 | Imagens que faltam | **Você** arrasta, a partir da lista do que procurar |
 | Prévia e ajustes ("troca a imagem da batida 7", "coloca um X aqui") | Ao vivo no navegador |
 | Render e publicação no Instagram / MP4 para Shorts e TikTok | App |
@@ -50,7 +50,7 @@ Detalhes em [docs/AUTO_EDIT.md](docs/AUTO_EDIT.md) e o propósito completo em [d
 | "Peça um ajuste" em linguagem natural, com desfazer | ✅ Funciona |
 | Biblioteca: imagens e figurinhas catalogadas por IA, efeitos sonoros e músicas (áudio de Reels/TikTok/Shorts por link) | ✅ Funciona |
 | Setas, X, círculos, figurinhas, efeitos sonoros, música e legenda completa palavra por palavra | ✅ Funciona (tempo das palavras estimado até a transcrição entrar) |
-| Reserva de IA: Gemini → Claude Haiku 4.5 (API ou Claude Code do plano Pro/Max) | ✅ Funciona ([AI.md](docs/AI.md)) |
+| Reserva de IA: Gemini → Claude Sonnet 5.5 (API ou Claude Code do plano Pro/Max) | ✅ Funciona ([AI.md](docs/AI.md)) |
 | Salvar o vídeo para publicar depois | ✅ Funciona |
 | Render do MP4 e publicação direto do projeto | 📋 Próximo passo |
 | Gerador de prompts para IA de vídeo | ⚠️ Legado |
@@ -109,7 +109,7 @@ O motor de edição (Remotion, Whisper e FFmpeg locais) é **gratuito para uso p
 - **Backend:** Node.js, Express, TypeScript, armazenamento em arquivos JSON
 - **Frontend:** React 18, Vite, TypeScript, CSS puro
 - **Vídeo:** FFmpeg (fluent-ffmpeg) hoje; Remotion (composição em React, prévia ao vivo e render) para a edição automática
-- **IA:** Google Gemini, com o Claude Haiku 4.5 de reserva (API ou Claude Code com o plano Pro/Max)
+- **IA:** Google Gemini, com o Claude Sonnet 5.5 de reserva (API ou Claude Code com o plano Pro/Max)
 - **Integrações:** Instagram Graph API, Cloudinary
 
 Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) e endpoints em [docs/API.md](docs/API.md).
@@ -126,7 +126,7 @@ Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) e endpoints em [docs
 | [USO.md](docs/USO.md) | **Como usar o fluxo tema → Short**, tela por tela: roteiro, montagem, revisão, biblioteca, estilos |
 | [AUTO_EDIT.md](docs/AUTO_EDIT.md) | Especificação do fluxo tema → Short (roteiro, batidas, biblioteca, tipos de cena, prévia, Remotion) |
 | [SCHEDULER.md](docs/SCHEDULER.md) | Agendamento e publicação automática |
-| [AI.md](docs/AI.md) | Onde a IA é usada, Gemini e a reserva automática com o Claude Haiku 4.5 (API ou plano Pro) |
+| [AI.md](docs/AI.md) | Onde a IA é usada, Gemini e a reserva automática com o Claude Sonnet 5.5 (API ou plano Pro) |
 | [COSTS.md](docs/COSTS.md) | O que é grátis, o que é pago e quanto custa |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Estrutura do código e decisões técnicas |
 | [API.md](docs/API.md) | Referência dos endpoints |

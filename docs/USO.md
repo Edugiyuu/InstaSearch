@@ -12,8 +12,15 @@ Novo vídeo ─► Roteiro e voz ─► Montagem (automática) ─► Revisão �
 
 - Escreva o **tema** ("Por que o Luffy nunca mata ninguém?").
 - Escolha o **estilo** (Comentário de anime, Curiosidades, Ranking…), a **duração** (15 a 40 s) e o **tom**.
+  - **Polêmico:** opinião forte que divide e termina com uma pergunta para a pessoa escolher um lado nos comentários.
+  - **Curioso:** um fato que pouca gente sabe, com um detalhe surpreendente por cena.
+  - **Mistério:** promete uma resposta no gancho e só revela no final, para segurar até o fim.
+  - **Papo reto:** fala direto com quem assiste, como um amigo, sem enrolação.
+
+  A instrução completa que cada tom manda para a IA fica em `TONE_GUIDE` ([shortsAI.ts](../backend/src/services/shorts/shortsAI.ts)).
 - Já tem o texto? Marque **"Já tenho o texto da narração"** e cole. A IA só divide em cenas, sem mudar o texto.
-- **Gerar roteiro** chama a IA (Gemini, ou o Claude Haiku se o Gemini estiver fora).
+- **Gerar roteiro** chama a IA (Gemini, ou o Claude Sonnet 5.5 se o Gemini estiver fora). Antes de escrever, ela confirma na web os fatos de que não tem certeza (no máximo 2 buscas).
+- O nome da IA que escreveu aparece num selo abaixo do título do roteiro e no cartão **Quem fez** da revisão ([detalhes](AI.md#quem-fez-cada-parte)).
 
 O atalho do Início (tema + estilo + "Começar") abre esta tela já preenchida.
 
@@ -29,7 +36,7 @@ O atalho do Início (tema + estilo + "Começar") abre esta tela já preenchida.
 Você não faz nada aqui. O app:
 
 1. Escolhe uma imagem da biblioteca para cada cena (ver "Quem escolhe as imagens" abaixo).
-2. Troca emojis por **figurinhas** da sua biblioteca quando alguma combina com a reação da cena.
+2. Coloca **figurinhas** da sua biblioteca nas cenas de reação, quando alguma combina. O vídeo não desenha emojis: sem figurinha que combine, a cena fica sem reação.
 3. Coloca **efeitos sonoros** nos cortes: whoosh nas setas, erro nos X, pop nas figurinhas, boom no gancho, click nas provas.
 4. Escolhe uma **música** que combina com o clima do estilo.
 
@@ -50,6 +57,19 @@ A tela mostra cada decisão ("“NARUTO” → naruto e sakura · Naruto e Sakur
 | Efeitos | Poucos · Na medida · Muitos | A IA ajusta a quantidade de setas, X, círculos e reações |
 | Legenda | Quadrinho · **Completa** · Limpa · Sem legenda | Quadrinho = 1 a 3 palavras-chave amarelas; **Completa = todas as palavras da fala**, em blocos de até 4, com a palavra falada acendendo em amarelo; Limpa = texto branco discreto |
 | Música | as músicas da biblioteca · Sem música | A música toca baixinho quando tem voz |
+| Final com bordão | Com final · Sem | 2,5 s no fim com a sua foto, o nome, o bordão e o botão "Inscreva-se" sendo clicado. Configure em **Configurações → Seu canal** |
+
+### Efeitos sonoros de cada cena
+
+Embaixo do vídeo, **🔊 Efeito sonoro desta cena** mostra o som da cena que está tocando (clique numa cena na barra para ir até ela). Escolha:
+
+- **Automático**: a montagem escolhe pelo tipo de efeito (whoosh nas setas, erro nos X, pop nas figurinhas, boom no gancho), procurando pelo nome e pelas etiquetas dos sons.
+- **Sem som**: a cena fica sem efeito.
+- **Qualquer efeito da sua biblioteca** ("fahhh", "vine boom"…): toca nessa cena. ▶ ouve o som.
+
+O que você escolhe fica travado: montar de novo ou pedir ajustes não troca. Na barra de cenas, um pontinho laranja marca as cenas com som.
+
+O chat também troca: "põe o fahhh no X", "tira o som da cena 3", "vine boom no final". Ele recebe a lista dos seus efeitos e usa o nome exato.
 
 A legenda completa usa um tempo **estimado** por palavra (proporcional ao tamanho da palavra dentro da cena). Ela fica exata quando a transcrição (Whisper) entrar.
 
@@ -62,17 +82,39 @@ A legenda completa usa um tempo **estimado** por palavra (proporcional ao tamanh
 
 Uma cena por vez ("Cena 1 de 3"):
 
-- À esquerda, como a cena está agora; à direita, **Cole a imagem aqui**: Ctrl+V de uma imagem copiada, arrastar um arquivo, colar um link ou clicar para escolher.
-- **Procurar no Google ↗** abre a busca de imagens com a descrição da cena.
+- À esquerda, como a cena está agora.
+- À direita, **Sugestões para esta cena**: a tela já abre com imagens da internet buscadas a partir do que a cena precisa mostrar e dos personagens dela. **Clique em uma** e pronto: ela é baixada, vai para a biblioteca (catalogada pela IA), entra na cena e a tela passa para a próxima.
+  - **Mangá**: painéis reais do mangá achados na internet (Bing Imagens, sem chave). A busca usa o nome completo do personagem, a série e as etiquetas da cena em inglês ("Satoru Gojou jujutsu kaisen smile blindfold manga panel"). Em estilos de mangá (ex.: Comentário de anime) eles aparecem **primeiro**; nos outros, depois dos resultados gerais.
+  - **Internet**: resultados gerais do Bing Imagens (sem chave) para o texto da cena: prints, wallpapers, fanarts, sites de notícia.
+  - **Danbooru**: ilustrações, páginas de mangá e prints, **só as classificadas como "geral"**, sem crossovers com outras séries. A busca é **específica da cena**: a IA escreve no roteiro etiquetas para cada cena (`hands_in_pockets`, `smirk`, `from_below`…) e as palavras do texto também viram filtros ("mão no bolso", "calmo", "de costas", "olhos de perto", "mangá"…; "sem venda" não vira "venda"). As imagens que batem com a cena aparecem primeiro.
+  - **Arte oficial** (AniList): o retrato oficial de cada personagem. O nome é desempatado pela série: "Sakura" num vídeo de Naruto é a Sakura Haruno, "Sukuna" é o de Jujutsu Kaisen (não o do Touhou), "Yuta" é o Yuuta Okkotsu (não o Yutaka).
+  - Imagens que já estão na sua biblioteca não aparecem de novo.
+  - **Google** (opcional): resultados do Google Imagens, se você colocar a `SERPER_API_KEY` (ver abaixo). O Google Imagens só funciona com JavaScript, então sem a chave o app usa o Bing.
+  - Não gostou? **↻ Outras opções** traz outras imagens para a mesma cena (cada clique, uma leva nova). Ou mude o texto da busca ("Goku sorrindo criança") e clique em **Buscar**. **Ver mais** mostra o resto.
+- **✨ Preencher as N cenas automaticamente** (no topo): busca e coloca a melhor sugestão em cada cena que falta, de uma vez. Prefere imagens que batem com a cena, em pé (vídeo vertical), com boa resolução, sem personagens a mais e sem repetir. Não gasta IA: as imagens entram na biblioteca com os personagens e a descrição da cena, e você pode catalogá-las depois. O mesmo botão está no cartão "Precisa de você" da revisão.
+- **Tem outra imagem? Cole aqui**: Ctrl+V de uma imagem copiada, arrastar um arquivo, colar um link ou clicar para escolher. **Google ↗** abre o Google Imagens numa aba.
 - Embaixo, imagens da sua biblioteca que combinam.
 - Toda imagem nova vai para a biblioteca, já catalogada, e serve para os próximos vídeos.
 - **Manter a parecida** aceita a imagem provisória; **Próxima cena →** segue.
 
+A busca não gasta IA (só a catalogação da imagem escolhida gasta 1 chamada). Bing, AniList e Danbooru funcionam sem chave.
+
+**Resultados do Google (opcional).** Crie uma conta grátis em [serper.dev](https://serper.dev) (dá 2.500 buscas), copie a chave e coloque no `backend/.env`:
+
+```env
+SERPER_API_KEY=sua_chave
+```
+
+Reinicie o backend. Cada cena aberta gasta 1 busca.
+
 ## 6. Salvar ou publicar
 
 - **Salvar para depois** (topo da revisão ou no modal Publicar): o vídeo fica em **Projetos → Salvos**, pronto para publicar quando você quiser.
-- **Publicar**: o modal gera a legenda do post com hashtags (dá para editar, copiar e gerar outra).
-- ⚠️ **O arquivo MP4 ainda não é gerado.** A prévia já é a composição final; o render com o Remotion no backend é o próximo passo do [ROADMAP](ROADMAP.md). Até lá, o botão de publicar fica desligado.
+- **Publicar**: o modal gera a legenda do post com hashtags (dá para editar, copiar e gerar outra) e, ao abrir, já começa a gerar o **MP4** (1080×1920, 30 fps) com a mesma composição da prévia. O primeiro render demora mais (prepara o pacote do Remotion e baixa o Chrome Headless Shell); os seguintes só renderizam. Se o vídeo não mudou, o MP4 guardado é reaproveitado.
+  - **⬇ Baixar MP4**: salva o arquivo com o título do projeto.
+  - **Publicar no Instagram**: Reels com a legenda acima. Precisa da conta conectada e do Cloudinary no `backend/.env` (o Instagram só aceita vídeo por URL pública; o arquivo é apagado do Cloudinary depois).
+  - **Enviar ao YouTube**: Short com título, privacidade (público, não listado ou privado) e a legenda como descrição. Precisa conectar o canal em Configurações; ver [YOUTUBE.md](YOUTUBE.md).
+  - Depois de publicar, o projeto vai para **Publicados** e o modal mostra o link do post.
 
 ## Biblioteca (`/biblioteca`)
 
@@ -81,8 +123,8 @@ Quatro abas. Tudo fica em `backend/data/` no seu computador.
 | Aba | Para quê | Dicas |
 |---|---|---|
 | **Imagens** | As imagens das cenas | A IA cataloga cada uma: quem aparece, etiquetas, descrição e áreas de zoom (caixas amarelas). Corrija personagens e etiquetas à mão quando precisar. Busca em linguagem natural ("sukuna sorrindo no mangá") |
-| **Figurinhas** | Reações que entram no lugar dos emojis | Use PNG com fundo transparente. A IA etiqueta a reação com sinônimos ("chocado, surpreso, espantado"). Sem figurinha que combine, o vídeo usa o emoji |
-| **Efeitos sonoros** | Sons dos cortes | A montagem procura pelo nome e pelas etiquetas: whoosh, boom, impacto, pop, ding, erro, risada, suspense, glitch, click. Nomeie os arquivos assim (`whoosh_01.mp3`). Os cartões no topo mostram quais tipos você já tem |
+| **Figurinhas** | As reações das cenas (o vídeo não usa emoji) | Use PNG com fundo transparente. A IA etiqueta a reação com sinônimos ("chocado, surpreso, espantado"). Sem figurinha que combine, a cena fica sem reação |
+| **Efeitos sonoros** | Sons dos cortes | A montagem procura pelo nome e pelas etiquetas: whoosh, boom, impacto, pop, ding, erro, risada, suspense, glitch, click. Nomeie os arquivos assim (`whoosh_01.mp3`). Na revisão você escolhe o efeito de cada cena |
 | **Músicas** | Fundo do vídeo | A montagem escolhe pelo clima do estilo (tensa, animada, calma). Cole o link de um **Reel, TikTok ou Short** para pegar o áudio |
 
 Para pegar áudio de links, instale o [yt-dlp](https://github.com/yt-dlp/yt-dlp) uma vez e reinicie o backend:
@@ -95,8 +137,10 @@ Alguns links do Instagram exigem login e podem falhar. Músicas com direitos aut
 
 ## Estilos (`/estilos`)
 
-Cada estilo aparece como um frame de Short. Os ajustes são em palavras simples: velocidade dos cortes, setas/X/emojis, legenda, música, tipo de imagem e "Algo mais para a IA saber?". **Como fica** mostra o seu vídeo mais recente com os ajustes do estilo. Mudar um estilo que vem com o app salva uma cópia sua. **Usar no próximo vídeo** abre o Novo vídeo com ele.
+Cada estilo aparece como um frame de Short. Os ajustes são em palavras simples: velocidade dos cortes, setas/X/figurinhas, legenda, música, tipo de imagem e "Algo mais para a IA saber?". **Como fica** mostra o seu vídeo mais recente com os ajustes do estilo. Mudar um estilo que vem com o app salva uma cópia sua. **Usar no próximo vídeo** abre o Novo vídeo com ele.
 
 ## Configurações (`/configuracoes`)
+
+**Seu canal (final do vídeo):** a foto (envie uma ou clique em **Usar a do Instagram**, que também preenche o @), o nome, o bordão ("Se inscreve pra mais!") e o texto do botão. Marque **Colocar o final nos vídeos novos** para já começar ligado; em cada vídeo dá para ligar ou desligar nos ajustes rápidos da revisão. Fica em `backend/data/channel/`.
 
 Mostra o Instagram conectado e o estado de cada IA: Gemini (com a hora em que a cota volta, se tiver acabado), Claude API e Claude Code do seu plano. Como configurar cada uma: [AI.md](AI.md).

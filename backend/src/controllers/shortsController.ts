@@ -5,14 +5,19 @@
 
 import { Request, Response } from 'express'
 import multer from 'multer'
+import os from 'os'
 import path from 'path'
-import axios from 'axios'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
 import * as projects from '../services/shorts/projects.js'
 import * as library from '../services/shorts/library.js'
+import * as videoScenes from '../services/shorts/videoScenes.js'
 import * as styles from '../services/shorts/styles.js'
 import * as sounds from '../services/shorts/sounds.js'
 import { aiStatus } from '../services/shorts/llm.js'
+import * as render from '../services/shorts/render.js'
+import * as publish from '../services/shorts/publish.js'
+import * as channel from '../services/shorts/channel.js'
+import { fetchThumb, searchWebImages } from '../services/shorts/imageSearch.js'
 
 const MAX_IMAGE = 15 * 1024 * 1024
 
@@ -23,6 +28,17 @@ const imageUpload = multer({
     const ok = file.mimetype.startsWith('image/') || library.IMAGE_EXTENSIONS.includes(path.extname(file.originalname).toLowerCase())
     if (ok) cb(null, true)
     else cb(new AppError('Envie imagens (jpg, png, webp ou gif)', 400, 'INVALID_FILE'))
+  },
+})
+
+// episódios são grandes: vão direto para o disco
+const videoUpload = multer({
+  storage: multer.diskStorage({ destination: os.tmpdir() }),
+  limits: { fileSize: 4 * 1024 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const ok = videoScenes.VIDEO_EXTENSIONS.includes(path.extname(file.originalname).toLowerCase())
+    if (ok) cb(null, true)
+    else cb(new AppError(`Envie um vídeo (${videoScenes.VIDEO_EXTENSIONS.join(', ')})`, 400, 'INVALID_FILE'))
   },
 })
 
@@ -93,7 +109,23 @@ export const uploadAudio = [
 
 export const listImages = asyncHandler(async (req: Request, res: Response) => {
   const q = typeof req.query.q === 'string' ? req.query.q : ''
-  res.json({ success: true, data: q ? await library.searchImages(q) : await library.listImages() })
+  res.json({ success: true, data: videoScenes.withLiveStatus(q ? await library.searchImages(q) : await library.listImages()) })
+})
+
+/** Envia um episódio ou trecho (campo "video") e começa a dividir em cenas. Body: { hint? } (anime/episódio). */
+export const uploadVideo = [
+  videoUpload.single('video'),
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.file) throw new AppError('Nenhum vídeo enviado', 400, 'NO_FILE')
+    const video = await videoScenes.addVideo(req.file.path, req.file.originalname, String(req.body.hint ?? ''))
+    res.status(202).json({ success: true, data: video })
+  }),
+]
+
+export const reprocessVideo = asyncHandler(async (req: Request, res: Response) => {
+  const video = await videoScenes.reprocess(req.params.id)
+  if (!video) throw new AppError('Vídeo não encontrado', 404, 'NOT_FOUND')
+  res.json({ success: true, data: video })
 })
 
 export const uploadImages = [
@@ -109,28 +141,74 @@ export const uploadImages = [
   }),
 ]
 
+/**
+ * Body: { url, fallbackUrl?, name?, characters? }. fallbackUrl (a miniatura) é usada se o site
+ * bloquear a imagem grande; name e characters vêm da sugestão e valem se a IA não catalogar.
+ */
 export const importImageUrl = asyncHandler(async (req: Request, res: Response) => {
   const url = String(req.body.url ?? '').trim()
-  if (!/^https?:\/\//i.test(url)) throw new AppError('Cole um link que comece com http', 400, 'VALIDATION')
-
-  let response
-  try {
-    response = await axios.get<ArrayBuffer>(url, {
-      responseType: 'arraybuffer',
-      maxContentLength: MAX_IMAGE,
-      timeout: 15000,
-      headers: { 'User-Agent': 'Mozilla/5.0 InstaSearch' },
-    })
-  } catch (error: any) {
-    throw new AppError(`Não consegui baixar a imagem: ${error.message}`, 400, 'DOWNLOAD_FAILED')
-  }
-  const mime = String(response.headers['content-type'] ?? '').split(';')[0]
-  if (!mime.startsWith('image/')) {
-    throw new AppError('Esse link não é de uma imagem. Abra a imagem e copie o endereço dela.', 400, 'NOT_IMAGE')
-  }
-  const name = decodeURIComponent(new URL(url).pathname.split('/').pop() || 'imagem')
-  const image = await library.addImage(Buffer.from(response.data), mime, name, url)
+  const characters = Array.isArray(req.body.characters) ? req.body.characters.map(String).slice(0, 6) : undefined
+  const name = typeof req.body.name === 'string' && req.body.name.trim() ? req.body.name.trim() : undefined
+  const fallbackUrl = String(req.body.fallbackUrl ?? '').trim() || undefined
+  const image = await library.importImageFromUrl(url, { fallbackUrl, name, characters })
   res.status(201).json({ success: true, data: image })
+})
+
+/** GET /library/web-search?q=&characters=a,b&tags=a,b&context=&page= → sugestões da internet para uma cena. */
+/** Tipo de imagem do estilo do projeto (mangá, anime…), para ordenar as sugestões. */
+async function projectImageType(projectId: string) {
+  try {
+    return (await styles.getStyle((await projects.getProject(projectId)).styleId)).imageType
+  } catch {
+    return undefined
+  }
+}
+
+export const webImageSearch = asyncHandler(async (req: Request, res: Response) => {
+  const q = String(req.query.q ?? '').trim()
+  if (!q) throw new AppError('Escreva o que a imagem precisa mostrar', 400, 'VALIDATION')
+  const list = (v: unknown) =>
+    String(v ?? '')
+      .split(',')
+      .map(c => c.trim())
+      .filter(Boolean)
+  const result = await searchWebImages({
+    query: q.slice(0, 200),
+    characters: list(req.query.characters),
+    tags: list(req.query.tags).slice(0, 6),
+    context: String(req.query.context ?? '').slice(0, 200),
+    page: Number(req.query.page) || 1,
+    imageType: typeof req.query.projectId === 'string' ? await projectImageType(req.query.projectId) : undefined,
+  })
+  res.json({ success: true, data: result })
+})
+
+/** PUT /shorts/projects/:id/beats/:beatId/sfx { sfxId: id | null | 'auto' } → efeito sonoro da cena */
+export const setBeatSfx = asyncHandler(async (req: Request, res: Response) => {
+  const raw = req.body?.sfxId
+  const sfxId = raw === null || raw === undefined || raw === '' ? null : String(raw)
+  res.json({ success: true, data: await projects.setBeatSfx(req.params.id, req.params.beatId, sfxId) })
+})
+
+/** POST /shorts/projects/:id/auto-images → busca na internet e coloca imagem nas cenas que precisam. */
+export const autoImages = asyncHandler(async (req: Request, res: Response) => {
+  const result = await projects.autoFillImages(req.params.id)
+  res.json({ success: true, data: result })
+})
+
+/** GET /library/web-thumb?url= → miniatura de uma sugestão (só domínios das fontes de busca). */
+export const webThumb = asyncHandler(async (req: Request, res: Response) => {
+  let thumb
+  try {
+    thumb = await fetchThumb(String(req.query.url ?? ''))
+  } catch {
+    thumb = null
+  }
+  if (!thumb) {
+    res.status(404).end()
+    return
+  }
+  res.set('Content-Type', thumb.type).set('Cache-Control', 'public, max-age=86400').send(thumb.data)
 })
 
 export const updateImage = asyncHandler(async (req: Request, res: Response) => {
@@ -215,4 +293,70 @@ export const deleteStyle = asyncHandler(async (req: Request, res: Response) => {
   }
   await styles.deleteStyle(req.params.id)
   res.json({ success: true })
+})
+
+// ── MP4 e publicação ─────────────────────────────────────
+
+/** POST: começa o render com as props da prévia (ou devolve o MP4 que já bate com elas). */
+export const startRender = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await render.startRender(req.params.id, req.body?.props) })
+})
+
+/** GET ?key=: andamento do render (null = nada renderizado para essas props). */
+export const getRender = asyncHandler(async (req: Request, res: Response) => {
+  const key = typeof req.query.key === 'string' ? req.query.key : undefined
+  res.json({ success: true, data: await render.renderStatus(req.params.id, key) })
+})
+
+/** GET: baixa o MP4 com o título do projeto como nome. */
+export const downloadVideo = asyncHandler(async (req: Request, res: Response) => {
+  const { project, file } = await render.renderedFile(req.params.id)
+  const name = project.title.replace(/[\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 80) || 'short'
+  res.download(file, `${name}.mp4`)
+})
+
+export const publishInstagram = asyncHandler(async (req: Request, res: Response) => {
+  const caption = String(req.body?.caption ?? '')
+  if (!caption.trim()) throw new AppError('Escreva a legenda do post', 400, 'VALIDATION_ERROR')
+  res.json({ success: true, data: await publish.publishInstagram(req.params.id, caption) })
+})
+
+export const publishYouTube = asyncHandler(async (req: Request, res: Response) => {
+  const { title, description, privacy } = req.body ?? {}
+  if (!String(title ?? '').trim()) throw new AppError('Escreva o título do vídeo', 400, 'VALIDATION_ERROR')
+  res.json({
+    success: true,
+    data: await publish.publishYouTube(req.params.id, { title: String(title), description: String(description ?? ''), privacy }),
+  })
+})
+
+// ── Seu canal (final do vídeo) ───────────────────────────
+
+const photoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true)
+    else cb(new AppError('Envie uma imagem', 400, 'INVALID_FILE'))
+  },
+})
+
+export const getChannel = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ success: true, data: await channel.getChannel() })
+})
+
+export const updateChannel = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await channel.updateChannel(req.body ?? {}) })
+})
+
+export const uploadChannelPhoto = [
+  photoUpload.single('photo'),
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.file) throw new AppError('Envie a foto', 400, 'VALIDATION_ERROR')
+    res.json({ success: true, data: await channel.savePhoto(req.file.buffer, req.file.mimetype) })
+  }),
+]
+
+export const channelPhotoFromInstagram = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ success: true, data: await channel.useInstagramProfile() })
 })

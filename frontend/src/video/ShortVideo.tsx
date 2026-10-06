@@ -1,14 +1,16 @@
 // Composição Remotion do Short (1080×1920, 30fps).
-// Cada batida é uma <Sequence>: imagem com movimento, efeito (seta, X, círculo, emoji) e legenda.
+// Cada batida é uma <Sequence>: imagem (ou trecho de vídeo) com movimento, efeito (seta, X, círculo, figurinha de reação) e legenda.
 import { CSSProperties } from 'react'
-import { AbsoluteFill, Audio, Img, interpolate, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion'
+import { AbsoluteFill, Audio, Freeze, Img, interpolate, OffthreadVideo, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import type { ProjectSettings, Region } from '../api/shorts'
-import { focusRegion, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
+import { focusRegion, OutroProps, OUTRO_FRAMES, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
 
 const RED = '#E52222'
 const YELLOW = '#FFD60A'
 
-export function ShortVideo({ beats, settings, audioSrc, musicSrc }: ShortVideoProps) {
+export function ShortVideo({ beats, settings, audioSrc, musicSrc, outro }: ShortVideoProps) {
+  const last = beats[beats.length - 1]
+  const end = last ? last.from + last.frames : 0
   return (
     <AbsoluteFill style={{ background: '#000', fontFamily: 'Inter, sans-serif' }}>
       {beats.map(t => (
@@ -17,6 +19,11 @@ export function ShortVideo({ beats, settings, audioSrc, musicSrc }: ShortVideoPr
           {t.sfxSrc && <Audio src={t.sfxSrc} volume={0.75} />}
         </Sequence>
       ))}
+      {outro && (
+        <Sequence from={end} durationInFrames={OUTRO_FRAMES} name="Final">
+          <Outro outro={outro} background={last?.image?.poster ?? last?.image?.src} />
+        </Sequence>
+      )}
       {audioSrc && <Audio src={audioSrc} />}
       {/* música baixa quando tem voz, para não brigar com a narração */}
       {musicSrc && <Audio src={musicSrc} loop volume={audioSrc ? 0.12 : 0.35} />}
@@ -34,7 +41,7 @@ function BeatScene({ timed, settings }: { timed: TimedBeat; settings: ProjectSet
     <AbsoluteFill>
       {!image ? (
         <MissingImage query={beat.query} />
-      ) : beat.scene === 'evidence' ? (
+      ) : beat.scene === 'evidence' && !image.clip ? (
         <Evidence src={image.src} />
       ) : (
         <FullImage src={image.src} timed={timed} region={region} punch={settings.pace !== 'calmo'} />
@@ -60,8 +67,11 @@ function BeatScene({ timed, settings }: { timed: TimedBeat; settings: ProjectSet
 function FullImage({ src, timed, region, punch }: { src: string; timed: TimedBeat; region?: Region; punch: boolean }) {
   const frame = useCurrentFrame()
   const p = frame / Math.max(1, timed.frames - 1)
-  const cx = region ? region.x + region.w / 2 : 0.5
-  const cy = region ? region.y + region.h / 2 : 0.4
+  const clip = timed.image?.clip
+  // o vídeo deitado vira vertical cortando as laterais: centraliza no que a IA marcou
+  const center = region ?? (clip ? timed.image?.regions[0] : undefined)
+  const cx = center ? center.x + center.w / 2 : 0.5
+  const cy = center ? center.y + center.h / 2 : 0.4
 
   let scale = 1
   let x = 0
@@ -98,10 +108,27 @@ function FullImage({ src, timed, region, punch }: { src: string; timed: TimedBea
 
   return (
     <AbsoluteFill>
-      <Img src={src} style={imgStyle} />
+      {clip ? <ClipVideo src={src} clip={clip} frames={timed.frames} style={imgStyle} /> : <Img src={src} style={imgStyle} />}
       {/* escurece o pé do quadro para a legenda aparecer */}
       <AbsoluteFill style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 100%)' }} />
     </AbsoluteFill>
+  )
+}
+
+/**
+ * Trecho de uma cena de vídeo, sem som. Se a cena for mais curta que a batida, desacelera
+ * até a metade da velocidade e, se ainda faltar, congela no último quadro (nunca mostra a cena seguinte).
+ */
+function ClipVideo({ src, clip, frames, style }: { src: string; clip: { start: number; end: number }; frames: number; style: CSSProperties }) {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+  const clipFrames = Math.max(1, Math.floor((clip.end - clip.start) * fps))
+  const rate = Math.min(1, Math.max(0.5, clipFrames / frames))
+  const last = Math.max(0, Math.floor(clipFrames / rate) - 1)
+  return (
+    <Freeze frame={last} active={frame > last}>
+      <OffthreadVideo src={src} muted trimBefore={Math.round(clip.start * fps)} playbackRate={rate} pauseWhenBuffering style={style} />
+    </Freeze>
   )
 }
 
@@ -246,6 +273,7 @@ function BeatEffect({ timed, region }: { timed: TimedBeat; region?: Region }) {
       )
     }
     case 'emoji':
+      // a reação só aparece com figurinha da biblioteca; emoji desenhado no vídeo não fica bom
       if (timed.stickerSrc) {
         return (
           <Img
@@ -263,23 +291,153 @@ function BeatEffect({ timed, region }: { timed: TimedBeat; region?: Region }) {
           />
         )
       }
-      return (
-        <div
-          style={{
-            position: 'absolute',
-            right: 90,
-            top: 300,
-            fontSize: 230,
-            transform: `scale(${pop}) rotate(${Math.sin(f / 3) * 10}deg)`,
-            filter: 'drop-shadow(0 10px 18px rgba(0,0,0,0.5))',
-          }}
-        >
-          {timed.beat.emoji || '😱'}
-        </div>
-      )
+      return null
     default:
       return null
   }
+}
+
+// ── Final ────────────────────────────────────────────────
+
+/** Foto do perfil, nome, bordão e o botão de inscrever sendo clicado. */
+function Outro({ outro, background }: { outro: OutroProps; background?: string }) {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+  const photoPop = spring({ frame, fps, config: { damping: 12, stiffness: 180 } })
+  const textIn = spring({ frame: frame - 8, fps, config: { damping: 14, stiffness: 200 } })
+  const buttonIn = spring({ frame: frame - 16, fps, config: { damping: 10, stiffness: 240 } })
+  // o cursor chega no botão e clica: o botão afunda e vira "inscrito"
+  const CLICK = 44
+  const cursor = interpolate(frame, [22, CLICK - 4], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+  const press = interpolate(frame, [CLICK - 3, CLICK, CLICK + 4], [1, 0.9, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+  const clicked = frame >= CLICK
+  const fadeOut = interpolate(frame, [OUTRO_FRAMES - 6, OUTRO_FRAMES], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+  const initial = (outro.name.replace(/^@/, '')[0] ?? '?').toUpperCase()
+  const buttonY = 1270
+
+  return (
+    <AbsoluteFill style={{ background: '#0b0b0d', opacity: fadeOut }}>
+      {background && (
+        <Img
+          src={background}
+          style={{
+            position: 'absolute',
+            inset: -80,
+            width: WIDTH + 160,
+            height: HEIGHT + 160,
+            objectFit: 'cover',
+            filter: 'blur(36px) brightness(0.45)',
+            transform: `scale(${interpolate(frame, [0, OUTRO_FRAMES], [1.05, 1.15])})`,
+          }}
+        />
+      )}
+      <AbsoluteFill style={{ background: 'radial-gradient(circle at 50% 38%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 70%)' }} />
+
+      {/* foto */}
+      <div
+        style={{
+          position: 'absolute',
+          left: WIDTH / 2 - 210,
+          top: 380,
+          width: 420,
+          height: 420,
+          borderRadius: '50%',
+          border: `14px solid ${YELLOW}`,
+          overflow: 'hidden',
+          background: '#222',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+          transform: `scale(${photoPop})`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {outro.photoSrc ? (
+          <Img src={outro.photoSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <span style={{ color: '#fff', fontSize: 200, fontWeight: 900 }}>{initial}</span>
+        )}
+      </div>
+
+      {/* nome e bordão */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 60,
+          right: 60,
+          top: 850,
+          textAlign: 'center',
+          opacity: textIn,
+          transform: `translateY(${(1 - textIn) * 40}px)`,
+        }}
+      >
+        {outro.name && <div style={{ color: '#fff', fontSize: 62, fontWeight: 800, textShadow: '0 4px 18px rgba(0,0,0,0.8)' }}>{outro.name}</div>}
+        {outro.text && (
+          <div
+            style={{
+              marginTop: 34,
+              color: YELLOW,
+              fontSize: outro.text.length <= 22 ? 104 : outro.text.length <= 40 ? 84 : 68,
+              fontWeight: 900,
+              lineHeight: 1.05,
+              letterSpacing: -1,
+              WebkitTextStroke: '14px #000',
+              paintOrder: 'stroke fill',
+              textShadow: '0 8px 0 #000',
+              transform: 'rotate(-2deg)',
+            }}
+          >
+            {outro.text.toUpperCase()}
+          </div>
+        )}
+      </div>
+
+      {/* botão */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: buttonY,
+          display: 'flex',
+          justifyContent: 'center',
+          transform: `scale(${buttonIn * press})`,
+        }}
+      >
+        <div
+          style={{
+            padding: '34px 76px',
+            borderRadius: 999,
+            background: clicked ? '#3a3a3f' : RED,
+            color: '#fff',
+            fontSize: 64,
+            fontWeight: 900,
+            letterSpacing: 1,
+            boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+          }}
+        >
+          {clicked ? 'INSCRITO' : outro.button.toUpperCase()}
+        </div>
+      </div>
+
+      {/* cursor */}
+      <svg
+        width="110"
+        height="110"
+        viewBox="0 0 24 24"
+        style={{
+          position: 'absolute',
+          left: interpolate(cursor, [0, 1], [900, WIDTH / 2 + 40]),
+          top: interpolate(cursor, [0, 1], [1780, buttonY + 70]),
+          opacity: interpolate(frame, [20, 24], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+          transform: `scale(${clicked && frame < CLICK + 4 ? 0.85 : 1})`,
+          filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))',
+        }}
+      >
+        <path d="M4 2 L4 19 L8.5 15 L11.5 22 L14.5 20.7 L11.6 14 L18 14 Z" fill="#fff" stroke="#000" strokeWidth="1.4" strokeLinejoin="round" />
+      </svg>
+    </AbsoluteFill>
+  )
 }
 
 // ── Legenda ──────────────────────────────────────────────

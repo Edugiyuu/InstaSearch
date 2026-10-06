@@ -14,12 +14,15 @@ import {
   PICKER_LABEL,
   ShortProject,
   shortsApi,
+  soundUrl,
 } from '../api/shorts'
-import { Segmented, Spinner, useToast } from '../components/flow'
+import { AiBadge, Segmented, Spinner, useToast } from '../components/flow'
 import PublishModal from '../components/PublishModal'
-import { useLibrary, useProject, useSounds, useStyles } from '../hooks/useShorts'
+import { useChannel, useLibrary, useProject, useSounds, useStyles } from '../hooks/useShorts'
 import { ShortPlayer, ShortPlayerHandle } from '../video/ShortPlayer'
 import './Review.css'
+
+const OUTRO_LABEL = { sim: 'Com final', nao: 'Sem' }
 
 const SUGGESTIONS = ['Gancho mais curto', 'Final mais polêmico', 'Mais setas e X', 'Tira uma cena do meio', 'Legenda menor']
 
@@ -29,11 +32,13 @@ function Review() {
   const [params] = useSearchParams()
   const initialBeat = Math.max(0, Number(params.get('cena') ?? 1) - 1)
   const { project, setProject, error, loading } = useProject(id)
-  const { byId } = useLibrary()
+  const { byId, reload: reloadLibrary } = useLibrary()
   const { sounds, byId: soundsById } = useSounds()
+  const { channel } = useChannel()
   const { styles } = useStyles()
   const toast = useToast()
   const player = useRef<ShortPlayerHandle>(null)
+  const preview = useRef<HTMLAudioElement | null>(null)
   const chatEnd = useRef<HTMLDivElement>(null)
   const [current, setCurrent] = useState(initialBeat)
   const [request, setRequest] = useState('')
@@ -87,6 +92,12 @@ function Review() {
       return (await shortsApi.assemble(project.id)).project
     })
 
+  const setOutro = (outro: 'sim' | 'nao') => {
+    const settings = { ...project.settings, outro: outro === 'sim' }
+    setProject({ ...project, settings })
+    shortsApi.updateProject(project.id, { settings }).catch(e => toast.show(errorMessage(e)))
+  }
+
   const setCaption = (caption: CaptionMode) => {
     setProject({ ...project, settings: { ...project.settings, caption } })
     shortsApi.updateProject(project.id, { settings: { ...project.settings, caption } }).catch(e => toast.show(errorMessage(e)))
@@ -117,6 +128,29 @@ function Review() {
   const style = styles.find(s => s.id === project.styleId)
   const beat = project.beats[current]
   const beatImage = beat?.imageId ? byId.get(beat.imageId) : undefined
+  const sfxList = sounds.filter(s => s.kind === 'sfx')
+  const beatSound = beat?.sfxId ? soundsById.get(beat.sfxId) : undefined
+
+  // editor: o usuário escolhe o efeito sonoro da cena (fica travado; "auto" devolve para a montagem)
+  const setSfx = async (value: string) => {
+    if (!beat) return
+    const sfxId = value === 'none' ? null : value
+    const sound = sfxId && sfxId !== 'auto' ? soundsById.get(sfxId) : undefined
+    try {
+      setProject(await shortsApi.setBeatSfx(project.id, beat.id, sfxId))
+      if (sound) playSound(sound.id)
+    } catch (e) {
+      toast.show(errorMessage(e))
+    }
+  }
+
+  const playSound = (soundId?: string) => {
+    const sound = soundId ? soundsById.get(soundId) : undefined
+    if (!sound) return
+    preview.current?.pause()
+    preview.current = new Audio(soundUrl(sound))
+    preview.current.play().catch(() => undefined)
+  }
 
   return (
     <div className="review">
@@ -143,9 +177,9 @@ function Review() {
             {project.beats.map((b, i) => (
               <button
                 key={b.id}
-                className={`rv-tick ${b.locked ? 'match' : b.imageStatus} ${i === current ? 'on' : ''}`}
+                className={`rv-tick ${b.locked ? 'match' : b.imageStatus} ${i === current ? 'on' : ''} ${b.sfxId ? 'has-sfx' : ''}`}
                 style={{ flexGrow: Math.max(2, b.say.split(/\s+/).length) }}
-                title={`${i + 1}. ${b.text}`}
+                title={`${i + 1}. ${b.text}${b.sfxId ? ` · 🔊 ${soundsById.get(b.sfxId)?.name ?? 'efeito'}` : ''}`}
                 onClick={() => player.current?.seekToBeat(i)}
               />
             ))}
@@ -155,7 +189,38 @@ function Review() {
               <span className="c-muted">Cena {current + 1}/{project.beats.length}</span>
               <span className="rv-now-text">“{beat.say}”</span>
               <span className={beatImage ? 'c-muted' : 'c-danger'}>{beatImage ? beatImage.name : 'falta imagem'}</span>
+              <button className="act rv-swap" onClick={() => navigate(`/projeto/${project.id}/imagens?cena=${beat.id}`)}>
+                🖼 Trocar imagem
+              </button>
             </p>
+          )}
+          {beat && (
+            <div className="rv-sfx">
+              <span className="rv-sfx-label">🔊 Efeito sonoro desta cena</span>
+              {sfxList.length === 0 ? (
+                <Link to="/biblioteca?aba=sfx" className="act">+ Adicionar efeitos à biblioteca</Link>
+              ) : (
+                <div className="rv-sfx-row">
+                  <select
+                    className="rv-sfx-pick"
+                    value={beat.sfxLocked ? beat.sfxId ?? 'none' : 'auto'}
+                    onChange={e => setSfx(e.target.value)}
+                    aria-label="Efeito sonoro desta cena"
+                  >
+                    <option value="auto">Automático ({beat.sfxLocked ? 'a montagem escolhe' : beatSound?.name ?? 'sem som'})</option>
+                    <option value="none">Sem som</option>
+                    <optgroup label="Seus efeitos">
+                      {sfxList.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  <button className="btn-g rv-sfx-play" onClick={() => playSound(beat.sfxId)} disabled={!beatSound} title="Ouvir o efeito">
+                    ▶
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </section>
 
@@ -169,6 +234,7 @@ function Review() {
               <div key={h.id} className="rv-msg">
                 <p className="rv-me">{h.request}</p>
                 <p className="rv-ai">{h.reply}</p>
+                <AiBadge ai={h.ai} compact />
               </div>
             ))}
             {working && (
@@ -245,13 +311,36 @@ function Review() {
                   })}
                 </div>
                 <button className="btn-y rv-need-btn" onClick={() => navigate(`/projeto/${project.id}/imagens`)}>
-                  Resolver agora →
+                  Escolher eu mesmo →
+                </button>
+                <button
+                  className="btn-g rv-need-btn"
+                  disabled={!!working}
+                  title="Busca na internet e coloca a melhor imagem em cada cena que falta"
+                  onClick={() =>
+                    run('Buscando imagens na internet', async () => {
+                      const out = await shortsApi.autoImages(project.id)
+                      await reloadLibrary()
+                      toast.show(`Coloquei imagem em ${out.added} de ${out.total} ${out.total === 1 ? 'cena' : 'cenas'}.`)
+                      return out.project
+                    })
+                  }
+                >
+                  ✨ Preencher automaticamente
                 </button>
               </>
             ) : (
               <p className="c-success rv-ok">✓ Todas as cenas têm imagem</p>
             )}
           </div>
+
+          {(project.ai?.script || project.ai?.images) && (
+            <div className="panel rv-card rv-credits">
+              <span className="label">Quem fez</span>
+              <AiBadge label="Roteiro" ai={project.ai?.script} />
+              <AiBadge label="Imagens" ai={project.ai?.images} />
+            </div>
+          )}
 
           <div className="panel rv-card">
             <span className="label">Ajustes rápidos</span>
@@ -275,6 +364,13 @@ function Review() {
               <Segmented value={project.settings.caption} options={CAPTION_LABEL} onChange={setCaption} />
             </div>
             <div className="rv-knob">
+              <span>Final com bordão</span>
+              <Segmented value={project.settings.outro ? 'sim' : 'nao'} options={OUTRO_LABEL} onChange={setOutro} />
+              {project.settings.outro && !channel?.photoFile && !channel?.name && (
+                <Link to="/configuracoes" className="act">Configure sua foto e o bordão em Configurações</Link>
+              )}
+            </div>
+            <div className="rv-knob">
               <span>Música</span>
               {music.length ? (
                 <select className="field rv-music" value={project.musicId ?? ''} onChange={e => setMusic(e.target.value || null)}>
@@ -291,7 +387,7 @@ function Review() {
         </aside>
       </div>
 
-      {publishing && <PublishModal project={project} images={byId} onClose={() => setPublishing(false)} onSaved={setProject} />}
+      {publishing && <PublishModal project={project} images={byId} sounds={soundsById} onClose={() => setPublishing(false)} onSaved={setProject} />}
       {toast.node}
     </div>
   )

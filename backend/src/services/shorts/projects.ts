@@ -4,8 +4,11 @@ import { fileURLToPath } from 'url'
 import { FileStorage } from '../storage/FileStorage.js'
 import { AppError } from '../../middleware/errorHandler.js'
 import { generateId } from '../../utils/idGenerator.js'
+import { logger } from '../../utils/logger.js'
 import { getStyle } from './styles.js'
-import { forgetProject, matchBeats, syncUsage } from './library.js'
+import { getChannel } from './channel.js'
+import { forgetProject, importImageFromUrl, matchBeats, pickSfx, syncUsage } from './library.js'
+import { searchWebImages, type WebImage } from './imageSearch.js'
 import { adjustBeats, generateScript } from './shortsAI.js'
 import { listSounds, syncSoundUsage } from './sounds.js'
 import { normalize } from './library.js'
@@ -13,6 +16,7 @@ import type { Beat, ProjectSettings, ShortProject } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const AUDIO_DIR = path.join(__dirname, '../../../data/short_projects/audio')
+export const RENDERS_DIR = path.join(__dirname, '../../../data/short_projects/renders')
 
 const storage = new FileStorage<ShortProject>('short_projects')
 const MAX_UNDO = 15
@@ -82,9 +86,10 @@ export async function createProject(input: {
     tone: input.tone || 'Curioso',
     narration: script.narration,
     beats: script.beats,
-    settings: { pace: style.pace, effects: style.effects, caption: style.caption },
+    settings: { pace: style.pace, effects: style.effects, caption: style.caption, outro: (await getChannel()).outroDefault },
     status: 'roteiro',
     history: [],
+    ai: { script: script.ai },
     undo: [],
     createdAt: now,
     updatedAt: now,
@@ -111,15 +116,22 @@ export async function updateProject(id: string, changes: Partial<ShortProject>) 
   return save(next)
 }
 
+/** Guarda o MP4 renderizado e as publicações (o updateProject só aceita edições do usuário). */
+export async function recordOutput(id: string, changes: Pick<Partial<ShortProject>, 'render' | 'published' | 'status'>) {
+  const project = await getProject(id)
+  return save({ ...project, ...changes })
+}
+
 /** 04b: escolhe as imagens e passa o projeto para revisão. */
 export async function assemble(id: string) {
   const project = await getProject(id)
-  const { beats, log } = await matchBeats(project.beats, id, {
+  const { beats, log, ai } = await matchBeats(project.beats, id, {
     ai: (project.settings.imagePicker ?? 'ia') === 'ia',
     title: project.title,
     narration: project.narration,
   })
   project.beats = beats
+  if (ai) project.ai = { ...project.ai, images: ai }
   if (project.musicId === undefined) {
     const style = await getStyle(project.styleId)
     const musicId = await pickMusic(style.music)
@@ -134,31 +146,34 @@ export async function adjust(id: string, request: string) {
   if (!request?.trim()) throw new AppError('Escreva o que quer mudar', 400, 'VALIDATION')
   const project = await getProject(id)
   const style = await getStyle(project.styleId)
+  const sfx = await listSounds('sfx')
   const out = await adjustBeats({
     request: request.trim(),
     beats: project.beats,
     narration: project.narration,
     settings: project.settings,
     style,
+    sounds: sfx.map(s => ({ id: s.id, name: s.name })),
   })
 
   const changed = out.beats !== project.beats
-  const { beats } = changed
+  const { beats, ai } = changed
     ? await matchBeats(out.beats, id, {
         ai: (project.settings.imagePicker ?? 'ia') === 'ia',
         title: project.title,
         narration: out.narration,
         keepExisting: true,
       })
-    : { beats: project.beats }
+    : { beats: project.beats, ai: undefined }
 
   project.undo = [project.beats, ...project.undo].slice(0, MAX_UNDO)
   project.beats = beats
   project.narration = out.narration
   project.settings = out.settings as ProjectSettings
+  if (ai) project.ai = { ...project.ai, images: ai }
   project.history = [
     ...project.history,
-    { id: generateId('adj'), request: request.trim(), reply: out.reply, at: new Date().toISOString() },
+    { id: generateId('adj'), request: request.trim(), reply: out.reply, at: new Date().toISOString(), ai: out.ai },
   ]
   return save(project)
 }
@@ -192,6 +207,101 @@ export async function setBeatImage(id: string, beatId: string, imageId: string |
   return save(project)
 }
 
+/** Cenas que ainda precisam de imagem: sem imagem, ou com uma parecida que o usuário não aprovou. */
+const needsImage = (b: Beat) => !b.locked && b.imageStatus !== 'match'
+
+/** Entre as sugestões, a que melhor serve num vídeo vertical e ainda não foi usada. */
+function bestCandidate(images: WebImage[], used: Set<string>, wanted: number) {
+  const free = images.filter(i => !used.has(i.url)).slice(0, 8)
+  // as primeiras batem com a cena; entre elas, prefere imagem em pé, com boa resolução
+  // e sem gente a mais (cena só do Gojo não quer o Gojo com o Toji)
+  const score = (i: WebImage, n: number) => {
+    const tall = i.width && i.height ? (i.height >= i.width * 0.9 ? 2 : 0) : 1
+    const sharp = i.width && i.width >= 700 ? 1 : 0
+    const extra = Math.max(0, new Set(i.characters ?? []).size - Math.max(1, wanted))
+    return tall + sharp - extra * 0.8 - n * 0.35
+  }
+  return free.map((img, n) => ({ img, s: score(img, n) })).sort((a, b) => b.s - a.s)[0]?.img
+}
+
+/**
+ * Botão "Buscar imagens automaticamente": para cada cena que precisa, busca na internet,
+ * baixa a melhor sugestão e coloca na cena. Sem IA (não gasta cota): a imagem entra na
+ * biblioteca com o que a fonte informa e pode ser catalogada depois.
+ */
+export async function autoFillImages(id: string) {
+  const project = await getProject(id)
+  const pending = project.beats.filter(needsImage)
+  const { imageType } = await getStyle(project.styleId)
+  const used = new Set<string>()
+  const results: { beatId: string; ok: boolean; message: string }[] = []
+
+  // 3 cenas por vez: rápido sem abusar das fontes
+  const queue = [...pending]
+  const worker = async () => {
+    for (let beat = queue.shift(); beat; beat = queue.shift()) {
+      try {
+        const found = await searchWebImages({
+          query: beat.query || beat.text,
+          characters: beat.characters,
+          tags: beat.searchTags,
+          context: project.title,
+          imageType,
+        })
+        const pick = bestCandidate(found.images, used, beat.characters.length)
+        if (!pick) {
+          results.push({ beatId: beat.id, ok: false, message: `Nada encontrado para “${beat.query}”` })
+          continue
+        }
+        used.add(pick.url)
+        const img = await importImageFromUrl(pick.url, {
+          fallbackUrl: pick.thumb !== pick.url ? pick.thumb : undefined,
+          name: (beat.characters.join(' e ') || pick.title).slice(0, 40),
+          characters: beat.characters.length ? beat.characters : pick.characters,
+          tags: beat.searchTags?.map(t => t.replace(/_/g, ' ')) ?? [],
+          description: beat.query,
+          catalog: false,
+        })
+        const b = project.beats.find(x => x.id === beat.id)!
+        b.imageId = img.id
+        b.imageStatus = 'match'
+        b.locked = true
+        results.push({ beatId: beat.id, ok: true, message: `“${beat.text}” → ${pick.title}` })
+      } catch (error: any) {
+        results.push({ beatId: beat.id, ok: false, message: `“${beat.text}”: ${String(error.message).slice(0, 80)}` })
+      }
+    }
+  }
+  await Promise.all([worker(), worker(), worker()])
+
+  await syncUsage(id, project.beats)
+  const saved = await save(project)
+  const added = results.filter(r => r.ok).length
+  logger.info(`🖼️ Imagens automáticas em ${id}: ${added} de ${pending.length}`)
+  return { project: saved, added, total: pending.length, results }
+}
+
+/**
+ * Editor: o usuário escolhe o efeito sonoro de uma cena. sfxId = um som da biblioteca,
+ * null = sem som, 'auto' = deixa a montagem escolher de novo.
+ */
+export async function setBeatSfx(id: string, beatId: string, sfxId: string | null) {
+  const project = await getProject(id)
+  const index = project.beats.findIndex(b => b.id === beatId)
+  if (index < 0) throw new AppError('Cena não encontrada', 404, 'NOT_FOUND')
+  const sounds = await listSounds('sfx')
+  const beat = project.beats[index]
+  if (sfxId === 'auto') {
+    const uses = new Map<string, number>()
+    project.beats.forEach(b => b.sfxId && uses.set(b.sfxId, (uses.get(b.sfxId) ?? 0) + 1))
+    project.beats[index] = { ...beat, sfxLocked: false, sfxId: pickSfx({ ...beat, sfxLocked: false, sfxId: undefined }, index, sounds, uses) }
+  } else {
+    if (sfxId && !sounds.some(s => s.id === sfxId)) throw new AppError('Esse efeito não está na biblioteca', 400, 'VALIDATION')
+    project.beats[index] = { ...beat, sfxId: sfxId ?? undefined, sfxLocked: true }
+  }
+  return save(project)
+}
+
 export async function saveAudio(id: string, data: Buffer, ext: string) {
   const project = await getProject(id)
   await fs.mkdir(AUDIO_DIR, { recursive: true })
@@ -205,6 +315,7 @@ export async function saveAudio(id: string, data: Buffer, ext: string) {
 export async function deleteProject(id: string) {
   const project = await getProject(id)
   if (project.audioFile) await fs.unlink(path.join(AUDIO_DIR, project.audioFile)).catch(() => undefined)
+  if (project.render) await fs.unlink(path.join(RENDERS_DIR, project.render.file)).catch(() => undefined)
   await forgetProject(id)
   await syncSoundUsage(id, new Set())
   return storage.delete(id)

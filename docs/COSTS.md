@@ -21,7 +21,7 @@ Princípio do projeto: **todo recurso essencial tem um caminho de custo zero.** 
 | Motor de edição (composição, prévia, render) | Remotion local: gratuito para pessoas físicas e empresas com até 3 funcionários | Licença de empresa do Remotion para empresas maiores |
 | Biblioteca de imagens | Local, catalogada uma vez por imagem (Gemini, nível gratuito) | — |
 | Transcrição e sincronização | whisper.cpp local | APIs de transcrição: centavos por minuto |
-| Roteiro, descrição de imagens, ajustes, escolha de imagens | Gemini, nível gratuito; quando acaba, Claude Haiku 4.5 pelo Claude Code do seu plano Pro/Max (sem custo extra) | Claude Haiku 4.5 pela API: centavos por vídeo. Ver [AI.md](AI.md) |
+| Roteiro, descrição de imagens, ajustes, escolha de imagens | Gemini, nível gratuito; quando acaba, Claude Sonnet 5.5 pelo Claude Code do seu plano Pro/Max (sem custo extra, conta no limite) | Claude Sonnet 5.5 pela API: alguns centavos por vídeo. Ver [AI.md](AI.md) |
 | **Voz** | Seu microfone · Piper local · plano gratuito do ElevenLabs (poucos minutos por mês e restrições de uso comercial) | Planos pagos do ElevenLabs, a partir de cerca de US$ 5/mês. Confira a licença comercial do plano |
 | Imagens novas | As suas (busca manual guiada pela lista de busca) | Geração por IA: centavos por imagem via API, ou grátis com Stable Diffusion/Flux local (exige GPU) |
 | Efeitos sonoros | Sua biblioteca · Pixabay Sound Effects · Freesound (confira a licença de cada arquivo) | Bibliotecas pagas |

@@ -11,6 +11,7 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { logger } from '../utils/logger.js';
+import { askJson } from './shorts/llm.js';
 
 interface ProfileAnalysisResult {
   overview: string;
@@ -325,16 +326,9 @@ Regras:
 Responda APENAS com o JSON válido, sem texto adicional.
 `;
 
-      const result = await this.model.generateContent(prompt);
-      const response = result.response.text();
-      
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('Resposta não está em formato JSON válido');
-      }
+      // Gemini primeiro; se ele estiver sem cota ou fora do ar, o Claude responde
+      const caption = await askJson<CaptionResult>(prompt);
 
-      const caption: CaptionResult = JSON.parse(jsonMatch[0]);
-      
       logger.info('✅ Caption gerada com sucesso');
       return caption;
 

@@ -6,7 +6,13 @@ import { useStyles } from '../hooks/useShorts'
 import './NewVideo.css'
 
 const DURATIONS = [15, 20, 30, 40]
-const TONES = ['Polêmico', 'Curioso', 'Épico', 'Engraçado']
+// tons que seguram gente em vídeo curto; o backend tem a instrução completa de cada um (TONE_GUIDE)
+const TONES = [
+  { name: 'Polêmico', hint: 'Opinião forte que divide e faz a pessoa comentar' },
+  { name: 'Curioso', hint: 'Fato que pouca gente sabe, um detalhe surpreendente por cena' },
+  { name: 'Mistério', hint: 'Promete uma resposta no começo e só revela no final' },
+  { name: 'Papo reto', hint: 'Fala direto com quem assiste, como um amigo, sem enrolação' },
+]
 
 function NewVideo() {
   const navigate = useNavigate()
@@ -81,11 +87,12 @@ function NewVideo() {
           <span className="label">Tom</span>
           <div className="chips">
             {TONES.map(t => (
-              <button key={t} className={`chip ${tone === t ? 'on' : ''}`} onClick={() => setTone(t)}>
-                {t}
+              <button key={t.name} className={`chip ${tone === t.name ? 'on' : ''}`} onClick={() => setTone(t.name)} title={t.hint}>
+                {t.name}
               </button>
             ))}
           </div>
+          <p className="meta nv-tone-hint">{TONES.find(t => t.name === tone)?.hint}</p>
         </div>
       </div>
 

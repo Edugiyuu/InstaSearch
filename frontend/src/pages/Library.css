@@ -479,3 +479,150 @@
 .snd-delete:hover {
   color: var(--danger);
 }
+
+@media (max-width: 600px) {
+  .snd-row {
+    grid-template-columns: 44px 1fr 28px;
+    row-gap: 6px;
+  }
+
+  .snd-row .snd-play {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .snd-row .snd-main {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .snd-row .snd-delete {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .snd-row .snd-usage {
+    grid-column: 2;
+  }
+}
+
+/* ── Vídeos ─────────────────────────────────────────────── */
+
+.lib-big video {
+  display: block;
+  width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+}
+
+.lib-video-hint {
+  flex: 0 1 300px;
+}
+
+.lib-videos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.lib-video {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.lib-video:hover {
+  border-color: var(--faint);
+}
+
+.lib-video.on {
+  border-color: var(--accent);
+}
+
+.lib-video > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.lib-video strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lib-video-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  aspect-ratio: 16 / 9;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--panel-2);
+}
+
+.lib-video-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lib-bar {
+  display: block;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--panel-3);
+  overflow: hidden;
+}
+
+.lib-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s;
+}
+
+.lib-video-error {
+  color: var(--danger);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lib-video-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.lib-video-actions .act {
+  font-size: 12px;
+}
+
+.lib-img {
+  position: relative;
+}
+
+.lib-clip-len {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}

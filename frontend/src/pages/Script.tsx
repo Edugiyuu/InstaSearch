@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { audioUrl, Beat, errorMessage, shortsApi } from '../api/shorts'
-import { copyText, Spinner, Stepper, useToast } from '../components/flow'
+import { AiBadge, copyText, Spinner, Stepper, useToast } from '../components/flow'
 import { useProject } from '../hooks/useShorts'
 import './Script.css'
 
@@ -79,6 +79,12 @@ function Script() {
           <p className="page-sub">
             {project.beats.length} cenas · ~{Math.round(words / 2.6)}s de fala · edite o texto direto ou peça para a IA
           </p>
+          {project.ai?.script && (
+            <div className="sc-credits">
+              <AiBadge label="Roteiro" ai={project.ai.script} />
+              {lastReply?.ai && <AiBadge label="Última mudança" ai={lastReply.ai} />}
+            </div>
+          )}
         </div>
       </div>
 

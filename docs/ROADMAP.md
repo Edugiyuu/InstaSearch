@@ -13,8 +13,8 @@ Legenda: ✅ pronto · ⚠️ funciona com ressalvas · 🚧 incompleto/stub · 
 | Roteiro e voz (`/projeto/:id/roteiro`) | ✅ | Cenas editáveis, pedidos à IA, copiar narração, upload do áudio (a duração do áudio dita os cortes) |
 | Montagem (`/projeto/:id/montagem`) | ✅ | Escolhe imagens, figurinhas, efeitos sonoros e música da biblioteca e mostra as decisões |
 | Revisão (`/projeto/:id`) | ⚠️ | Prévia no `@remotion/player`, "Peça um ajuste", desfazer, ajustes rápidos (ritmo, efeitos, legenda quadrinho/completa/limpa, música), salvar para depois. Legenda completa com tempo estimado (sem Whisper) |
-| Trocar imagem (`/projeto/:id/imagens`) | ✅ | Uma cena por vez: colar, arrastar, link, Google ou biblioteca |
-| Publicar (modal) | ⚠️ | Legenda do post pela IA e "salvar para depois"; **o render MP4 ainda não existe**, então não publica |
+| Trocar imagem (`/projeto/:id/imagens`) | ✅ | Uma cena por vez: sugestões da internet já buscadas (clique e usa), colar, arrastar, link, Google ou biblioteca |
+| Publicar (modal) | ✅ | Legenda do post pela IA, render MP4 no Remotion com progresso, baixar MP4, publicar no Instagram (Reels) e no YouTube (Shorts) |
 | Projetos (`/projetos`) | ✅ | Filtros: no roteiro, faltam imagens, prontos, salvos, publicados |
 | Biblioteca (`/biblioteca`) | ✅ | Abas Imagens, Figurinhas, Efeitos sonoros e Músicas. Catalogação pela IA; áudio de Reels/TikTok/Shorts por link (precisa do `yt-dlp`) |
 | Estilos (`/estilos`) | ✅ | Galeria, ajustes em palavras simples, prévia "Como fica"; mudar um embutido salva uma cópia |
@@ -55,7 +55,7 @@ Dados do fluxo novo ficam em `backend/data/`: `short_projects/`, `library/` (ima
 
 Especificação: [AUTO_EDIT.md](AUTO_EDIT.md)
 
-- [ ] **M1: protótipo Remotion.** ⚠️ Prévia pronta: `frontend/src/video/` (FullImage, Evidence, legendas, setas/X/círculos, figurinhas, sons, música) no `@remotion/player`, com estilos como configuração. **Falta o render MP4 no backend** e a transcrição (Whisper).
+- [ ] **M1: protótipo Remotion.** ⚠️ Prévia pronta: `frontend/src/video/` (FullImage, Evidence, legendas, setas/X/círculos, figurinhas, sons, música) no `@remotion/player`, com estilos como configuração. Render MP4 pronto (`frontend/scripts/render.mjs`, chamado por `backend/src/services/shorts/render.ts`). Falta a transcrição (Whisper).
   - Original: pacote `video/` com `FullImage`, `Evidence` e `Caption`, e **estilos como arquivo de configuração desde o início** (o `comentario-anime` primeiro); áudio + pasta de imagens → Whisper → batidas de 2 a 4 palavras → **prévia no `@remotion/player`** + render MP4 no backend. Sem LLM.
 - [x] Estrutura de **projetos** (`data/short_projects/`, com histórico de ajustes e desfazer). Jobs em background ainda não.
   - Original: (`data/projects/<id>/`) com versões do plano e jobs em background.
@@ -64,12 +64,12 @@ Especificação: [AUTO_EDIT.md](AUTO_EDIT.md)
 
 ## Fase 2: roteiro, planejador e anotações
 
-- [x] **M3: roteiro e planejador.** Feito: roteiro em cenas pela IA, escolha de imagens pela IA lendo o roteiro (ou por palavras), tela "Trocar imagem" com colar, arrastar, URL e Google.
+- [x] **M3: roteiro e planejador.** Feito: roteiro em cenas pela IA, escolha de imagens pela IA lendo o roteiro (ou por palavras), tela "Trocar imagem" com sugestões da internet já buscadas por cena (AniList, Danbooru e Google opcional via Serper), colar, arrastar e URL.
   - Original: Tema → roteiro editável ("copiar narração"); batidas + candidatos da biblioteca → `EditPlan` pelo LLM; **lista de busca** com arrastar, colar e URL. Reaproveita o gerador de prompts atual.
 - [ ] Caminho "já tenho o áudio": transcrição → roteiro reconstruído.
 - [ ] **M4: anotações e memes.** ⚠️ Feito: setas para regiões, X, círculos, emojis e figurinhas. Falta: Logo, Meme, Clip, Versus, TitleCard.
   - Original: `Arrow` apontando para regiões, `Cross`, `Circle`, `Emoji`, `Sticker`, `Logo`, `Flash`, `Meme`, `Clip`, `Versus`, `TitleCard`.
-- [x] Provedor de IA com reserva automática: Gemini → Claude Haiku 4.5 (API ou Claude Code do plano Pro/Max), em `services/shorts/llm.ts`. Ver [AI.md](AI.md). Falta: Ollama e saída estruturada com validação.
+- [x] Provedor de IA com reserva automática: Gemini → Claude Sonnet 5.5 com esforço médio (API ou Claude Code do plano Pro/Max), em `services/shorts/llm.ts`. Ver [AI.md](AI.md). Falta: Ollama e saída estruturada com validação.
 
 ## Fase 3: áudio, editor e ajustes
 

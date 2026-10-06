@@ -57,7 +57,7 @@ backend/
 │   │   └── dashboardController.ts      # health e visão geral
 │   ├── services/
 │   │   ├── shorts/                     # fluxo tema → Short (ver USO.md)
-│   │   │   ├── llm.ts                  # provedores de IA: Gemini → Claude API → Claude Code (Haiku 4.5)
+│   │   │   ├── llm.ts                  # provedores de IA: Gemini → Claude API → Claude Code (Sonnet 5.5)
 │   │   │   ├── shortsAI.ts             # prompts: roteiro, ajustes, escolha de imagens, catalogação
 │   │   │   ├── projects.ts             # projetos, montagem, ajustes, desfazer, música
 │   │   │   ├── library.ts              # imagens e figurinhas: busca, escolha por cena, uso

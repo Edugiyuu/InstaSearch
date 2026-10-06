@@ -128,6 +128,21 @@ Guia de uso: [USO.md](USO.md). Todas as rotas que chamam IA passam pela reserva 
 | POST | `/shorts/projects/:id/assemble` | ✅ | Montagem: imagens (IA ou palavras), figurinhas, efeitos sonoros e música → `{ project, log }` |
 | POST | `/shorts/projects/:id/adjust` | ✅ | `{ request }` → "Peça um ajuste" (IA); só as cenas novas recebem imagem |
 | POST | `/shorts/projects/:id/undo` | ✅ | Volta a versão anterior das cenas |
+| PUT | `/shorts/projects/:id/beats/:beatId/sfx` | ✅ | `{ sfxId }` efeito sonoro da cena: id de um som (fica travado), `null` = sem som, `'auto'` = a montagem escolhe |
+| POST | `/shorts/projects/:id/render` | ✅ | `{ props }` (as props da prévia + `durationInFrames`) → começa o MP4 no Remotion; devolve `{ key, stage, progress }`. Se já existe MP4 para essas props, volta `stage: "done"` |
+| GET | `/shorts/projects/:id/render` | ✅ | `?key=` andamento: `stage` = `bundle` \| `render` \| `done` \| `error`, `progress` 0–1; `null` = nada renderizado |
+| GET | `/shorts/projects/:id/video` | ✅ | Baixa o MP4 (nome = título do projeto) |
+| POST | `/shorts/projects/:id/publish/instagram` | ✅ | `{ caption }` → Cloudinary → Reels; grava `published.instagram` e status `publicado` |
+| POST | `/shorts/projects/:id/publish/youtube` | ✅ | `{ title, description, privacy: "public"\|"unlisted"\|"private" }` → YouTube Shorts; grava `published.youtube` |
+| GET | `/channel` | ✅ | Seu canal: `{ name, text, button, photoFile?, outroDefault }` (final dos vídeos) |
+| PUT | `/channel` | ✅ | Muda `name`, `text` (bordão), `button`, `outroDefault` |
+| POST | `/channel/photo` | ✅ | multipart `photo` → foto do final |
+| POST | `/channel/photo/instagram` | ✅ | Copia a foto (e o @, se o nome estiver vazio) do Instagram conectado |
+| GET | `/youtube/status` | ✅ | `{ configured, account }` (sem tokens) |
+| GET | `/youtube/auth-url` | ✅ | URL de autorização do Google |
+| GET | `/youtube/callback` | ✅ | Volta do Google; redireciona para `/configuracoes?youtube=ok\|erro` |
+| DELETE | `/youtube/account` | ✅ | Desconecta e revoga o acesso |
+| POST | `/shorts/projects/:id/auto-images` | ✅ | Busca na internet e coloca a melhor imagem em cada cena que precisa, sem IA: `{ project, added, total, results[] }` |
 | PUT | `/shorts/projects/:id/beats/:beatId/image` | ✅ | `{ imageId }` escolhe a imagem da cena e trava; `{ imageId: null }` aceita a parecida |
 | POST | `/shorts/projects/:id/audio` | ✅ | `multipart/form-data`, campo `audio` (≤30MB) |
 | GET | `/shorts/audio/:file` | ✅ | Arquivo de áudio da narração |
@@ -147,7 +162,9 @@ Guia de uso: [USO.md](USO.md). Todas as rotas que chamam IA passam pela reserva 
 |---|---|---|---|
 | GET | `/library` | ✅ | `?q=` busca em linguagem natural |
 | POST | `/library/upload` | ✅ | `multipart/form-data`, campo `images` (até 30; ≤15MB cada) e `kind=figurinha` opcional. Cataloga com IA |
-| POST | `/library/import-url` | ✅ | `{ url }` baixa a imagem e cataloga |
+| POST | `/library/import-url` | ✅ | `{ url, fallbackUrl?, name?, characters? }` baixa a imagem e cataloga. `fallbackUrl` (a miniatura) é usada se o site bloquear a grande; `name` e `characters` valem se a IA não catalogar |
+| GET | `/library/web-search` | ✅ | `?q=&characters=a,b&tags=a,b&context=&page=` sugestões da internet para uma cena (`tags` = etiquetas do Danbooru da cena; `page` 2, 3… = outras opções; `projectId` = usa o tipo de imagem do estilo: com mangá, os painéis do mangá vêm primeiro): `{ images[], searched[], google }`. Fontes: Google via Serper (se tiver `SERPER_API_KEY`), AniList (arte oficial) e Danbooru (só `rating:g`). Cache de 15 min |
+| GET | `/library/web-thumb` | ✅ | `?url=` miniatura de uma sugestão, carregada pelo backend (o CDN do Danbooru recusa o navegador). Só aceita os domínios das fontes |
 | PUT | `/library/:id` | ✅ | `{ name?, tags?, characters?, regions?, kind? }` |
 | POST | `/library/:id/recatalog` | ✅ | Cataloga de novo com IA |
 | DELETE | `/library/:id` | ✅ | |

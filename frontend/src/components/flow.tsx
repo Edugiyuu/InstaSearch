@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react'
 import type { ShortStyle } from '../api/shorts'
-import { hueOf, imageUrl, LibraryImage, ShortProject } from '../api/shorts'
+import { AiCredit, aiDetails, aiName, hueOf, imageUrl, LibraryImage, ShortProject } from '../api/shorts'
 
 const STEPS = ['Tema e estilo', 'Roteiro e voz', 'Montagem', 'Revisão']
 
@@ -101,4 +101,19 @@ export function Segmented<T extends string>({
 
 export function Spinner() {
   return <span className="spinner" aria-hidden />
+}
+
+/** "Roteiro: Claude Sonnet 5.5 (seu plano) · 2 buscas na web" */
+export function AiBadge({ label, ai, compact = false }: { label?: string; ai?: AiCredit; compact?: boolean }) {
+  if (!ai) return null
+  const details = aiDetails(ai)
+  const when = new Date(ai.at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+  return (
+    <span className={`ai-badge ${ai.provider === 'gemini' ? 'gemini' : 'claude'} ${compact ? 'compact' : ''}`} title={`${aiName(ai)} · ${when}`}>
+      <span className="ai-dot" />
+      {label && <span className="ai-label">{label}:</span>}
+      <strong>{aiName(ai)}</strong>
+      {!compact && details.map(d => <span key={d}>· {d}</span>)}
+    </span>
+  )
 }

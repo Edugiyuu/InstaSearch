@@ -1,8 +1,9 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
 import { Player, PlayerRef } from '@remotion/player'
-import { audioUrl, LibraryImage, ShortProject, SoundItem, soundUrl } from '../api/shorts'
+import type { LibraryImage, ShortProject, SoundItem } from '../api/shorts'
 import { ShortVideo } from './ShortVideo'
-import { buildTimeline, FPS, HEIGHT, WIDTH } from './timeline'
+import { useChannel } from '../hooks/useShorts'
+import { FPS, HEIGHT, shortVideoProps, WIDTH } from './timeline'
 
 export interface ShortPlayerHandle {
   seekToBeat: (index: number) => void
@@ -26,13 +27,10 @@ export const ShortPlayer = forwardRef<ShortPlayerHandle, Props>(function ShortPl
   ref,
 ) {
   const playerRef = useRef<PlayerRef>(null)
-  const timeline = useMemo(() => buildTimeline(project, images, sounds), [project, images, sounds])
-  const inputProps = useMemo(
-    () => {
-      const music = project.musicId ? sounds?.get(project.musicId) : undefined
-      return { beats: timeline.beats, settings: project.settings, audioSrc: audioUrl(project), musicSrc: music ? soundUrl(music) : undefined }
-    },
-    [timeline, project, sounds],
+  const { channel } = useChannel()
+  const { timeline, props: inputProps, durationInFrames } = useMemo(
+    () => shortVideoProps(project, images, sounds, channel),
+    [project, images, sounds, channel],
   )
 
   useImperativeHandle(ref, () => ({
@@ -48,7 +46,8 @@ export const ShortPlayer = forwardRef<ShortPlayerHandle, Props>(function ShortPl
     let last = -1
     const onFrame = (e: { detail: { frame: number } }) => {
       const i = timeline.beats.findIndex(t => e.detail.frame >= t.from && e.detail.frame < t.from + t.frames)
-      if (i !== last) {
+      // no final (depois da última cena) continua marcando a última cena
+      if (i !== last && i !== -1) {
         last = i
         onBeatChange(i)
       }
@@ -62,7 +61,7 @@ export const ShortPlayer = forwardRef<ShortPlayerHandle, Props>(function ShortPl
       ref={playerRef}
       component={ShortVideo}
       inputProps={inputProps}
-      durationInFrames={timeline.durationInFrames}
+      durationInFrames={durationInFrames}
       fps={FPS}
       compositionWidth={WIDTH}
       compositionHeight={HEIGHT}
