@@ -6,7 +6,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-_(nada; escolha a próxima em "A fazer")_
+- [ ] Bordões de abertura e de final na biblioteca, escolhidos na edição ([ADR 0016](docs/decisions/0016-bordoes-de-abertura-e-final.md))
 
 ## A fazer
 
