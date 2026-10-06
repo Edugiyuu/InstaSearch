@@ -58,8 +58,10 @@ export interface ProjectSettings {
   caption: CaptionMode
   /** Quem escolhe as imagens: a IA lendo o roteiro (padrão) ou a busca por palavras. */
   imagePicker?: ImagePicker
-  /** Final com a foto do perfil, o nome e o bordão (Seu canal, em Configurações). */
-  outro?: boolean
+  /** Bordão de abertura (Biblioteca → Bordões); toca antes da narração. null = sem abertura. */
+  intro?: string | null
+  /** Bordão do final; null = sem final. */
+  outro?: string | null
 }
 
 /** Quem respondeu um pedido de IA (salvo no projeto pelo backend). */
@@ -279,14 +281,23 @@ export const shortsApi = {
   publishYouTube: (id: string, input: { title: string; description: string; privacy: YouTubePrivacy }) =>
     data<ShortProject>(api.post(`/shorts/projects/${id}/publish/youtube`, input, { timeout: 1200000 })),
 
-  getChannel: () => data<Channel>(api.get('/channel')),
-  updateChannel: (changes: Partial<Channel>) => data<Channel>(api.put('/channel', changes)),
-  uploadChannelPhoto: (file: File) => {
+  listCatchphrases: () => data<Catchphrase[]>(api.get('/catchphrases')),
+  /** O clipe já vai com o vídeo; o montado e o "se inscreve" se completam depois. */
+  createCatchphrase: (kind: CatchphraseKind, file?: File) => {
     const form = new FormData()
-    form.append('photo', file)
-    return data<Channel>(api.post('/channel/photo', form, { headers: { 'Content-Type': 'multipart/form-data' } }))
+    form.append('kind', kind)
+    if (file) form.append('file', file, file.name)
+    return data<Catchphrase>(api.post('/catchphrases', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 300000 }))
   },
-  channelPhotoFromInstagram: () => data<Channel>(api.post('/channel/photo/instagram', {}, { timeout: 30000 })),
+  updateCatchphrase: (id: string, changes: Partial<Catchphrase>) => data<Catchphrase>(api.put(`/catchphrases/${id}`, changes)),
+  /** O vídeo (clipe), o áudio (montado) ou a foto (se inscreve). */
+  replaceCatchphraseFile: (id: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    return data<Catchphrase>(api.post(`/catchphrases/${id}/file`, form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 300000 }))
+  },
+  catchphrasePhotoFromInstagram: (id: string) => data<Catchphrase>(api.post(`/catchphrases/${id}/photo/instagram`, {}, { timeout: 30000 })),
+  deleteCatchphrase: (id: string) => api.delete(`/catchphrases/${id}`),
 
   youtubeStatus: () => data<YouTubeStatus>(api.get('/youtube/status')),
   youtubeAuthUrl: () => data<{ url: string }>(api.get('/youtube/auth-url')),
@@ -357,16 +368,33 @@ export const shortsApi = {
 /** Link de download do MP4 renderizado. */
 export const videoDownloadUrl = (projectId: string, key: string) => `/api/shorts/projects/${projectId}/video?v=${key}`
 
-/** Seu canal: o final dos vídeos. */
-export interface Channel {
+/** clipe = vídeo pronto com o som; montado = imagem/cena + áudio + texto; inscreva = foto, nome, frase e botão (ADR 0016). */
+export type CatchphraseKind = 'clipe' | 'montado' | 'inscreva'
+
+/** Bordão: o que abre ou fecha o vídeo. */
+export interface Catchphrase {
+  id: string
   name: string
-  text: string
-  button: string
+  kind: CatchphraseKind
+  /** clipe: o vídeo; montado: o áudio */
+  file?: string
+  /** em segundos */
+  duration: number
+  /** montado: imagem ou cena da biblioteca no fundo */
+  imageId?: string
+  /** montado: texto na tela; inscreva: a frase */
+  text?: string
+  channelName?: string
+  button?: string
   photoFile?: string
-  outroDefault: boolean
+  defaultIntro?: boolean
+  defaultOutro?: boolean
+  createdAt: string
 }
 
-export const channelPhotoUrl = (c: Pick<Channel, 'photoFile'>) => (c.photoFile ? `/api/channel/files/${c.photoFile}` : undefined)
+export const CATCHPHRASE_KIND_LABEL: Record<CatchphraseKind, string> = { clipe: 'Clipe pronto', montado: 'Montado', inscreva: 'Se inscreve' }
+
+export const catchphraseFileUrl = (file?: string) => (file ? `/api/catchphrases/files/${file}` : undefined)
 
 export interface RenderJob {
   key: string

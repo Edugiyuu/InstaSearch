@@ -3,16 +3,25 @@
 import { CSSProperties } from 'react'
 import { AbsoluteFill, Audio, Freeze, Img, interpolate, OffthreadVideo, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import type { ProjectSettings, Region } from '../api/shorts'
-import { focusRegion, OutroProps, OUTRO_FRAMES, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
+import { CatchphraseProps, focusRegion, MediaProps, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
 
 const RED = '#E52222'
 const YELLOW = '#FFD60A'
 
-export function ShortVideo({ beats, settings, audioSrc, musicSrc, outro }: ShortVideoProps) {
+export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro }: ShortVideoProps) {
+  const first = beats[0]
   const last = beats[beats.length - 1]
-  const end = last ? last.from + last.frames : 0
+  const start = intro?.frames ?? 0
+  const end = last ? last.from + last.frames : start
+  // a música para quando entra um final com som próprio, para não brigar com ele
+  const outroHasSound = outro?.kind === 'clipe' || (outro?.kind === 'montado' && !!outro.audioSrc)
   return (
     <AbsoluteFill style={{ background: '#000', fontFamily: 'Inter, sans-serif' }}>
+      {intro && (
+        <Sequence durationInFrames={intro.frames} name="Abertura">
+          <CatchphraseScene c={intro} background={first?.image?.poster ?? first?.image?.src} />
+        </Sequence>
+      )}
       {beats.map(t => (
         <Sequence key={t.beat.id} from={t.from} durationInFrames={t.frames} name={t.beat.text}>
           <BeatScene timed={t} settings={settings} />
@@ -20,13 +29,22 @@ export function ShortVideo({ beats, settings, audioSrc, musicSrc, outro }: Short
         </Sequence>
       ))}
       {outro && (
-        <Sequence from={end} durationInFrames={OUTRO_FRAMES} name="Final">
-          <Outro outro={outro} background={last?.image?.poster ?? last?.image?.src} />
+        <Sequence from={end} durationInFrames={outro.frames} name="Final">
+          <CatchphraseScene c={outro} background={last?.image?.poster ?? last?.image?.src} />
         </Sequence>
       )}
-      {audioSrc && <Audio src={audioSrc} />}
-      {/* música baixa quando tem voz, para não brigar com a narração */}
-      {musicSrc && <Audio src={musicSrc} loop volume={audioSrc ? 0.12 : 0.35} />}
+      {/* a narração e a música começam depois da abertura, que toca com o som dela */}
+      {audioSrc && (
+        <Sequence from={start} layout="none" name="Narração">
+          <Audio src={audioSrc} />
+        </Sequence>
+      )}
+      {musicSrc && (
+        <Sequence from={start} durationInFrames={outroHasSound ? end - start : undefined} layout="none" name="Música">
+          {/* música baixa quando tem voz, para não brigar com a narração */}
+          <Audio src={musicSrc} loop volume={audioSrc ? 0.12 : 0.35} />
+        </Sequence>
+      )}
     </AbsoluteFill>
   )
 }
@@ -297,10 +315,84 @@ function BeatEffect({ timed, region }: { timed: TimedBeat; region?: Region }) {
   }
 }
 
-// ── Final ────────────────────────────────────────────────
+// ── Bordões (abertura e final) ───────────────────────────
 
-/** Foto do perfil, nome, bordão e o botão de inscrever sendo clicado. */
-function Outro({ outro, background }: { outro: OutroProps; background?: string }) {
+/** Um bordão sozinho; background é a imagem da cena vizinha, para o fundo desfocado. */
+export function CatchphraseScene({ c, background }: { c: CatchphraseProps; background?: string }) {
+  switch (c.kind) {
+    case 'clipe':
+      return (
+        <AbsoluteFill style={{ background: '#000' }}>
+          <OffthreadVideo src={c.src} pauseWhenBuffering style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </AbsoluteFill>
+      )
+    case 'montado':
+      return <MountedCatchphrase c={c} background={background} />
+    case 'inscreva':
+      return <Subscribe c={c} background={background} />
+  }
+}
+
+/** Composição só com o bordão, para a prévia na biblioteca. */
+export function CatchphrasePreview({ c }: { c: CatchphraseProps } & Record<string, unknown>) {
+  return (
+    <AbsoluteFill style={{ background: '#000', fontFamily: 'Inter, sans-serif' }}>
+      <CatchphraseScene c={c} />
+    </AbsoluteFill>
+  )
+}
+
+/** Imagem ou cena da biblioteca com um zoom lento, o áudio do bordão e o texto grande no meio. */
+function MountedCatchphrase({ c, background }: { c: Extract<CatchphraseProps, { kind: 'montado' }>; background?: string }) {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+  const textIn = spring({ frame: frame - 3, fps, config: { damping: 11, stiffness: 220 } })
+  const style: CSSProperties = {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    transform: `scale(${interpolate(frame, [0, c.frames], [1.04, 1.16])})`,
+  }
+  const media: MediaProps | undefined = c.image
+  return (
+    <AbsoluteFill style={{ background: '#0b0b0d' }}>
+      {media?.clip ? (
+        <ClipVideo src={media.src} clip={media.clip} frames={c.frames} style={style} />
+      ) : media ? (
+        <Img src={media.src} style={style} />
+      ) : (
+        background && <Img src={background} style={{ ...style, filter: 'blur(36px) brightness(0.45)' }} />
+      )}
+      <AbsoluteFill style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.5) 100%)' }} />
+      {c.text && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 60,
+            right: 60,
+            top: 1180,
+            textAlign: 'center',
+            color: YELLOW,
+            fontSize: c.text.length <= 18 ? 120 : c.text.length <= 40 ? 92 : 70,
+            fontWeight: 900,
+            lineHeight: 1.05,
+            letterSpacing: -1,
+            WebkitTextStroke: '14px #000',
+            paintOrder: 'stroke fill',
+            textShadow: '0 8px 0 #000',
+            transform: `rotate(-2deg) scale(${textIn})`,
+          }}
+        >
+          {c.text.toUpperCase()}
+        </div>
+      )}
+      {c.audioSrc && <Audio src={c.audioSrc} />}
+    </AbsoluteFill>
+  )
+}
+
+/** Foto do perfil, nome, frase e o botão de inscrever sendo clicado. */
+function Subscribe({ c: outro, background }: { c: Extract<CatchphraseProps, { kind: 'inscreva' }>; background?: string }) {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
   const photoPop = spring({ frame, fps, config: { damping: 12, stiffness: 180 } })
@@ -311,7 +403,7 @@ function Outro({ outro, background }: { outro: OutroProps; background?: string }
   const cursor = interpolate(frame, [22, CLICK - 4], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
   const press = interpolate(frame, [CLICK - 3, CLICK, CLICK + 4], [1, 0.9, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
   const clicked = frame >= CLICK
-  const fadeOut = interpolate(frame, [OUTRO_FRAMES - 6, OUTRO_FRAMES], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+  const fadeOut = interpolate(frame, [outro.frames - 6, outro.frames], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
   const initial = (outro.name.replace(/^@/, '')[0] ?? '?').toUpperCase()
   const buttonY = 1270
 
@@ -327,7 +419,7 @@ function Outro({ outro, background }: { outro: OutroProps; background?: string }
             height: HEIGHT + 160,
             objectFit: 'cover',
             filter: 'blur(36px) brightness(0.45)',
-            transform: `scale(${interpolate(frame, [0, OUTRO_FRAMES], [1.05, 1.15])})`,
+            transform: `scale(${interpolate(frame, [0, outro.frames], [1.05, 1.15])})`,
           }}
         />
       )}

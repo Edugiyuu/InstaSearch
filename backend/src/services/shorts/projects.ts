@@ -6,7 +6,7 @@ import { AppError } from '../../middleware/errorHandler.js'
 import { generateId } from '../../utils/idGenerator.js'
 import { logger } from '../../utils/logger.js'
 import { getStyle } from './styles.js'
-import { getChannel } from './channel.js'
+import { CHANNEL_CATCHPHRASE_ID, defaultCatchphrases } from './catchphrases.js'
 import { forgetProject, importImageFromUrl, matchBeats, pickSfx, syncUsage } from './library.js'
 import { searchWebImages, type WebImage } from './imageSearch.js'
 import { adjustBeats, generateScript } from './shortsAI.js'
@@ -21,15 +21,25 @@ export const RENDERS_DIR = path.join(__dirname, '../../../data/short_projects/re
 const storage = new FileStorage<ShortProject>('short_projects')
 const MAX_UNDO = 15
 
+/**
+ * Projetos de antes dos bordões (ADR 0016) guardavam `outro: true/false`, o final do "Seu canal".
+ * Na leitura, true vira o bordão migrado e false vira "sem final"; o arquivo muda no próximo save.
+ */
+function migrateSettings(project: ShortProject) {
+  const outro = project.settings.outro as unknown
+  if (typeof outro === 'boolean') project.settings.outro = outro ? CHANNEL_CATCHPHRASE_ID : null
+  return project
+}
+
 export async function listProjects() {
   const all = await storage.findAll()
-  return all.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  return all.map(migrateSettings).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 }
 
 export async function getProject(id: string) {
   const project = await storage.findById(id)
   if (!project) throw new AppError('Projeto não encontrado', 404, 'NOT_FOUND')
-  return project
+  return migrateSettings(project)
 }
 
 async function save(project: ShortProject) {
@@ -86,7 +96,7 @@ export async function createProject(input: {
     tone: input.tone || 'Curioso',
     narration: script.narration,
     beats: script.beats,
-    settings: { pace: style.pace, effects: style.effects, caption: style.caption, outro: (await getChannel()).outroDefault },
+    settings: { pace: style.pace, effects: style.effects, caption: style.caption, ...(await defaultCatchphrases()) },
     status: 'roteiro',
     history: [],
     ai: { script: script.ai },

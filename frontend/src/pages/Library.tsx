@@ -4,6 +4,7 @@ import { errorMessage, imageUrl, LibraryImage, MediaKind, mediaUrl, shortsApi } 
 import { Spinner, useToast } from '../components/flow'
 import { useLibrary } from '../hooks/useShorts'
 import SoundLibrary from './SoundLibrary'
+import CatchphraseLibrary from './CatchphraseLibrary'
 import TagEditor from '../components/TagEditor'
 import './Library.css'
 
@@ -13,6 +14,7 @@ const TABS = [
   { id: 'figurinhas', label: 'Figurinhas' },
   { id: 'sfx', label: 'Efeitos sonoros' },
   { id: 'musica', label: 'Músicas' },
+  { id: 'bordoes', label: 'Bordões' },
 ] as const
 
 type Tab = (typeof TABS)[number]['id']
@@ -38,6 +40,7 @@ function Library() {
       {tab === 'figurinhas' && <ImageLibrary key="figurinhas" mode="figurinhas" />}
       {tab === 'sfx' && <SoundLibrary key="sfx" kind="sfx" />}
       {tab === 'musica' && <SoundLibrary key="musica" kind="musica" />}
+      {tab === 'bordoes' && <CatchphraseLibrary />}
     </div>
   )
 }

@@ -12,17 +12,17 @@ Legenda: ✅ pronto · ⚠️ funciona com ressalvas · 🚧 incompleto/stub · 
 | Novo vídeo (`/novo`) | ✅ | Tema, estilo, duração e tom; o Gemini escreve o roteiro e divide em cenas. Aceita narração pronta |
 | Roteiro e voz (`/projeto/:id/roteiro`) | ✅ | Cenas editáveis, pedidos à IA, copiar narração, upload do áudio (a duração do áudio dita os cortes) |
 | Montagem (`/projeto/:id/montagem`) | ✅ | Escolhe imagens, figurinhas, efeitos sonoros e música da biblioteca e mostra as decisões |
-| Revisão (`/projeto/:id`) | ⚠️ | Prévia no `@remotion/player`, "Peça um ajuste", desfazer, ajustes rápidos (ritmo, efeitos, legenda quadrinho/completa/limpa, música), salvar para depois. Legenda completa com tempo estimado (sem Whisper) |
+| Revisão (`/projeto/:id`) | ⚠️ | Prévia no `@remotion/player`, "Peça um ajuste", desfazer, ajustes rápidos (ritmo, efeitos, legenda quadrinho/completa/limpa, música, bordão de abertura e do final), salvar para depois. Legenda completa com tempo estimado (sem Whisper) |
 | Trocar imagem (`/projeto/:id/imagens`) | ✅ | Uma cena por vez: sugestões da internet já buscadas (clique e usa), colar, arrastar, link, Google ou biblioteca |
 | Publicar (modal) | ✅ | Legenda do post pela IA, render MP4 no Remotion com progresso, baixar MP4, publicar no Instagram (Reels) e no YouTube (Shorts) |
 | Projetos (`/projetos`) | ✅ | Filtros: no roteiro, faltam imagens, prontos, salvos, publicados |
-| Biblioteca (`/biblioteca`) | ✅ | Abas Imagens, Figurinhas, Efeitos sonoros e Músicas. Catalogação pela IA; áudio de Reels/TikTok/Shorts por link (precisa do `yt-dlp`) |
+| Biblioteca (`/biblioteca`) | ✅ | Abas Imagens, Vídeos, Figurinhas, Efeitos sonoros, Músicas e Bordões (abertura e final, [ADR 0016](decisions/0016-bordoes-de-abertura-e-final.md)). Catalogação pela IA; áudio de Reels/TikTok/Shorts por link (precisa do `yt-dlp`) |
 | Estilos (`/estilos`) | ✅ | Galeria, ajustes em palavras simples, prévia "Como fica"; mudar um embutido salva uma cópia |
 | Calendário (`/calendario`) | ✅ | Posts reais, status do agendador, publicar agora, cancelar, horário sugerido |
 | Configurações (`/configuracoes`) | ✅ | Instagram (token) e IA reais; voz, mídia e sistema marcados como "prévia" |
 | Ferramentas antigas (`/dashboard`, `/my-profile`, `/video-publish`, `/video-prompts`, `/profiles`, `/analysis`, `/content`) | ⚠️ legado | No rodapé do menu. Publicar Reels e Meu Perfil seguem funcionando; o resto é stub |
 
-Dados do fluxo novo ficam em `backend/data/`: `short_projects/`, `library/` (imagens e figurinhas), `sounds/` (efeitos e músicas), `styles/`.
+Dados do fluxo novo ficam em `backend/data/`: `short_projects/`, `library/` (imagens e figurinhas), `sounds/` (efeitos e músicas), `styles/`, `bordoes/` (abertura e final).
 
 ---
 
@@ -77,6 +77,7 @@ Especificação: [AUTO_EDIT.md](AUTO_EDIT.md)
   - Original: Biblioteca de SFX e música, regras `sfx` de cada estilo, ducking, normalização.
 - [ ] ~~**M6: editor da prévia.**~~ Trocado pelo editor automático (revisão + "Peça um ajuste" + ajustes rápidos); sem linha do tempo manual.
   - Original: Linha do tempo de batidas, trocar material e tipo de cena, arrastar a seta, dividir e mesclar batidas, editar legendas, desfazer/refazer.
+- [x] **Bordões de abertura e de final** ([ADR 0016](decisions/0016-bordoes-de-abertura-e-final.md)): clipe pronto, montado ou "se inscreve", criados na biblioteca e escolhidos por vídeo na revisão. Substitui o "Seu canal" de Configurações.
 - [x] **M7: ajustes em linguagem natural.** "Peça um ajuste" com histórico e desfazer; ritmo e efeitos também viram pedidos para a IA.
   - Original: Pedido → patch → nova versão.
 - [ ] Exportar o MP4 (Shorts/TikTok) além de publicar no Instagram.

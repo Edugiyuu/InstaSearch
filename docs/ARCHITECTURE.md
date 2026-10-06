@@ -81,7 +81,7 @@ backend/
 
 `FileStorage<T>` grava **um arquivo por item** em `backend/data/<coleção>/<id>.json` e cria a pasta automaticamente. Cada entidade estende essa classe com consultas específicas (ex.: `PostStorage`, `InstagramAccountStorage`).
 
-Coleções: `instagram_accounts`, `posts`, `profiles`, `reels`, `analyses`, `content`, `users` e, no fluxo de Shorts, `short_projects`, `library`, `sounds` e `styles`. Os arquivos ficam ao lado (`library/files`, `sounds/files`, `short_projects/audio`). Os vídeos das telas antigas ficam em `data/videos/temp` (uploads) e `data/videos/output` (processados).
+Coleções: `instagram_accounts`, `posts`, `profiles`, `reels`, `analyses`, `content`, `users` e, no fluxo de Shorts, `short_projects`, `library`, `sounds`, `styles` e `bordoes`. Os arquivos ficam ao lado (`library/files`, `sounds/files`, `bordoes/files`, `short_projects/audio`). Os vídeos das telas antigas ficam em `data/videos/temp` (uploads) e `data/videos/output` (processados).
 
 ### Tratamento de erros
 

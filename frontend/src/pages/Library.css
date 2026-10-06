@@ -626,3 +626,136 @@
   font-style: normal;
   font-weight: 700;
 }
+
+/* ── Bordões ────────────────────────────────────────────── */
+
+.lib-img video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lib-img {
+  position: relative;
+}
+
+.bdo-badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #000;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.bdo-icon {
+  font-size: 40px;
+}
+
+.bdo-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 4px solid var(--accent);
+  overflow: hidden;
+  background: var(--panel);
+  font-size: 36px;
+  font-weight: 900;
+}
+
+.bdo-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bdo-preview {
+  max-height: 460px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+}
+
+.bdo-preview-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 9 / 16;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.bdo-section {
+  margin-top: 10px;
+}
+
+.bdo-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.bdo-audio {
+  width: 100%;
+  height: 36px;
+}
+
+.bdo-bg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.bdo-bg img {
+  width: 54px;
+  height: 72px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.bdo-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bdo-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.bdo-picker-grid button {
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--panel-2);
+  aspect-ratio: 3 / 4;
+}
+
+.bdo-picker-grid button:hover {
+  border-color: var(--faint);
+}
+
+.bdo-picker-grid button.on {
+  border-color: var(--accent);
+}
+
+.bdo-picker-grid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

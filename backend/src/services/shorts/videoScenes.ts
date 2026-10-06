@@ -260,6 +260,32 @@ async function moveInto(from: string, to: string) {
   }
 }
 
+/** Duração em segundos de um áudio ou vídeo (0 se o ffprobe não souber). */
+export async function mediaDuration(file: string) {
+  const out = await run('ffprobe', ['-v', 'error', '-print_format', 'json', '-show_format', file])
+  return Number(JSON.parse(out).format?.duration ?? 0) || 0
+}
+
+/**
+ * Guarda um vídeo curto inteiro (o clipe de um bordão) em `dir/base.mp4`, convertendo se o
+ * navegador não tocar o arquivo. Diferente do episódio, não vira cenas e o som é mantido.
+ */
+export async function saveClip(tempFile: string, originalName: string, dir: string, base: string) {
+  const ext = path.extname(originalName).toLowerCase()
+  if (!VIDEO_EXTENSIONS.includes(ext)) throw new AppError(`Envie um vídeo (${VIDEO_EXTENSIONS.join(', ')})`, 400, 'INVALID_FILE')
+  await fs.mkdir(dir, { recursive: true })
+  const info = await probe(tempFile)
+  if (PLAYABLE_CONTAINERS.includes(ext) && PLAYABLE_CODECS.includes(info.codec)) {
+    const file = `${base}${ext}`
+    await moveInto(tempFile, path.join(dir, file))
+    return { file, duration: info.duration }
+  }
+  const file = `${base}.mp4`
+  await toPlayable(tempFile, path.join(dir, file), info.duration, () => undefined)
+  await fs.unlink(tempFile).catch(() => undefined)
+  return { file, duration: info.duration }
+}
+
 /** Salva o vídeo enviado e começa a dividir em cenas. Devolve logo; o andamento fica em processing. */
 export async function addVideo(tempFile: string, originalName: string, hint: string) {
   const ext = path.extname(originalName).toLowerCase()

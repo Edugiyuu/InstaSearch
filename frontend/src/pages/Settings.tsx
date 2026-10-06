@@ -1,6 +1,5 @@
-import { AiStatus, Channel, channelPhotoUrl, errorMessage, shortsApi, YouTubeStatus } from '../api/shorts'
-import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react'
-import { useChannel } from '../hooks/useShorts'
+import { AiStatus, errorMessage, shortsApi, YouTubeStatus } from '../api/shorts'
+import { FormEvent, ReactNode, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useInstagram } from '../hooks/useInstagram'
 import api from '../services/api'
@@ -32,90 +31,6 @@ function Card({
       </h2>
       <dl className="kv set-kv">{children}</dl>
       <div className="act-row set-actions">{actions}</div>
-    </section>
-  )
-}
-
-/** Seu canal: o que aparece no final dos vídeos (foto, nome, bordão e botão). */
-function ChannelCard({ instagramConnected }: { instagramConnected: boolean }) {
-  const { channel, setChannel } = useChannel()
-  const [draft, setDraft] = useState<Channel | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [note, setNote] = useState<string | null>(null)
-  const fileInput = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (channel && !draft) setDraft(channel)
-  }, [channel, draft])
-
-  const run = async (work: () => Promise<Channel>, done?: string) => {
-    setBusy(true)
-    setNote(null)
-    try {
-      const next = await work()
-      setChannel(next)
-      setDraft(d => ({ ...next, ...(d ? { name: next.name || d.name, text: d.text, button: d.button } : {}) }))
-      if (done) setNote(done)
-    } catch (e) {
-      setNote(errorMessage(e))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const save = (changes: Partial<Channel>) => run(() => shortsApi.updateChannel(changes))
-  const photo = draft ? channelPhotoUrl(draft) : undefined
-
-  return (
-    <section className="panel set-card set-channel">
-      <h2>Seu canal (final do vídeo)</h2>
-      {!draft ? (
-        <p className="meta">Carregando…</p>
-      ) : (
-        <div className="set-channel-body">
-          <div className="set-channel-photo">
-            <div className="set-avatar">{photo ? <img src={photo} alt="Foto do perfil" /> : <span>{(draft.name.replace(/^@/, '')[0] ?? '?').toUpperCase()}</span>}</div>
-            <button className="act" onClick={() => fileInput.current?.click()} disabled={busy}>↑ Enviar foto</button>
-            {instagramConnected && (
-              <button className="act" onClick={() => run(shortsApi.channelPhotoFromInstagram, 'Foto do Instagram aplicada.')} disabled={busy}>
-                Usar a do Instagram
-              </button>
-            )}
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={e => {
-                const file = e.target.files?.[0]
-                if (file) run(() => shortsApi.uploadChannelPhoto(file), 'Foto salva.')
-                e.target.value = ''
-              }}
-            />
-          </div>
-          <div className="set-channel-fields">
-            <label className="label" htmlFor="ch-name">Nome</label>
-            <input id="ch-name" className="field" value={draft.name} placeholder="@seucanal" maxLength={40}
-              onChange={e => setDraft({ ...draft, name: e.target.value })} onBlur={() => save({ name: draft.name })} />
-            <label className="label" htmlFor="ch-text">Bordão</label>
-            <input id="ch-text" className="field" value={draft.text} placeholder="Se inscreve pra mais!" maxLength={80}
-              onChange={e => setDraft({ ...draft, text: e.target.value })} onBlur={() => save({ text: draft.text })} />
-            <label className="label" htmlFor="ch-button">Texto do botão</label>
-            <input id="ch-button" className="field" value={draft.button} placeholder="INSCREVA-SE" maxLength={24}
-              onChange={e => setDraft({ ...draft, button: e.target.value })} onBlur={() => save({ button: draft.button })} />
-            <label className="set-check">
-              <input type="checkbox" checked={draft.outroDefault}
-                onChange={e => {
-                  setDraft({ ...draft, outroDefault: e.target.checked })
-                  save({ outroDefault: e.target.checked })
-                }} />
-              Colocar o final nos vídeos novos
-            </label>
-            <span className="meta">Em cada vídeo, liga e desliga em Revisão → Ajustes rápidos → Final com bordão.</span>
-            {note && <span className="meta set-channel-note">{note}</span>}
-          </div>
-        </div>
-      )}
     </section>
   )
 }
@@ -352,8 +267,6 @@ function Settings() {
             </>
           )}
         </Card>
-
-        <ChannelCard instagramConnected={connected} />
 
         <Card
           title="Inteligência artificial"

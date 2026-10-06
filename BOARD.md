@@ -6,7 +6,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-- [ ] Bordões de abertura e de final na biblioteca, escolhidos na edição ([ADR 0016](docs/decisions/0016-bordoes-de-abertura-e-final.md))
+_(nada; escolha a próxima em "A fazer")_
 
 ## A fazer
 
@@ -27,6 +27,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-06 · Bordões de abertura e de final na biblioteca, escolhidos na edição ([ADR 0016](docs/decisions/0016-bordoes-de-abertura-e-final.md))
 - [x] 2026-10-05 · Workflow: board em arquivo e commit por tarefa (ADR 0014)
 - [x] 2026-10-05 · ADRs em `docs/decisions/` e `CLAUDE.md`
 - [x] 2026-10-05 · Render MP4, publicação no YouTube/Instagram e busca de imagens

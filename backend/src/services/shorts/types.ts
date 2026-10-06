@@ -68,8 +68,13 @@ export interface ProjectSettings {
   caption: CaptionMode
   /** Quem escolhe as imagens: a IA lendo o roteiro (padrão) ou a busca por palavras. */
   imagePicker?: 'ia' | 'palavras'
-  /** Final com a foto do perfil, o nome e o bordão de "se inscreve" (ver Seu canal em Configurações). */
-  outro?: boolean
+  /** Bordão de abertura (id em Biblioteca → Bordões); toca antes da narração. null = sem abertura. */
+  intro?: string | null
+  /**
+   * Bordão do final; null = sem final. Projetos antigos guardavam true/false (o final do
+   * "Seu canal"); a leitura do projeto converte (ver projects.ts).
+   */
+  outro?: string | null
 }
 
 export type AiProvider = 'gemini' | 'claude' | 'claude-code'
@@ -200,5 +205,36 @@ export interface SoundItem {
   /** Projetos em que o som foi usado. */
   usedIn: string[]
   source?: string
+  createdAt: string
+}
+
+/**
+ * Bordão: o que abre ou fecha o vídeo (ADR 0016).
+ * clipe = vídeo pronto, com o som; montado = imagem/cena da biblioteca + áudio + texto;
+ * inscreva = foto, nome, frase e o botão de inscrever sendo clicado.
+ */
+export type CatchphraseKind = 'clipe' | 'montado' | 'inscreva'
+
+export interface Catchphrase {
+  id: string
+  name: string
+  kind: CatchphraseKind
+  /** clipe: o vídeo; montado: o áudio. */
+  file?: string
+  /** Em segundos: do vídeo (clipe), do áudio (montado) ou fixa (inscreva e montado sem áudio). */
+  duration: number
+  /** montado: imagem ou cena da biblioteca no fundo. */
+  imageId?: string
+  /** montado: texto na tela; inscreva: a frase ("Se inscreve pra mais!"). */
+  text?: string
+  /** inscreva: o @ embaixo da foto. */
+  channelName?: string
+  /** inscreva: texto do botão. */
+  button?: string
+  /** inscreva: foto do perfil. */
+  photoFile?: string
+  /** Vídeos novos já começam com este bordão na abertura / no final. */
+  defaultIntro?: boolean
+  defaultOutro?: boolean
   createdAt: string
 }

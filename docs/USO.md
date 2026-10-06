@@ -57,7 +57,8 @@ A tela mostra cada decisão ("“NARUTO” → naruto e sakura · Naruto e Sakur
 | Efeitos | Poucos · Na medida · Muitos | A IA ajusta a quantidade de setas, X, círculos e reações |
 | Legenda | Quadrinho · **Completa** · Limpa · Sem legenda | Quadrinho = 1 a 3 palavras-chave amarelas; **Completa = todas as palavras da fala**, em blocos de até 4, com a palavra falada acendendo em amarelo; Limpa = texto branco discreto |
 | Música | as músicas da biblioteca · Sem música | A música toca baixinho quando tem voz |
-| Final com bordão | Com final · Sem | 2,5 s no fim com a sua foto, o nome, o bordão e o botão "Inscreva-se" sendo clicado. Configure em **Configurações → Seu canal** |
+| Bordão de abertura | Nenhum · seus bordões | Toca antes da narração, com o som dele; a narração, as cenas e a música começam depois. Vídeos novos já vêm com o bordão marcado como padrão. Crie em **Biblioteca → Bordões** |
+| Bordão do final | Nenhum · seus bordões | Entra depois da última cena. Se o final tem som próprio (clipe ou montado com áudio), a música para quando ele começa |
 
 ### Efeitos sonoros de cada cena
 
@@ -118,7 +119,7 @@ Reinicie o backend. Cada cena aberta gasta 1 busca.
 
 ## Biblioteca (`/biblioteca`)
 
-Quatro abas. Tudo fica em `backend/data/` no seu computador.
+Uma aba para cada tipo de material. Tudo fica em `backend/data/` no seu computador.
 
 | Aba | Para quê | Dicas |
 |---|---|---|
@@ -126,6 +127,7 @@ Quatro abas. Tudo fica em `backend/data/` no seu computador.
 | **Figurinhas** | As reações das cenas (o vídeo não usa emoji) | Use PNG com fundo transparente. A IA etiqueta a reação com sinônimos ("chocado, surpreso, espantado"). Sem figurinha que combine, a cena fica sem reação |
 | **Efeitos sonoros** | Sons dos cortes | A montagem procura pelo nome e pelas etiquetas: whoosh, boom, impacto, pop, ding, erro, risada, suspense, glitch, click. Nomeie os arquivos assim (`whoosh_01.mp3`). Na revisão você escolhe o efeito de cada cena |
 | **Músicas** | Fundo do vídeo | A montagem escolhe pelo clima do estilo (tensa, animada, calma). Cole o link de um **Reel, TikTok ou Short** para pegar o áudio |
+| **Bordões** | O que abre ou fecha o vídeo ([ADR 0016](decisions/0016-bordoes-de-abertura-e-final.md)) | Três tipos: **clipe pronto** (um vídeo seu já com o som, ex.: a dança com o "se ligaa"; mkv/avi são convertidos), **montado** (imagem ou cena da biblioteca + um áudio seu + texto na tela; dura o tempo do áudio) e **se inscreve** (foto, @, frase e o botão sendo clicado, 2,5 s; **Usar a do Instagram** copia a foto e o @). A prévia é a mesma cena que vai para o vídeo. Marque um padrão de abertura e um de final para os vídeos novos; em cada vídeo, troque na revisão. Fica em `backend/data/bordoes/` |
 
 Para pegar áudio de links, instale o [yt-dlp](https://github.com/yt-dlp/yt-dlp) uma vez e reinicie o backend:
 
@@ -141,6 +143,6 @@ Cada estilo aparece como um frame de Short. Os ajustes são em palavras simples:
 
 ## Configurações (`/configuracoes`)
 
-**Seu canal (final do vídeo):** a foto (envie uma ou clique em **Usar a do Instagram**, que também preenche o @), o nome, o bordão ("Se inscreve pra mais!") e o texto do botão. Marque **Colocar o final nos vídeos novos** para já começar ligado; em cada vídeo dá para ligar ou desligar nos ajustes rápidos da revisão. Fica em `backend/data/channel/`.
+O antigo **Seu canal** (final do vídeo) virou um bordão "se inscreve" em **Biblioteca → Bordões**; os dados foram migrados sozinhos na primeira vez que o backend leu os bordões.
 
 Mostra o Instagram conectado e o estado de cada IA: Gemini (com a hora em que a cota volta, se tiver acabado), Claude API e Claude Code do seu plano. Como configurar cada uma: [AI.md](AI.md).

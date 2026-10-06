@@ -4,6 +4,8 @@ import {
   beatsNeedingImage,
   CAPTION_LABEL,
   CaptionMode,
+  Catchphrase,
+  CATCHPHRASE_KIND_LABEL,
   EFFECTS_LABEL,
   EffectsLevel,
   errorMessage,
@@ -18,11 +20,15 @@ import {
 } from '../api/shorts'
 import { AiBadge, Segmented, Spinner, useToast } from '../components/flow'
 import PublishModal from '../components/PublishModal'
-import { useChannel, useLibrary, useProject, useSounds, useStyles } from '../hooks/useShorts'
+import { useCatchphrases, useLibrary, useProject, useSounds, useStyles } from '../hooks/useShorts'
 import { ShortPlayer, ShortPlayerHandle } from '../video/ShortPlayer'
 import './Review.css'
 
-const OUTRO_LABEL = { sim: 'Com final', nao: 'Sem' }
+/** "se ligaa · clipe pronto · 3,2s" na lista de bordões (sem repetir o tipo quando o nome já é ele) */
+const catchphraseLabel = (c: Catchphrase) => {
+  const kind = CATCHPHRASE_KIND_LABEL[c.kind].toLowerCase()
+  return [c.name, c.name.toLowerCase() === kind ? null : kind, `${c.duration.toFixed(1).replace('.', ',')}s`].filter(Boolean).join(' · ')
+}
 
 const SUGGESTIONS = ['Gancho mais curto', 'Final mais polêmico', 'Mais setas e X', 'Tira uma cena do meio', 'Legenda menor']
 
@@ -34,7 +40,7 @@ function Review() {
   const { project, setProject, error, loading } = useProject(id)
   const { byId, reload: reloadLibrary } = useLibrary()
   const { sounds, byId: soundsById } = useSounds()
-  const { channel } = useChannel()
+  const { catchphrases, byId: catchphraseById } = useCatchphrases()
   const { styles } = useStyles()
   const toast = useToast()
   const player = useRef<ShortPlayerHandle>(null)
@@ -92,8 +98,9 @@ function Review() {
       return (await shortsApi.assemble(project.id)).project
     })
 
-  const setOutro = (outro: 'sim' | 'nao') => {
-    const settings = { ...project.settings, outro: outro === 'sim' }
+  /** Abertura ou final: o id de um bordão da biblioteca, ou null para nenhum. */
+  const setCatchphrase = (slot: 'intro' | 'outro', id: string | null) => {
+    const settings = { ...project.settings, [slot]: id }
     setProject({ ...project, settings })
     shortsApi.updateProject(project.id, { settings }).catch(e => toast.show(errorMessage(e)))
   }
@@ -363,13 +370,26 @@ function Review() {
               <span>Legenda</span>
               <Segmented value={project.settings.caption} options={CAPTION_LABEL} onChange={setCaption} />
             </div>
-            <div className="rv-knob">
-              <span>Final com bordão</span>
-              <Segmented value={project.settings.outro ? 'sim' : 'nao'} options={OUTRO_LABEL} onChange={setOutro} />
-              {project.settings.outro && !channel?.photoFile && !channel?.name && (
-                <Link to="/configuracoes" className="act">Configure sua foto e o bordão em Configurações</Link>
-              )}
-            </div>
+            {(['intro', 'outro'] as const).map(slot => (
+              <div className="rv-knob" key={slot}>
+                <span>{slot === 'intro' ? 'Bordão de abertura' : 'Bordão do final'}</span>
+                {catchphrases.length ? (
+                  <select
+                    className="field rv-music"
+                    // um bordão apagado da biblioteca aparece como "Nenhum" (a composição já o ignora)
+                    value={catchphraseById.has(project.settings[slot] ?? '') ? project.settings[slot]! : ''}
+                    onChange={e => setCatchphrase(slot, e.target.value || null)}
+                  >
+                    <option value="">Nenhum</option>
+                    {catchphrases.map(c => (
+                      <option key={c.id} value={c.id}>{catchphraseLabel(c)}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <Link to="/biblioteca?aba=bordoes" className="act">+ Criar bordões na biblioteca</Link>
+                )}
+              </div>
+            ))}
             <div className="rv-knob">
               <span>Música</span>
               {music.length ? (

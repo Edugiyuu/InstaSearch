@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Channel, errorMessage, LibraryImage, ShortProject, shortsApi, ShortStyle, SoundItem } from '../api/shorts'
+import { Catchphrase, errorMessage, LibraryImage, ShortProject, shortsApi, ShortStyle, SoundItem } from '../api/shorts'
 
 export function useProject(id: string | undefined) {
   const [project, setProject] = useState<ShortProject | null>(null)
@@ -122,32 +122,43 @@ export function useSounds() {
   return { sounds, setSounds, byId, loading, error, reload }
 }
 
-// "Seu canal" é um só para o app inteiro: um cache compartilhado, e quem muda avisa os outros
-let channelCache: Channel | null = null
-let channelLoad: Promise<Channel | null> | null = null
-const channelListeners = new Set<(c: Channel | null) => void>()
+// Os bordões são os mesmos no app inteiro (biblioteca, revisão, prévia, render):
+// um cache compartilhado, e quem muda avisa os outros
+let catchphraseCache: Catchphrase[] | null = null
+let catchphraseLoad: Promise<Catchphrase[] | null> | null = null
+const catchphraseListeners = new Set<(list: Catchphrase[] | null) => void>()
 
-function publishChannel(c: Channel | null) {
-  channelCache = c
-  channelListeners.forEach(fn => fn(c))
+/** Como o setState: aceita a lista nova ou uma função que recebe a atual (evita sobrescrever com uma lista velha). */
+function publishCatchphrases(next: Catchphrase[] | ((prev: Catchphrase[]) => Catchphrase[])) {
+  const list = typeof next === 'function' ? next(catchphraseCache ?? []) : next
+  catchphraseCache = list
+  catchphraseListeners.forEach(fn => fn(list))
 }
 
-export function useChannel() {
-  const [channel, setChannel] = useState<Channel | null>(channelCache)
+/** Bordões (abertura e final). `loaded` diz se a lista já chegou: antes disso a prévia ainda não sabe o que tocar. */
+export function useCatchphrases() {
+  const [catchphrases, setCatchphrases] = useState<Catchphrase[] | null>(catchphraseCache)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    channelListeners.add(setChannel)
-    if (!channelCache) {
-      channelLoad ??= shortsApi.getChannel().catch(() => null)
-      channelLoad.then(c => {
-        channelLoad = null
-        if (c) publishChannel(c)
+    catchphraseListeners.add(setCatchphrases)
+    // a lista pode ter chegado entre o render e este efeito, antes de o ouvinte existir
+    if (catchphraseCache) setCatchphrases(catchphraseCache)
+    else {
+      catchphraseLoad ??= shortsApi.listCatchphrases().catch(e => {
+        setError(errorMessage(e))
+        return null
+      })
+      catchphraseLoad.then(list => {
+        catchphraseLoad = null
+        if (list) publishCatchphrases(list)
       })
     }
     return () => {
-      channelListeners.delete(setChannel)
+      catchphraseListeners.delete(setCatchphrases)
     }
   }, [])
 
-  return { channel, setChannel: publishChannel }
+  const byId = useMemo(() => new Map((catchphrases ?? []).map(c => [c.id, c])), [catchphrases])
+  return { catchphrases: catchphrases ?? [], byId, loaded: catchphrases !== null, error, setCatchphrases: publishCatchphrases }
 }

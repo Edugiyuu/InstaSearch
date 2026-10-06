@@ -16,7 +16,7 @@ import * as sounds from '../services/shorts/sounds.js'
 import { aiStatus } from '../services/shorts/llm.js'
 import * as render from '../services/shorts/render.js'
 import * as publish from '../services/shorts/publish.js'
-import * as channel from '../services/shorts/channel.js'
+import * as catchphrases from '../services/shorts/catchphrases.js'
 import { fetchThumb, searchWebImages } from '../services/shorts/imageSearch.js'
 
 const MAX_IMAGE = 15 * 1024 * 1024
@@ -330,33 +330,43 @@ export const publishYouTube = asyncHandler(async (req: Request, res: Response) =
   })
 })
 
-// ── Seu canal (final do vídeo) ───────────────────────────
+// ── Bordões (abertura e final, ADR 0016) ─────────────────
 
-const photoUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 8 * 1024 * 1024, files: 1 },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) cb(null, true)
-    else cb(new AppError('Envie uma imagem', 400, 'INVALID_FILE'))
-  },
+// clipe, áudio ou foto: vai para o disco, o serviço confere pelo tipo do bordão
+const catchphraseUpload = multer({
+  storage: multer.diskStorage({ destination: os.tmpdir() }),
+  limits: { fileSize: 300 * 1024 * 1024, files: 1 },
 })
 
-export const getChannel = asyncHandler(async (_req: Request, res: Response) => {
-  res.json({ success: true, data: await channel.getChannel() })
+export const listCatchphrases = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ success: true, data: await catchphrases.listCatchphrases() })
 })
 
-export const updateChannel = asyncHandler(async (req: Request, res: Response) => {
-  res.json({ success: true, data: await channel.updateChannel(req.body ?? {}) })
-})
-
-export const uploadChannelPhoto = [
-  photoUpload.single('photo'),
+/** multipart: kind (clipe | montado | inscreva) e, no clipe, o vídeo em file. */
+export const createCatchphrase = [
+  catchphraseUpload.single('file'),
   asyncHandler(async (req: Request, res: Response) => {
-    if (!req.file) throw new AppError('Envie a foto', 400, 'VALIDATION_ERROR')
-    res.json({ success: true, data: await channel.savePhoto(req.file.buffer, req.file.mimetype) })
+    res.status(201).json({ success: true, data: await catchphrases.createCatchphrase(req.body.kind, req.file) })
   }),
 ]
 
-export const channelPhotoFromInstagram = asyncHandler(async (_req: Request, res: Response) => {
-  res.json({ success: true, data: await channel.useInstagramProfile() })
+export const updateCatchphrase = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await catchphrases.updateCatchphrase(req.params.id, req.body ?? {}) })
+})
+
+export const replaceCatchphraseFile = [
+  catchphraseUpload.single('file'),
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.file) throw new AppError('Envie o arquivo', 400, 'NO_FILE')
+    res.json({ success: true, data: await catchphrases.replaceFile(req.params.id, req.file) })
+  }),
+]
+
+export const catchphrasePhotoFromInstagram = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await catchphrases.photoFromInstagram(req.params.id) })
+})
+
+export const deleteCatchphrase = asyncHandler(async (req: Request, res: Response) => {
+  await catchphrases.deleteCatchphrase(req.params.id)
+  res.json({ success: true })
 })

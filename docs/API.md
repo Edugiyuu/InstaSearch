@@ -123,7 +123,7 @@ Guia de uso: [USO.md](USO.md). Todas as rotas que chamam IA passam pela reserva 
 | GET | `/shorts/projects` | ✅ | Lista, mais recentes primeiro |
 | POST | `/shorts/projects` | ✅ | `{ theme, styleId, duration: 15–40, tone, narration? }` → projeto com roteiro e cenas (IA) |
 | GET | `/shorts/projects/:id` | ✅ | |
-| PUT | `/shorts/projects/:id` | ✅ | Campos editáveis: `title`, `beats`, `settings` (`pace`, `effects`, `caption`, `imagePicker`), `status` (`roteiro`, `revisao`, `salvo`…), `musicId` (`null` = sem música), `postCaption`, `audioDuration` |
+| PUT | `/shorts/projects/:id` | ✅ | Campos editáveis: `title`, `beats`, `settings` (`pace`, `effects`, `caption`, `imagePicker`, `intro`/`outro` = id do bordão ou `null`), `status` (`roteiro`, `revisao`, `salvo`…), `musicId` (`null` = sem música), `postCaption`, `audioDuration` |
 | DELETE | `/shorts/projects/:id` | ✅ | As imagens e sons continuam na biblioteca |
 | POST | `/shorts/projects/:id/assemble` | ✅ | Montagem: imagens (IA ou palavras), figurinhas, efeitos sonoros e música → `{ project, log }` |
 | POST | `/shorts/projects/:id/adjust` | ✅ | `{ request }` → "Peça um ajuste" (IA); só as cenas novas recebem imagem |
@@ -134,10 +134,13 @@ Guia de uso: [USO.md](USO.md). Todas as rotas que chamam IA passam pela reserva 
 | GET | `/shorts/projects/:id/video` | ✅ | Baixa o MP4 (nome = título do projeto) |
 | POST | `/shorts/projects/:id/publish/instagram` | ✅ | `{ caption }` → Cloudinary → Reels; grava `published.instagram` e status `publicado` |
 | POST | `/shorts/projects/:id/publish/youtube` | ✅ | `{ title, description, privacy: "public"\|"unlisted"\|"private" }` → YouTube Shorts; grava `published.youtube` |
-| GET | `/channel` | ✅ | Seu canal: `{ name, text, button, photoFile?, outroDefault }` (final dos vídeos) |
-| PUT | `/channel` | ✅ | Muda `name`, `text` (bordão), `button`, `outroDefault` |
-| POST | `/channel/photo` | ✅ | multipart `photo` → foto do final |
-| POST | `/channel/photo/instagram` | ✅ | Copia a foto (e o @, se o nome estiver vazio) do Instagram conectado |
+| GET | `/catchphrases` | ✅ | Bordões ([ADR 0016](decisions/0016-bordoes-de-abertura-e-final.md)): `{ id, name, kind: "clipe"\|"montado"\|"inscreva", file?, duration, imageId?, text?, channelName?, button?, photoFile?, defaultIntro?, defaultOutro? }[]` |
+| POST | `/catchphrases` | ✅ | multipart `kind` e, no clipe, o vídeo em `file` (mkv/avi são convertidos para mp4) |
+| PUT | `/catchphrases/:id` | ✅ | Muda `name`, `text`, `imageId` (montado), `channelName` e `button` (se inscreve), `defaultIntro`/`defaultOutro` (marcar um desmarca o anterior) |
+| POST | `/catchphrases/:id/file` | ✅ | multipart `file`: o vídeo (clipe), o áudio (montado) ou a foto (se inscreve); a duração é medida com o ffprobe |
+| POST | `/catchphrases/:id/photo/instagram` | ✅ | Se inscreve: copia a foto (e o @, se o nome estiver vazio) do Instagram conectado |
+| DELETE | `/catchphrases/:id` | ✅ | Apaga o bordão e o arquivo; os vídeos que o usavam ficam sem ele |
+| GET | `/catchphrases/files/:file` | ✅ | Arquivos dos bordões |
 | GET | `/youtube/status` | ✅ | `{ configured, account }` (sem tokens) |
 | GET | `/youtube/auth-url` | ✅ | URL de autorização do Google |
 | GET | `/youtube/callback` | ✅ | Volta do Google; redireciona para `/configuracoes?youtube=ok\|erro` |

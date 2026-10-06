@@ -13,7 +13,7 @@ import {
   YouTubeStatus,
 } from '../api/shorts'
 import { useInstagram } from '../hooks/useInstagram'
-import { useChannel } from '../hooks/useShorts'
+import { useCatchphrases } from '../hooks/useShorts'
 import { shortVideoProps } from '../video/timeline'
 import { copyText, ProjectCover, Segmented, Spinner } from './flow'
 import './PublishModal.css'
@@ -58,11 +58,11 @@ function PublishModal({ project, images, sounds, onClose, onSaved }: Props) {
 
   // ── MP4: começa sozinho ao abrir e acompanha o andamento ──
 
-  const { channel } = useChannel()
+  const { byId: catchphrases, loaded: catchphrasesLoaded } = useCatchphrases()
   const renderProps = useMemo(() => {
-    const { props, durationInFrames } = shortVideoProps(project, images, sounds, channel)
+    const { props, durationInFrames } = shortVideoProps(project, images, sounds, catchphrases)
     return { ...props, durationInFrames }
-  }, [project, images, sounds, channel])
+  }, [project, images, sounds, catchphrases])
 
   const startRender = useCallback(async () => {
     setMessage(null)
@@ -74,9 +74,9 @@ function PublishModal({ project, images, sounds, onClose, onSaved }: Props) {
   }, [project.id, renderProps])
 
   // só uma vez ao abrir (mudanças aqui, como legenda e publicações, não mudam o vídeo),
-  // mas com o final ligado espera o "Seu canal" carregar para o MP4 sair com ele
+  // mas, com abertura ou final, espera os bordões carregarem para o MP4 sair com eles
   const started = useRef(false)
-  const propsReady = !project.settings.outro || !!channel
+  const propsReady = (!project.settings.intro && !project.settings.outro) || catchphrasesLoaded
   useEffect(() => {
     if (started.current || !propsReady) return
     started.current = true

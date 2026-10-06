@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'rea
 import { Player, PlayerRef } from '@remotion/player'
 import type { LibraryImage, ShortProject, SoundItem } from '../api/shorts'
 import { ShortVideo } from './ShortVideo'
-import { useChannel } from '../hooks/useShorts'
+import { useCatchphrases } from '../hooks/useShorts'
 import { FPS, HEIGHT, shortVideoProps, WIDTH } from './timeline'
 
 export interface ShortPlayerHandle {
@@ -27,10 +27,10 @@ export const ShortPlayer = forwardRef<ShortPlayerHandle, Props>(function ShortPl
   ref,
 ) {
   const playerRef = useRef<PlayerRef>(null)
-  const { channel } = useChannel()
+  const { byId: catchphrases } = useCatchphrases()
   const { timeline, props: inputProps, durationInFrames } = useMemo(
-    () => shortVideoProps(project, images, sounds, channel),
-    [project, images, sounds, channel],
+    () => shortVideoProps(project, images, sounds, catchphrases),
+    [project, images, sounds, catchphrases],
   )
 
   useImperativeHandle(ref, () => ({

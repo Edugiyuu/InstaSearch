@@ -3,7 +3,7 @@ import * as shortsController from '../controllers/shortsController.js'
 import { AUDIO_DIR } from '../services/shorts/projects.js'
 import { LIBRARY_FILES_DIR } from '../services/shorts/library.js'
 import { SOUND_FILES_DIR } from '../services/shorts/sounds.js'
-import { CHANNEL_FILES_DIR } from '../services/shorts/channel.js'
+import { CATCHPHRASE_FILES_DIR } from '../services/shorts/catchphrases.js'
 import * as profileController from '../controllers/profileController.js'
 import * as analysisController from '../controllers/analysisController.js'
 import * as contentController from '../controllers/contentController.js'
@@ -123,12 +123,14 @@ router.post('/shorts/projects/:id/publish/instagram', shortsController.publishIn
 router.post('/shorts/projects/:id/publish/youtube', shortsController.publishYouTube)
 router.use('/shorts/audio', express.static(AUDIO_DIR))
 
-// Seu canal: foto, nome e bordão do final dos vídeos
-router.get('/channel', shortsController.getChannel)
-router.put('/channel', shortsController.updateChannel)
-router.post('/channel/photo', ...shortsController.uploadChannelPhoto)
-router.post('/channel/photo/instagram', shortsController.channelPhotoFromInstagram)
-router.use('/channel/files', express.static(CHANNEL_FILES_DIR, { maxAge: '7d' }))
+// Bordões: abertura e final dos vídeos (ADR 0016)
+router.get('/catchphrases', shortsController.listCatchphrases)
+router.post('/catchphrases', ...shortsController.createCatchphrase)
+router.put('/catchphrases/:id', shortsController.updateCatchphrase)
+router.post('/catchphrases/:id/file', ...shortsController.replaceCatchphraseFile)
+router.post('/catchphrases/:id/photo/instagram', shortsController.catchphrasePhotoFromInstagram)
+router.delete('/catchphrases/:id', shortsController.deleteCatchphrase)
+router.use('/catchphrases/files', express.static(CATCHPHRASE_FILES_DIR, { maxAge: '7d' }))
 
 router.get('/shorts/styles', shortsController.listStyles)
 router.post('/shorts/styles', shortsController.saveStyle)
