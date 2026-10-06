@@ -10,31 +10,30 @@ App pessoal e *self-hosted* que transforma um tema num Short narrado: roteiro (I
 2. Siga os padrões de código do [CONTRIBUTING.md](CONTRIBUTING.md) (backend `routes → controllers → services → storage`, frontend `página → hook → api`, providers para serviços externos, nada de segredos no código).
 3. Regras de produto do [ADR 0011](docs/decisions/0011-editor-automatico.md): editor automático, a IA sugere e o usuário aprova, sem linha do tempo/trilhas, **sem dados de mentira nem prévias falsas**.
 
-## Workflow (Kanban — ver [ADR 0013](docs/decisions/0013-workflow-kanban-github-projects.md))
+## Workflow (ver [ADR 0014](docs/decisions/0014-board-em-arquivo-e-commit-por-tarefa.md))
 
-O board fica no **GitHub Projects** do repositório `Edugiyuu/InstaSearch`. Cada tarefa é uma **issue**.
+O board é o **[BOARD.md](BOARD.md)**, na raiz. **Leia no início de cada sessão** para saber o que está em andamento. Colunas: `Fazendo`, `A fazer`, `Backlog`, `Feito`; a ordem das listas é a prioridade, e quem decide a prioridade é o usuário.
 
-Colunas: `Backlog → A fazer → Fazendo → Revisão → Feito`
-
-**Limite: 1 cartão em "Fazendo".** Não começar outra tarefa com uma aberta. Se surgir algo fora do escopo no meio do trabalho, crie uma issue no Backlog e continue a tarefa atual.
+**Limite: 1 tarefa em "Fazendo".** Não começar outra com uma aberta. Se surgir algo fora do escopo no meio do trabalho, anote no Backlog e continue a tarefa atual.
 
 Ciclo de uma tarefa:
 
-1. **Escolha:** o usuário escolhe a issue. Mova para "Fazendo".
-2. **Branch** a partir do `master` atualizado: `tipo/<nº-da-issue>-descricao-curta` (ex.: `feat/14-whisper-local`, `fix/21-avisos-tsc`).
-3. **Commits pequenos** em [Conventional Commits](https://www.conventionalcommits.org/pt-br/): `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`. A primeira linha diz *o quê*; o corpo diz *por quê*, quando não for óbvio. Sem misturar features num commit.
-4. **Pronto para revisão:** cumpra a Definição de Pronto, abra o PR com `Closes #<nº>` e mova para "Revisão".
-5. **Revisão do usuário:** ele testa e aprova. Só então merge no `master`; a issue fecha sozinha e vai para "Feito".
+1. **Escolha:** o usuário escolhe a tarefa (ou diz "a próxima": a primeira de "A fazer"). Mova para "Fazendo".
+2. **Execução:** só o que a tarefa pede. Nada de misturar outras mudanças.
+3. **Teste do usuário:** cumpra a Definição de Pronto e peça para o usuário testar.
+4. **Commit no `master`**, um por tarefa, que também move a tarefa para "Feito" no `BOARD.md` (com a data). Push só quando o usuário pedir.
 
-Nunca faça commit direto no `master` fora desse fluxo, a não ser que o usuário peça.
+Branch só para experimento arriscado, que talvez seja descartado. Sem PRs.
+
+**Commits** em [Conventional Commits](https://www.conventionalcommits.org/pt-br/): `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`. A primeira linha diz *o quê*; o corpo diz *por quê*, quando não for óbvio.
 
 ### Definição de Pronto
 
-- [ ] Compila: `npx tsc --noEmit -p .` no `backend` e no `frontend` sem erros novos
+- [ ] Compila: `npx tsc --noEmit -p backend` e `-p frontend` sem erros novos
 - [ ] Se mudou a interface: testado no navegador (preview `frontend` em `.claude/launch.json`)
 - [ ] Documentação em `docs/` e status no [ROADMAP](docs/ROADMAP.md) atualizados, se o comportamento mudou
 - [ ] ADR escrito, se a tarefa tomou uma decisão importante (critérios abaixo)
-- [ ] PR explica **o quê**, **por quê** e **como testar**
+- [ ] `BOARD.md` atualizado no mesmo commit
 
 ## ADRs
 
@@ -52,14 +51,6 @@ npm --prefix frontend run dev    # app em localhost:5173
 npx tsc --noEmit -p backend      # checagem de tipos
 npx tsc --noEmit -p frontend
 npm --prefix frontend run lint
-```
-
-Board e issues pelo `gh` (precisa do escopo `project`: `gh auth refresh -s project`):
-
-```bash
-gh issue list
-gh issue create --title "..." --body "..." --label "..."
-gh project item-list <nº-do-projeto> --owner Edugiyuu
 ```
 
 Problema conhecido: o `tsc` do backend acusa variáveis não usadas (`noUnusedLocals`) em arquivos antigos; não são erros novos.

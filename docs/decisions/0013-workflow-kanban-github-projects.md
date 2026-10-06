@@ -1,6 +1,6 @@
 # 0013 — Workflow Kanban no GitHub Projects
 
-**Status:** Aceita · **Data:** 2026-10-05
+**Status:** Substituída por [0014](0014-board-em-arquivo-e-commit-por-tarefa.md) · **Data:** 2026-10-05
 
 ## Contexto
 

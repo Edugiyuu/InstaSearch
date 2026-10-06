@@ -129,6 +129,7 @@ Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) e endpoints em [docs
 | [AI.md](docs/AI.md) | Onde a IA é usada, Gemini e a reserva automática com o Claude Sonnet 5.5 (API ou plano Pro) |
 | [COSTS.md](docs/COSTS.md) | O que é grátis, o que é pago e quanto custa |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Estrutura do código e decisões técnicas |
+| [BOARD.md](BOARD.md) | **O que está sendo feito agora**, o que vem depois e o que já foi entregue |
 | [decisions/](docs/decisions/README.md) | **ADRs:** o porquê de cada decisão importante, as alternativas e o que custa |
 | [API.md](docs/API.md) | Referência dos endpoints |
 | [FIGMA.md](docs/FIGMA.md) | Prototipar telas no Figma com IA (desenhar e ler designs via MCP) |
