@@ -20,8 +20,13 @@ Ciclo de uma tarefa:
 
 1. **Escolha:** o usuário escolhe a tarefa (ou diz "a próxima": a primeira de "A fazer"). Mova para "Fazendo".
 2. **Execução:** só o que a tarefa pede. Nada de misturar outras mudanças.
-3. **Teste do usuário:** cumpra a Definição de Pronto e peça para o usuário testar.
-4. **Commit no `master`**, um por tarefa, que também move a tarefa para "Feito" no `BOARD.md` (com a data). Push só quando o usuário pedir.
+3. **Revisão por explicação:** cumpra a Definição de Pronto e **explique a mudança antes do commit**. O usuário quer entender o código, não só aceitar (ele não quer virar *vibe coder*). Para cada arquivo alterado:
+   - **o que** mudou, apontando os trechos (`arquivo.ts:linha`);
+   - **por que foi feito desse jeito**, e não de outro: as alternativas e o motivo da escolha;
+   - **conceitos novos** (padrão, API, recurso da linguagem) explicados em poucas palavras.
+
+   Responda às perguntas até ele entender. Se ele preferir outro caminho, ajuste. Ele também testa o app quando a interface muda.
+4. **Commit no `master`** só depois da revisão, um por tarefa. O corpo do commit resume o porquê da explicação. O mesmo commit move a tarefa para "Feito" no `BOARD.md` (com a data). Push só quando o usuário pedir.
 
 Branch só para experimento arriscado, que talvez seja descartado. Sem PRs.
 
@@ -33,6 +38,7 @@ Branch só para experimento arriscado, que talvez seja descartado. Sem PRs.
 - [ ] Se mudou a interface: testado no navegador (preview `frontend` em `.claude/launch.json`)
 - [ ] Documentação em `docs/` e status no [ROADMAP](docs/ROADMAP.md) atualizados, se o comportamento mudou
 - [ ] ADR escrito, se a tarefa tomou uma decisão importante (critérios abaixo)
+- [ ] Mudança explicada ao usuário (o quê, por quê, alternativas) e dúvidas respondidas
 - [ ] `BOARD.md` atualizado no mesmo commit
 
 ## ADRs

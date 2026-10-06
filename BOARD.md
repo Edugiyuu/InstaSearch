@@ -14,6 +14,7 @@ _(nada; escolha a próxima em "A fazer")_
 - [ ] Corrigir os avisos de variáveis não usadas do `tsc` no backend (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
 - [ ] Remover a dependência `openai`, que não é usada (pendência do [ADR 0006](docs/decisions/0006-remover-openai.md))
+- [ ] Configurar testes e escrever os primeiros (aguarda a escolha do framework no [ADR 0015](docs/decisions/0015-framework-de-testes.md))
 
 ## Backlog
 
@@ -22,7 +23,6 @@ _(nada; escolha a próxima em "A fazer")_
 - [ ] Remover os logs que imprimem `INSTAGRAM_CLIENT_ID`
 - [ ] Criptografar os tokens em `data/instagram_accounts/`
 - [ ] Apagar o vídeo do Cloudinary depois de publicar
-- [ ] Configurar testes com Vitest
 - [ ] Demais itens da Fase 0 do [ROADMAP](docs/ROADMAP.md#fase-0-fundação-e-segurança-prioridade-imediata)
 
 ## Feito
