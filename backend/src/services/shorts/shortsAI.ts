@@ -96,6 +96,8 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
         sfxLocked: sound ? true : previous?.sfxLocked,
         // sem "twist" na resposta: mantém o de antes; null tira
         twist: b.twist === undefined && previous ? previous.twist : cleanTwist(b.twist),
+        // escolha do usuário na revisão; com outra imagem, volta para o automático
+        framing: changedImage ? undefined : previous?.framing,
       }
     })
 }

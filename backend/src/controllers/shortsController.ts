@@ -100,6 +100,13 @@ export const setBeatImage = asyncHandler(async (req: Request, res: Response) => 
   res.json({ success: true, data: await projects.setBeatImage(id, beatId, req.body.imageId ?? null) })
 })
 
+/** Body: { framing: 'cover' | 'fit' | null } → tela cheia, imagem inteira ou automático. */
+export const setBeatFraming = asyncHandler(async (req: Request, res: Response) => {
+  const { id, beatId } = req.params
+  const framing = req.body.framing === 'cover' || req.body.framing === 'fit' ? req.body.framing : null
+  res.json({ success: true, data: await projects.setBeatFraming(id, beatId, framing) })
+})
+
 export const uploadAudio = [
   audioUpload.single('audio'),
   asyncHandler(async (req: Request, res: Response) => {

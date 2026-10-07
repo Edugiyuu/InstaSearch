@@ -66,7 +66,7 @@ function BeatScene({ timed, settings }: { timed: TimedBeat; settings: ProjectSet
         <FullImage src={image.src} timed={timed} region={region} punch={settings.pace !== 'calmo'} />
       )}
 
-      {image && <BeatEffect timed={timed} region={beat.scene === 'evidence' ? undefined : regionOnScreen(region, image.width, image.height)} />}
+      {image && <BeatEffect timed={timed} region={beat.scene === 'evidence' ? undefined : regionOnScreen(region, image.width, image.height, beat.framing)} />}
 
       {settings.caption === 'completa' ? (
         <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} />
@@ -93,7 +93,7 @@ function FullImage({ src, timed, region, punch }: { src: string; timed: TimedBea
   const cy = center ? center.y + center.h / 2 : 0.4
 
   // o zoom conta o recorte que o cover já faz; imagem larga fica inteira (ADR 0020)
-  const fr = framing(timed.image?.width, timed.image?.height, region)
+  const fr = framing(timed.image?.width, timed.image?.height, region, timed.beat.framing)
   const cap = (s: number) => Math.min(s, fr.maxScale)
 
   let scale = 1

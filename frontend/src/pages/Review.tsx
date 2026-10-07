@@ -23,6 +23,7 @@ import PublishModal from '../components/PublishModal'
 import { useCatchphrases, useLibrary, useProject, useSounds, useStyles } from '../hooks/useShorts'
 import { ShortPlayer, ShortPlayerHandle } from '../video/ShortPlayer'
 import { voiceTiming } from '../video/timeline'
+import { framing } from '../video/framing'
 import './Review.css'
 
 /** "se ligaa · clipe pronto · 3,2s" na lista de bordões (sem repetir o tipo quando o nome já é ele) */
@@ -62,6 +63,10 @@ function VoiceSync({ project, onSync }: { project: ShortProject; onSync: () => v
   }
   return <li>Legenda com tempo estimado · {retry('sincronizar com a voz')}</li>
 }
+
+/** O que o automático faz com esta imagem: inteira se for larga, tela cheia se for em pé (ADR 0020). */
+const framingLabel = (img: { width?: number; height?: number }) =>
+  framing(img.width, img.height).mode === 'fit' ? 'inteira' : 'tela cheia'
 
 const SUGGESTIONS = ['Gancho mais curto', 'Final mais polêmico', 'Mais setas e X', 'Tira uma cena do meio', 'Legenda menor']
 
@@ -199,6 +204,16 @@ function Review() {
     }
   }
 
+  /** Tela cheia, imagem inteira ou automático nesta cena (ADR 0020). */
+  const setFraming = async (value: 'auto' | 'cover' | 'fit') => {
+    if (!beat) return
+    try {
+      setProject(await shortsApi.setBeatFraming(project.id, beat.id, value === 'auto' ? null : value))
+    } catch (e) {
+      toast.show(errorMessage(e))
+    }
+  }
+
   const playSound = (soundId?: string) => {
     const sound = soundId ? soundsById.get(soundId) : undefined
     if (!sound) return
@@ -248,6 +263,16 @@ function Review() {
                 🖼 Trocar imagem
               </button>
             </p>
+          )}
+          {beat && beatImage && beat.scene !== 'evidence' && (
+            <div className="rv-sfx">
+              <span className="rv-sfx-label">🖼 Enquadramento desta cena</span>
+              <Segmented
+                value={beat.framing ?? 'auto'}
+                options={{ auto: `Automático (${framingLabel(beatImage)})`, cover: 'Tela cheia', fit: 'Inteira' }}
+                onChange={setFraming}
+              />
+            </div>
           )}
           {beat && (
             <div className="rv-sfx">

@@ -32,9 +32,10 @@ export interface Framing {
 /** Sem tamanho conhecido (imagem antiga ainda não medida): supõe um recorte médio. */
 const UNKNOWN_VISIBLE = 0.75
 
-export function framing(width?: number, height?: number, region?: Region): Framing {
+/** forced: o que o usuário escolheu na revisão (tela cheia ou inteira); sem ele, decide pelo formato. */
+export function framing(width?: number, height?: number, region?: Region, forced?: 'cover' | 'fit'): Framing {
   const aspect = width && height ? width / height : undefined
-  if (aspect && aspect > FIT_ABOVE) return { mode: 'fit', maxScale: 1.08, zoomEnd: 1.06, closeUp: false }
+  if (forced === 'fit' || (!forced && aspect && aspect > FIT_ABOVE)) return { mode: 'fit', maxScale: 1.08, zoomEnd: 1.06, closeUp: false }
 
   // quanto da imagem aparece com o cover, na largura e na altura (1 = inteira)
   const visW = aspect ? Math.min(1, FRAME_ASPECT / aspect) : UNKNOWN_VISIBLE
@@ -54,9 +55,17 @@ export function framing(width?: number, height?: number, region?: Region): Frami
  * No modo inteira (fit), a imagem ocupa só uma faixa no meio da tela; no cover, continua a
  * aproximação de antes (a área relativa à imagem).
  */
-export function regionOnScreen(region: Region | undefined, width?: number, height?: number): Region | undefined {
-  if (!region || !width || !height || width / height <= FIT_ABOVE) return region
-  const band = FRAME_ASPECT / (width / height) // altura da faixa, em fração da tela
-  const top = (1 - band) / 2
-  return { ...region, y: top + region.y * band, h: region.h * band }
+export function regionOnScreen(region: Region | undefined, width?: number, height?: number, forced?: 'cover' | 'fit'): Region | undefined {
+  if (!region || !width || !height || framing(width, height, undefined, forced).mode === 'cover') return region
+  const aspect = width / height
+  if (aspect >= FRAME_ASPECT) {
+    // mais larga que a tela: uma faixa no meio, na altura
+    const band = FRAME_ASPECT / aspect
+    const top = (1 - band) / 2
+    return { ...region, y: top + region.y * band, h: region.h * band }
+  }
+  // mais alta que a tela (inteira por escolha): uma faixa no meio, na largura
+  const band = aspect / FRAME_ASPECT
+  const left = (1 - band) / 2
+  return { ...region, x: left + region.x * band, w: region.w * band }
 }

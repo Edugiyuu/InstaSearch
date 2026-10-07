@@ -79,6 +79,11 @@ export interface Beat {
    * (versão mulher, chibi…). A montagem procura isso primeiro nesta cena.
    */
   twist?: BeatTwist
+  /**
+   * Enquadramento escolhido pelo usuário na revisão: tela cheia (cover) ou a imagem inteira sobre o
+   * fundo desfocado (fit). Sem valor, o automático do ADR 0020 decide pelo formato da imagem.
+   */
+  framing?: 'cover' | 'fit'
 }
 
 export interface BeatTwist {

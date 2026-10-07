@@ -50,6 +50,8 @@ export interface Beat {
   locked?: boolean
   /** Meme ou variação do personagem que a montagem procura primeiro (ADR 0020). */
   twist?: { kind: 'meme' | 'variacao'; query: string; tags?: string[] }
+  /** Tela cheia ou imagem inteira, escolhido na revisão; sem valor, o automático decide. */
+  framing?: 'cover' | 'fit'
 }
 
 export type ImagePicker = 'ia' | 'palavras'
@@ -321,6 +323,9 @@ export const shortsApi = {
   setBeatImage: (id: string, beatId: string, imageId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/image`, { imageId })),
   /** Efeito sonoro de uma cena: id de um som, null = sem som, 'auto' = a montagem escolhe. */
+  /** framing null = automático (ADR 0020). */
+  setBeatFraming: (id: string, beatId: string, framing: 'cover' | 'fit' | null) =>
+    data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/framing`, { framing })),
   setBeatSfx: (id: string, beatId: string, sfxId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sfx`, { sfxId })),
   /** Busca na internet e coloca imagem em todas as cenas que precisam (sem gastar IA). */

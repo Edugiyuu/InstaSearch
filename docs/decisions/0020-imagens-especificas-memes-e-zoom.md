@@ -62,6 +62,15 @@ O usuário escolheu a recomendação do Claude nas quatro escolhas: **1A, 2A, 3A
 - A visão confirmava que a imagem tinha *algum* personagem pedido, e o código gravava *todos* os da cena. Agora a IA diz quais aparecem, e só esses são gravados. A catalogação em segundo plano também não apaga mais um personagem já conferido quando ela não reconhece ninguém.
 - A busca do meme trazia painéis de mangá comuns primeiro, por causa do estilo de mangá. Buscas com "meme", "fanart", "genderswap" ou "chibi" agora mostram a web primeiro.
 
+## Adendo (2026-10-07): tela cheia por escolha
+
+Pedido do usuário depois de ver o resultado: poder deixar uma imagem em **tela cheia** mesmo quando o automático a mostraria inteira. A decisão 4A continua valendo como padrão; o adendo só acrescenta a escolha.
+
+- Na revisão, cada cena com imagem (fora as de prova) tem **Enquadramento: Automático / Tela cheia / Inteira**. O Automático diz o que faria com aquela imagem ("Automático (inteira)").
+- A escolha fica na cena (`beat.framing`) e vale na prévia e no render. O zoom continua com o limite do recorte, e a seta acompanha o modo escolhido.
+- Trocar a imagem da cena pelo chat volta para o Automático, porque a escolha foi feita para a imagem anterior. Na tela de troca, a escolha continua.
+- Por que por cena, e não um ajuste para o vídeo todo: a decisão depende de cada imagem (um painel largo com o personagem no centro aguenta o corte; um com dois personagens nas pontas, não). Um padrão do vídeo inteiro pode vir depois, se a escolha cena a cena der trabalho demais.
+
 ## Alternativas consideradas
 
 As alternativas de cada escolha estão na seção acima, com o motivo de não serem a recomendação.

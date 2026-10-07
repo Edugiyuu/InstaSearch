@@ -393,6 +393,16 @@ export async function autoFillImages(id: string) {
   return { project: saved, added, total: pending.length, results }
 }
 
+/** Editor: tela cheia, imagem inteira ou automático (null) numa cena. */
+export async function setBeatFraming(id: string, beatId: string, framing: 'cover' | 'fit' | null) {
+  const project = await getProject(id)
+  const beat = project.beats.find(b => b.id === beatId)
+  if (!beat) throw new AppError('Cena não encontrada', 404, 'NOT_FOUND')
+  if (framing) beat.framing = framing
+  else delete beat.framing
+  return save(project)
+}
+
 /**
  * Editor: o usuário escolhe o efeito sonoro de uma cena. sfxId = um som da biblioteca,
  * null = sem som, 'auto' = deixa a montagem escolher de novo.
