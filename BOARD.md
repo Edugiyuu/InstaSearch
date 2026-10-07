@@ -11,7 +11,6 @@ _(nada; escolha a próxima em "A fazer")_
 ## A fazer
 
 - [ ] 🔴 Revogar o token versionado em `backend/scripts/add-token.js` e ler o token do argumento ou do `.env` (a revogação no painel da Meta é com você)
-- [ ] Métricas dos vídeos publicados ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md)): `views` no Instagram (as métricas antigas foram descontinuadas), Graph API atualizada, permissões `instagram_manage_insights` e `yt-analytics.readonly`, fotos com 1, 7 e 28 dias pelo agendador
 - [ ] Tela Ideias ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md)): brainstorm a partir das métricas, dos comentários e das buscas na web, banco em `data/ideas/`, refino por pedido e "Criar vídeo" que preenche o Novo vídeo
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
@@ -31,6 +30,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-07 · Métricas dos vídeos publicados na tela Ideias: `views` no Instagram, retenção no YouTube, Graph API v23.0, fotos com 1, 7 e 28 dias e comparação com a mediana ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md))
 - [x] 2026-10-07 · ADR das ideias a partir do desempenho no Instagram e no YouTube ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md))
 - [x] 2026-10-07 · Enquadramento por cena na revisão: automático, tela cheia ou inteira (adendo ao [ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))
 - [x] 2026-10-07 · Imagens específicas (a IA olha antes de escolher), memes e zoom na medida ([ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))

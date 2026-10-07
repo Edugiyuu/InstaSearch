@@ -5,7 +5,7 @@ O modal **Publicar** envia o MP4 do Short direto para o seu canal pela YouTube D
 ## 1. Criar o cliente OAuth no Google Cloud
 
 1. Entre em <https://console.cloud.google.com/> e crie um projeto (ex.: "InstaSearch").
-2. **APIs e serviços → Biblioteca**: ative a **YouTube Data API v3**.
+2. **APIs e serviços → Biblioteca**: ative a **YouTube Data API v3** e a **YouTube Analytics API** (a segunda é para as métricas da tela Ideias).
 3. **APIs e serviços → Tela de consentimento OAuth** (Google Auth Platform):
    - Tipo de usuário: **Externo**.
    - Preencha nome do app e e-mail.
@@ -34,6 +34,17 @@ Reinicie o backend.
 **Configurações → YouTube → + Conectar canal**. O Google pede para escolher a conta e autorizar; depois volta para Configurações com o nome do canal.
 
 Como o app está em modo Teste, o Google mostra o aviso "O Google não verificou este app". Clique em **Continuar** (é o seu próprio app).
+
+## Métricas (tela Ideias)
+
+A tela **Ideias** mostra como cada Short se saiu ([ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md)):
+
+- **Data API** (permissão `youtube.readonly`): visualizações, curtidas e comentários dos 50 Shorts mais recentes (vídeos de até 3 minutos).
+- **YouTube Analytics API** (permissão `yt-analytics.readonly`): tempo médio assistido, % assistida, compartilhamentos e visualizações engajadas (`engagedViews`, a contagem antiga dos Shorts, antes de abril de 2025).
+
+**Canal conectado antes de 07/10/2026?** Ele não tem a permissão nova. Configurações mostra **↻ Conectar de novo**; é só autorizar outra vez. Sem isso, a tela Ideias mostra só os números da Data API.
+
+A Analytics API tem **2 a 3 dias de atraso**: um Short novo pode aparecer sem retenção nos primeiros dias. Ler métricas gasta pouco da cota (umas 5 unidades por coleta, contra ~1.600 de um envio).
 
 ## Limites e avisos
 

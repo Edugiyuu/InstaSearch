@@ -6,6 +6,7 @@ import './AppShell.css'
 const NAV = [
   { to: '/', icon: '⌂', label: 'Início', end: true },
   { to: '/projetos', icon: '▦', label: 'Projetos' },
+  { to: '/ideias', icon: '◎', label: 'Ideias' },
   { to: '/biblioteca', icon: '▣', label: 'Biblioteca' },
   { to: '/estilos', icon: '✦', label: 'Estilos' },
   { to: '/calendario', icon: '▤', label: 'Calendário' },

@@ -19,6 +19,7 @@ import { InstagramAccountStorage } from '../services/storage/InstagramAccountSto
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { logger } from '../utils/logger.js';
+import { GRAPH_API_BASE_URL } from '../services/graphApi.js';
 
 // Configurar Cloudinary
 cloudinary.config({
@@ -225,7 +226,7 @@ export const publishReel = asyncHandler(
       const videoUrl = await uploadVideoToPublicURL(videoPath);
       
       const containerResponse = await axios.post(
-        `https://graph.facebook.com/v18.0/${accountId}/media`,
+        `${GRAPH_API_BASE_URL}/${accountId}/media`,
         {
           media_type: 'REELS',
           video_url: videoUrl,
@@ -245,7 +246,7 @@ export const publishReel = asyncHandler(
 
       // Etapa 3: Publicar reel
       const publishResponse = await axios.post(
-        `https://graph.facebook.com/v18.0/${accountId}/media_publish`,
+        `${GRAPH_API_BASE_URL}/${accountId}/media_publish`,
         {
           creation_id: creationId
         },
@@ -317,7 +318,7 @@ async function waitForVideoProcessing(
 
   while (attempts < maxAttempts) {
     const statusResponse = await axios.get(
-      `https://graph.facebook.com/v18.0/${creationId}`,
+      `${GRAPH_API_BASE_URL}/${creationId}`,
       {
         params: {
           fields: 'status_code',

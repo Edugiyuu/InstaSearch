@@ -69,7 +69,12 @@ backend/
 │   │   │   └── types.ts                # ShortProject, Beat, LibraryImage, SoundItem…
 │   │   ├── videoService.ts             # ffprobe, merge, optimize, extractFrames
 │   │   ├── aiService.ts                # Gemini: prompts das telas antigas e da legenda do post
-│   │   ├── instagramGraphService.ts    # Graph API (graph.facebook.com/v18.0)
+│   │   ├── insights/                   # métricas dos vídeos publicados (ADR 0021)
+│   │   │   ├── collect.ts              # coleta no Instagram e no YouTube, 1x/dia e nas idades de 1, 7 e 28 dias
+│   │   │   ├── compare.ts              # fotos por idade e comparação com a mediana (sem rede; testado)
+│   │   │   └── types.ts                # VideoMetrics, MetricsSnapshot
+│   │   ├── graphApi.ts                 # versão e endereço da Graph API da Meta (v23.0)
+│   │   ├── instagramGraphService.ts    # Graph API: perfil, Reels, métricas, publicação
 │   │   ├── instagramAuthService.ts     # OAuth + renovação (graph.instagram.com)
 │   │   ├── schedulerService.ts         # loop de publicação
 │   │   └── storage/                    # FileStorage<T> + um storage por entidade

@@ -18,6 +18,7 @@ import * as videoController from '../controllers/videoController.js'
 import * as schedulerController from '../controllers/schedulerController.js'
 import * as videoAnalysisController from '../controllers/videoAnalysisController.js'
 import * as youtubeController from '../controllers/youtubeController.js'
+import * as insightsController from '../controllers/insightsController.js'
 
 const router = Router()
 
@@ -58,6 +59,10 @@ router.get('/youtube/status', youtubeController.getStatus)
 router.get('/youtube/auth-url', youtubeController.getAuthUrl)
 router.get('/youtube/callback', youtubeController.handleCallback)
 router.delete('/youtube/account', youtubeController.disconnect)
+
+// Métricas dos vídeos publicados (ADR 0021)
+router.get('/metrics', insightsController.listMetrics)
+router.post('/metrics/refresh', insightsController.refreshMetrics)
 
 // Instagram Data (Graph API)
 router.get('/instagram/data/profile', instagramDataController.getInstagramProfile)

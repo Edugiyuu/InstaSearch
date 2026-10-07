@@ -33,6 +33,9 @@ app.use('/api', apiRoutes)
 // Import and start scheduler
 const { schedulerService } = await import('./services/schedulerService.js')
 schedulerService.start()
+// Métricas dos vídeos publicados: 1 vez por dia e nas idades de 1, 7 e 28 dias (ADR 0021)
+const { startMetricsCollector, stopMetricsCollector } = await import('./services/insights/collect.js')
+startMetricsCollector()
 
 // Imagens que ficaram na fila da catalogação quando o servidor parou
 const { resumeCataloguing } = await import('./services/shorts/library.js')
@@ -84,12 +87,14 @@ app.listen(PORT, () => {
 process.on('SIGTERM', () => {
   logger.info('SIGTERM signal received: closing HTTP server')
   schedulerService.stop()
+  stopMetricsCollector()
   process.exit(0)
 })
 
 process.on('SIGINT', () => {
   logger.info('SIGINT signal received: closing HTTP server')
   schedulerService.stop()
+  stopMetricsCollector()
   process.exit(0)
 })
 

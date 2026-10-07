@@ -241,9 +241,16 @@ function Settings() {
           actions={
             <>
               {yt?.account ? (
-                <button className="act" onClick={disconnectYouTube} disabled={ytBusy}>
-                  ⏻ Desconectar
-                </button>
+                <>
+                  {yt.account.needsReconnect && (
+                    <button className="act" onClick={connectYouTube} disabled={ytBusy}>
+                      ↻ Conectar de novo
+                    </button>
+                  )}
+                  <button className="act" onClick={disconnectYouTube} disabled={ytBusy}>
+                    ⏻ Desconectar
+                  </button>
+                </>
               ) : (
                 <button className="act" onClick={connectYouTube} disabled={ytBusy || !yt?.configured}>
                   + Conectar canal
@@ -271,6 +278,12 @@ function Settings() {
             <>
               <dt>Canal</dt>
               <dd>{yt.account.channelTitle}</dd>
+              {yt.account.needsReconnect && (
+                <>
+                  <dt>Métricas</dt>
+                  <dd className="c-warning">Conecte de novo para o app ler a retenção e os compartilhamentos (permissão nova, usada na tela Ideias).</dd>
+                </>
+              )}
             </>
           )}
           {ytNote && (

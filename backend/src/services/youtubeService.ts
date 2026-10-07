@@ -4,6 +4,10 @@
  * Precisa de um cliente OAuth ("App da Web") no Google Cloud com a YouTube Data API v3 ativada:
  * YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET e YOUTUBE_REDIRECT_URI no backend/.env (ver docs/YOUTUBE.md).
  * O token fica em data/youtube/account.json; o refresh_token renova o acesso sozinho.
+ *
+ * As métricas (ADR 0021) usam a Data API (visualizações, curtidas, comentários) e a YouTube
+ * Analytics API (retenção, compartilhamentos), que precisa da permissão yt-analytics.readonly
+ * e de estar ativada no mesmo projeto do Google Cloud.
  */
 
 import axios from 'axios'
@@ -14,7 +18,8 @@ import { FileStorage } from './storage/FileStorage.js'
 import { AppError } from '../middleware/errorHandler.js'
 import { logger } from '../utils/logger.js'
 
-const SCOPES = ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly']
+const ANALYTICS_SCOPE = 'https://www.googleapis.com/auth/yt-analytics.readonly'
+const SCOPES = ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly', ANALYTICS_SCOPE]
 
 export interface YouTubeAccount {
   id: 'account'
@@ -25,6 +30,8 @@ export interface YouTubeAccount {
   refreshToken: string
   expiresAt: number
   connectedAt: string
+  /** O que o Google concedeu; contas conectadas antes do ADR 0021 não têm (e não têm a de métricas). */
+  scopes?: string[]
 }
 
 export type YouTubePrivacy = 'public' | 'unlisted' | 'private'
@@ -93,6 +100,7 @@ export async function handleCallback(code: string, state: string) {
     refreshToken: token.refresh_token,
     expiresAt: Date.now() + token.expires_in * 1000,
     connectedAt: new Date().toISOString(),
+    scopes: String(token.scope ?? '').split(' ').filter(Boolean),
   }
   await storage.save(account)
   logger.info(`✅ YouTube conectado: ${account.channelTitle}`)
@@ -103,12 +111,24 @@ export async function getAccount() {
   return storage.findById('account')
 }
 
+/** A conta pode ler retenção e compartilhamentos (permissão concedida ao conectar). */
+export const canReadAnalytics = (account: YouTubeAccount) => !!account.scopes?.includes(ANALYTICS_SCOPE)
+
 /** Para a tela: sem tokens. */
 export async function status() {
   const account = await getAccount()
   return {
     configured: config().configured,
-    account: account ? { channelId: account.channelId, channelTitle: account.channelTitle, thumbnail: account.thumbnail, connectedAt: account.connectedAt } : null,
+    account: account
+      ? {
+          channelId: account.channelId,
+          channelTitle: account.channelTitle,
+          thumbnail: account.thumbnail,
+          connectedAt: account.connectedAt,
+          // conectada antes das métricas: precisa conectar de novo para dar a permissão nova
+          needsReconnect: !canReadAnalytics(account),
+        }
+      : null,
   }
 }
 
@@ -189,4 +209,155 @@ export async function uploadShort(file: string, meta: { title: string; descripti
     if (error instanceof AppError) throw error
     throw new AppError(`Erro ao enviar ao YouTube: ${message}`, 502, 'YOUTUBE_ERROR')
   }
+}
+
+// ── Métricas (ADR 0021) ──────────────────────────────────
+
+export interface YouTubeShort {
+  id: string
+  title: string
+  publishedAt: string
+  durationSec: number
+  thumbnail?: string
+  privacy?: string
+  views: number
+  likes: number
+  comments: number
+}
+
+export interface YouTubeAnalyticsRow {
+  engagedViews?: number
+  averageViewDuration?: number
+  averageViewPercentage?: number
+  shares?: number
+}
+
+/** "PT1M5S" → 65 */
+export function isoDurationSeconds(iso: string): number {
+  const m = iso.match(/^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?$/)
+  if (!m) return 0
+  const [, d, h, min, sec] = m
+  return Number(d ?? 0) * 86400 + Number(h ?? 0) * 3600 + Number(min ?? 0) * 60 + Number(sec ?? 0)
+}
+
+function youtubeError(error: any): never {
+  const reason = error.response?.data?.error?.errors?.[0]?.reason
+  const message = error.response?.data?.error?.message || error.message
+  if (error instanceof AppError) throw error
+  if (reason === 'quotaExceeded') throw new AppError('A cota diária da API do YouTube acabou. Tente amanhã.', 429, 'YOUTUBE_QUOTA')
+  if (reason === 'accessNotConfigured' || /has not been used|is disabled/i.test(message)) {
+    throw new AppError('Ative a "YouTube Analytics API" no seu projeto do Google Cloud (ver docs/YOUTUBE.md).', 503, 'YOUTUBE_ANALYTICS_OFF')
+  }
+  if (error.response?.status === 403) throw new AppError('Conecte o YouTube de novo em Configurações para liberar as métricas.', 403, 'YOUTUBE_SCOPE')
+  throw new AppError(`YouTube: ${message}`, 502, 'YOUTUBE_ERROR')
+}
+
+/**
+ * Os Shorts mais recentes do canal (vídeos de até 3 minutos), com os números da Data API.
+ * Custa poucas unidades da cota: 1 por página da lista e 1 por lote de 50 vídeos.
+ */
+export async function listShorts(max = 50): Promise<YouTubeShort[]> {
+  const token = await accessToken()
+  const headers = { Authorization: `Bearer ${token}` }
+  try {
+    const { data: channels } = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
+      params: { part: 'contentDetails', mine: true },
+      headers,
+    })
+    const uploads = channels.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
+    if (!uploads) return []
+
+    // o canal pode ter vídeos longos também: pega até 2 páginas e filtra pela duração
+    const ids: string[] = []
+    let pageToken: string | undefined
+    for (let page = 0; page < 2; page++) {
+      const { data } = await axios.get('https://www.googleapis.com/youtube/v3/playlistItems', {
+        params: { part: 'contentDetails', playlistId: uploads, maxResults: 50, pageToken },
+        headers,
+      })
+      ids.push(...(data.items ?? []).map((i: any) => i.contentDetails.videoId))
+      pageToken = data.nextPageToken
+      if (!pageToken) break
+    }
+
+    const shorts: YouTubeShort[] = []
+    for (let i = 0; i < ids.length && shorts.length < max; i += 50) {
+      const { data } = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+        params: { part: 'snippet,statistics,contentDetails,status', id: ids.slice(i, i + 50).join(','), maxResults: 50 },
+        headers,
+      })
+      for (const v of data.items ?? []) {
+        const durationSec = isoDurationSeconds(v.contentDetails?.duration ?? '')
+        if (durationSec === 0 || durationSec > 180) continue
+        shorts.push({
+          id: v.id,
+          title: v.snippet?.title ?? '',
+          publishedAt: v.snippet?.publishedAt,
+          durationSec,
+          thumbnail: v.snippet?.thumbnails?.medium?.url ?? v.snippet?.thumbnails?.default?.url,
+          privacy: v.status?.privacyStatus,
+          views: Number(v.statistics?.viewCount ?? 0),
+          likes: Number(v.statistics?.likeCount ?? 0),
+          comments: Number(v.statistics?.commentCount ?? 0),
+        })
+      }
+    }
+    return shorts.slice(0, max)
+  } catch (error) {
+    youtubeError(error)
+  }
+}
+
+/**
+ * Retenção, visualizações engajadas e compartilhamentos de cada vídeo, pela YouTube Analytics API.
+ * Os dados chegam com 2 a 3 dias de atraso: um vídeo novo pode ainda não aparecer.
+ */
+export async function shortsAnalytics(ids: string[], since: string): Promise<Map<string, YouTubeAnalyticsRow>> {
+  const result = new Map<string, YouTubeAnalyticsRow>()
+  if (ids.length === 0) return result
+  const account = await getAccount()
+  if (!account || !canReadAnalytics(account)) return result
+  const token = await accessToken()
+  const today = new Date().toISOString().slice(0, 10)
+  const full = ['engagedViews', 'averageViewDuration', 'averageViewPercentage', 'shares']
+
+  const ask = async (batch: string[], metrics: string[]) => {
+    const { data } = await axios.get('https://youtubeanalytics.googleapis.com/v2/reports', {
+      params: {
+        ids: 'channel==MINE',
+        startDate: since.slice(0, 10),
+        endDate: today,
+        metrics: metrics.join(','),
+        dimensions: 'video',
+        filters: `video==${batch.join(',')}`,
+        sort: `-${metrics[0]}`,
+        maxResults: 200,
+      },
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const columns: string[] = (data.columnHeaders ?? []).map((c: any) => c.name)
+    for (const row of data.rows ?? []) {
+      const entry: Record<string, number> = {}
+      columns.forEach((name, i) => {
+        if (name !== 'video') entry[name] = Number(row[i])
+      })
+      result.set(String(row[columns.indexOf('video')]), entry)
+    }
+  }
+
+  try {
+    for (let i = 0; i < ids.length; i += 50) {
+      const batch = ids.slice(i, i + 50)
+      try {
+        await ask(batch, full)
+      } catch (error: any) {
+        // relatório que não aceita "engagedViews" com a dimensão vídeo: tenta sem ela
+        if (error.response?.status !== 400) throw error
+        await ask(batch, full.slice(1))
+      }
+    }
+  } catch (error) {
+    youtubeError(error)
+  }
+  return result
 }

@@ -68,6 +68,15 @@ O usuário pediu para seguir a recomendação do Claude nas cinco escolhas: **1B
 - Tela Ideias no frontend (`página → hook → api`) e a linha de ideias no Novo vídeo.
 - Os vídeos antigos (fora do app) entram com o que têm: a IA lê a legenda/título e deduz o tema, marcado como **deduzido** na tela.
 
+### Como ficou no código: métricas (07/10)
+
+- **Coleta** em `backend/src/services/insights/collect.ts`, com um relógio próprio que olha a cada hora (sem chamar as APIs) se está na hora: 1 vez por dia, quando um vídeo faz 1, 7 ou 28 dias, ou 3 horas depois de uma falha. Ficou fora do `SchedulerService` para não misturar publicação com leitura de métricas. Os dados ficam em `data/metrics/`.
+- **As fotos por idade** (`compare.ts`, testado): cada foto vale para uma faixa, de 1 a 7 dias, de 7 a 28 e de 28 em diante. Um vídeo que o app só conheceu velho (ex.: 200 dias) ganha só a foto de 28. Assim os vídeos de antes do app já entram na comparação, com o custo de comparar o total de um vídeo de 200 dias com o de um de 28.
+- **Comparação:** a foto mais velha que o vídeo tem, contra a mediana dos 20 vídeos mais recentes da mesma plataforma na mesma foto; com menos de 3 vizinhos, não compara e diz isso. Com menos de 10 vídeos medidos, a tela avisa que é pouco. Shorts **privados** ficam fora da comparação (como alvo e como vizinho): sem público, puxariam a mediana para baixo.
+- **Mudança em relação à escolha 2B:** a comparação usa `views` **nas duas plataformas**, e não `engagedViews` no YouTube. A Analytics API, de onde vem o `engagedViews`, tem 2 a 3 dias de atraso, então a foto de 1 dia sairia vazia. As visualizações engajadas aparecem guardadas na foto, junto com a retenção e os compartilhamentos.
+- **Graph API** na `v23.0`, num lugar só (`services/graphApi.ts`), com `GRAPH_API_VERSION` para trocar sem mexer no código.
+- **Permissões:** o YouTube guarda as permissões concedidas e Configurações pede para conectar de novo quando falta a de métricas; o Instagram confere `instagram_manage_insights` em `/me/permissions` antes de coletar e a tela Ideias avisa se ela faltar.
+
 ## Alternativas consideradas
 
 As alternativas de cada escolha estão na seção acima, com o motivo de não serem a recomendação.

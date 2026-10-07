@@ -484,7 +484,14 @@ export type YouTubePrivacy = 'public' | 'unlisted' | 'private'
 
 export interface YouTubeStatus {
   configured: boolean
-  account: { channelId: string; channelTitle: string; thumbnail?: string; connectedAt: string } | null
+  account: {
+    channelId: string
+    channelTitle: string
+    thumbnail?: string
+    connectedAt: string
+    /** Conectado antes das métricas (ADR 0021): falta a permissão de ler retenção e compartilhamentos. */
+    needsReconnect?: boolean
+  } | null
 }
 
 export interface AiStatus {

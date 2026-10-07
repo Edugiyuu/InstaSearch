@@ -32,8 +32,8 @@ O InstaSearch usa a **Instagram Graph API via Facebook Login** (`graph.facebook.
    |---|---|
    | `instagram_basic` | Ler perfil e mídias |
    | `instagram_content_publish` | Publicar Reels |
-   | `instagram_manage_insights` | Ler métricas (alcance, plays, salvamentos) |
-   | `instagram_manage_comments` | Ler comentários |
+   | `instagram_manage_insights` | Ler métricas (visualizações, alcance, salvamentos), usadas na tela Ideias |
+   | `instagram_manage_comments` | Ler comentários (usados pelas ideias, [ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md)) |
    | `pages_show_list` | Encontrar a Página vinculada |
    | `pages_read_engagement` | Ler dados da Página |
    | `business_management` | Às vezes necessário para enxergar a Página |
@@ -88,7 +88,7 @@ Em `backend/data/instagram_accounts/*.json`, **em texto puro**. Essa pasta já e
 ## Verificação rápida pelo terminal
 
 ```bash
-curl "https://graph.facebook.com/v18.0/me/accounts?fields=name,instagram_business_account&access_token=SEU_TOKEN"
+curl "https://graph.facebook.com/v23.0/me/accounts?fields=name,instagram_business_account&access_token=SEU_TOKEN"
 ```
 
 Se retornar a sua Página com `instagram_business_account`, o token serve para o InstaSearch.
@@ -96,7 +96,17 @@ Se retornar a sua Página com `instagram_business_account`, o token serve para o
 ## Limites da API
 
 - Há um **limite de publicações via API por conta a cada 24h**. Confira o valor atual na [documentação de publicação de conteúdo](https://developers.facebook.com/docs/instagram-platform/content-publishing).
-- A versão da Graph API fixada no código é a `v18.0`. Quando uma versão é desativada, a Meta redireciona as chamadas para a versão mais antiga ainda suportada. Atualizar a versão está no roadmap.
+- A versão da Graph API fica em `backend/src/services/graphApi.ts` (hoje `v23.0`). Para trocar sem mexer no código, use `GRAPH_API_VERSION` no `backend/.env`. Quando uma versão é desativada, a Meta redireciona as chamadas para a versão mais antiga ainda suportada.
+
+## Métricas dos Reels (tela Ideias)
+
+A tela **Ideias** mostra como cada Reel se saiu ([ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md)). O app lê, para os 50 Reels mais recentes: `views`, `reach`, `saved`, `shares`, `likes`, `comments`, `total_interactions` e `ig_reels_avg_watch_time` (tempo médio assistido).
+
+- **Precisa da permissão `instagram_manage_insights`.** Se o seu token foi gerado sem ela, gere um novo no Explorer (Passo 3) e conecte de novo. A tela Ideias avisa quando ela falta.
+- `plays`, `video_views` e `impressions` foram **descontinuadas pela Meta em abril de 2025**; a métrica unificada é `views`.
+- Só conta profissional (criador ou empresa) tem métricas.
+- O Instagram não informa a duração do Reel. Para os vídeos feitos no app, a duração vem do projeto e a tela mostra a **% assistida**; para os outros, mostra o tempo médio em segundos.
+- Cada Reel é um pedido à API, um de cada vez, uma vez por dia (o limite da Meta é de cerca de 200 pedidos por hora).
 
 ## Próximo: dados de outros perfis (planejado)
 

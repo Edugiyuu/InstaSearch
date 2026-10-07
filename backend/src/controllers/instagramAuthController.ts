@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import axios from 'axios'
 import { InstagramAuthService } from '../services/instagramAuthService.js'
 import { logger } from '../utils/logger.js'
+import { GRAPH_API_BASE_URL } from '../services/graphApi.js'
 
 // Create service instance after env is loaded
 const instagramAuthService = new InstagramAuthService()
@@ -144,7 +145,7 @@ export const refreshAccountData = async (req: Request, res: Response) => {
     }
 
     // Buscar dados atualizados usando o accountId
-    const response = await axios.get(`https://graph.facebook.com/v18.0/${account.accountId}`, {
+    const response = await axios.get(`${GRAPH_API_BASE_URL}/${account.accountId}`, {
       params: {
         fields: 'id,username,name,profile_picture_url,followers_count,follows_count,media_count',
         access_token: account.accessToken

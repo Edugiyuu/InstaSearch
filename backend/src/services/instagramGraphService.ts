@@ -2,7 +2,7 @@ import axios from 'axios';
 import { logger } from '../utils/logger';
 import { InstagramAccountStorage } from './storage/InstagramAccountStorage';
 
-const GRAPH_API_BASE_URL = 'https://graph.facebook.com/v18.0';
+import { GRAPH_API_BASE_URL } from './graphApi.js';
 
 interface InstagramProfile {
   id: string;
@@ -20,6 +20,7 @@ interface InstagramMedia {
   id: string;
   caption?: string;
   media_type: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM';
+  media_product_type?: 'AD' | 'FEED' | 'STORY' | 'REELS';
   media_url?: string;
   permalink: string;
   thumbnail_url?: string;
@@ -30,18 +31,28 @@ interface InstagramMedia {
   is_shared_to_feed?: boolean;
 }
 
-interface InstagramMediaInsights {
+/** Métricas de um post; nomes da Graph API v22+ (ADR 0021). */
+export interface InstagramMediaInsights {
   id: string;
-  impressions?: number;
+  /** Visualizações (substituiu plays, video_views e impressions em abril de 2025). */
+  views?: number;
   reach?: number;
-  engagement?: number;
   saved?: number;
-  video_views?: number;
   likes?: number;
   comments?: number;
   shares?: number;
-  plays?: number;
   total_interactions?: number;
+  /** Só Reels: tempo médio assistido, em milissegundos. */
+  ig_reels_avg_watch_time?: number;
+}
+
+/** Um Reel do perfil, com o que a listagem já devolve. */
+export interface InstagramReel {
+  id: string;
+  caption?: string;
+  permalink: string;
+  thumbnail_url?: string;
+  timestamp: string;
 }
 
 interface InstagramAccountInsights {
@@ -51,6 +62,18 @@ interface InstagramAccountInsights {
   profile_views?: number;
   website_clicks?: number;
   email_contacts?: number;
+}
+
+/** Mensagem em português para os erros mais comuns da Graph API. */
+export function instagramErrorMessage(error: any): string {
+  const fb = error.response?.data?.error;
+  if (!fb) return error.message;
+  if (fb.code === 190) return 'O token do Instagram expirou ou foi revogado. Conecte de novo em Configurações.';
+  if (fb.code === 10 || fb.code === 200 || fb.code === 803) {
+    return 'O token do Instagram não tem permissão para ler métricas. Gere um token novo com instagram_manage_insights e conecte de novo em Configurações.';
+  }
+  if (fb.code === 4 || fb.code === 17 || fb.code === 32) return 'O Instagram limitou os pedidos por agora. Tente de novo daqui a uma hora.';
+  return `Instagram: ${fb.message}`;
 }
 
 export class InstagramGraphService {
@@ -172,7 +195,7 @@ export class InstagramGraphService {
       
       const response = await axios.get(`${GRAPH_API_BASE_URL}/${mediaId}`, {
         params: {
-          fields: 'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,username,like_count,comments_count,is_shared_to_feed',
+          fields: 'id,caption,media_type,media_product_type,media_url,permalink,thumbnail_url,timestamp,username,like_count,comments_count,is_shared_to_feed',
           access_token: accessToken,
         },
       });
@@ -192,77 +215,84 @@ export class InstagramGraphService {
   }
 
   /**
-   * Busca métricas (insights) de um post/reel específico
+   * Busca métricas (insights) de um post/reel específico.
+   * Precisa da permissão instagram_manage_insights e de conta profissional.
+   * Quem já sabe o tipo (a coleta de métricas, que só lista Reels) passa `productType` e economiza um pedido.
    */
-  async getMediaInsights(mediaId: string): Promise<InstagramMediaInsights> {
-    try {
-      const { accessToken } = await this.getAccountCredentials();
-      
-      // Primeiro busca o tipo de mídia
-      const media = await this.getMediaById(mediaId);
-      
-      let metrics: string[];
-      
-      if (media.media_type === 'VIDEO') {
-        // Métricas para vídeos/reels
-        metrics = [
-          'impressions',
-          'reach',
-          'saved',
-          'video_views',
-          'likes',
-          'comments',
-          'shares',
-          'plays',
-          'total_interactions',
-        ];
-      } else {
-        // Métricas para imagens/carrosséis
-        metrics = [
-          'impressions',
-          'reach',
-          'saved',
-          'likes',
-          'comments',
-          'shares',
-          'total_interactions',
-        ];
-      }
+  async getMediaInsights(mediaId: string, productType?: InstagramMedia['media_product_type']): Promise<InstagramMediaInsights> {
+    const { accessToken } = await this.getAccountCredentials();
+    const type = productType ?? (await this.getMediaById(mediaId)).media_product_type;
+    const base = ['views', 'reach', 'saved', 'likes', 'comments', 'shares', 'total_interactions'];
+    // o tempo médio assistido só existe para Reels
+    const isReel = type === 'REELS';
 
+    const ask = async (metrics: string[]) => {
       const response = await axios.get(`${GRAPH_API_BASE_URL}/${mediaId}/insights`, {
-        params: {
-          metric: metrics.join(','),
-          access_token: accessToken,
-        },
+        params: { metric: metrics.join(','), access_token: accessToken },
       });
-
-      // Converte array de insights em objeto
-      const insights: any = { id: mediaId };
+      const insights: InstagramMediaInsights = { id: mediaId };
       response.data.data.forEach((insight: any) => {
-        insights[insight.name] = insight.values[0].value;
+        (insights as any)[insight.name] = insight.values?.[0]?.value ?? insight.total_value?.value;
       });
-
-      logger.info('Instagram media insights fetched', {
-        mediaId,
-        metrics: Object.keys(insights),
-      });
-
       return insights;
+    };
+
+    try {
+      return await ask(isReel ? [...base, 'ig_reels_avg_watch_time'] : base);
     } catch (error: any) {
-      logger.error('Error fetching Instagram media insights', {
-        mediaId,
-        error: error.response?.data || error.message,
-      });
-      
-      // Se o erro for de permissões, retorna insights vazios
-      if (error.response?.data?.error?.code === 200) {
-        logger.warn('Instagram insights not available for this media (requires business account)', {
-          mediaId,
-        });
-        return { id: mediaId };
+      const fb = error.response?.data?.error;
+      // métrica que esta versão da API não aceita: tenta de novo só com as básicas
+      if (isReel && fb?.code === 100) {
+        try {
+          return await ask(base);
+        } catch (retryError: any) {
+          error = retryError;
+        }
       }
-      
-      throw new Error(`Erro ao buscar métricas: ${error.response?.data?.error?.message || error.message}`);
+      logger.error('Error fetching Instagram media insights', { mediaId, error: error.response?.data || error.message });
+      throw new Error(instagramErrorMessage(error));
+    }
+  }
+
+  /**
+   * Os Reels mais recentes do perfil (até `max`), seguindo a paginação.
+   */
+  async listReels(max: number = 50): Promise<InstagramReel[]> {
+    const { accessToken, accountId } = await this.getAccountCredentials();
+    const reels: InstagramReel[] = [];
+    let url: string | undefined = `${GRAPH_API_BASE_URL}/${accountId}/media`;
+    let params: Record<string, unknown> | undefined = {
+      fields: 'id,caption,media_product_type,permalink,thumbnail_url,timestamp',
+      limit: 50,
+      access_token: accessToken,
+    };
+    // no máximo 4 páginas: perfis com muitos posts de foto não precisam de mais
+    for (let page = 0; url && page < 4 && reels.length < max; page++) {
+      try {
+        const response: any = await axios.get(url, { params });
+        for (const m of response.data.data ?? []) {
+          if (m.media_product_type === 'REELS') reels.push(m);
+        }
+        url = response.data.paging?.next;
+        params = undefined; // o link "next" já traz os parâmetros
+      } catch (error: any) {
+        throw new Error(instagramErrorMessage(error));
+      }
+    }
+    return reels.slice(0, max);
+  }
+
+  /**
+   * Se o token tem uma permissão. null = não deu para saber (token que não é de usuário do Facebook).
+   */
+  async hasPermission(permission: string): Promise<boolean | null> {
+    const { accessToken } = await this.getAccountCredentials();
+    try {
+      const response = await axios.get(`${GRAPH_API_BASE_URL}/me/permissions`, { params: { access_token: accessToken } });
+      const list: { permission: string; status: string }[] = response.data.data ?? [];
+      return list.some(p => p.permission === permission && p.status === 'granted');
+    } catch {
+      return null;
     }
   }
 

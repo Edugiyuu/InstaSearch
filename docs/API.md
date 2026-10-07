@@ -71,10 +71,19 @@ Detalhes: [INSTAGRAM.md](INSTAGRAM.md).
 | GET | `/instagram/data/media` | ✅ | `?limit=25` |
 | GET | `/instagram/data/reels` | ✅ | `?limit=25` |
 | GET | `/instagram/data/media/:mediaId` | ✅ | |
-| GET | `/instagram/data/media/:mediaId/insights` | ✅ | Métricas variam por tipo de mídia |
+| GET | `/instagram/data/media/:mediaId/insights` | ✅ | `views`, alcance, salvamentos, compartilhamentos; Reels também o tempo médio assistido |
 | GET | `/instagram/data/media/:mediaId/comments` | ✅ | `?limit=50` |
 | GET | `/instagram/data/media/:mediaId/hashtags` | ✅ | Hashtags extraídas da legenda |
 | GET | `/instagram/data/insights` | ✅ | Insights da conta (período diário) |
+
+## Métricas dos vídeos publicados
+
+[ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md). Coleta automática 1 vez por dia e quando um vídeo faz 1, 7 ou 28 dias.
+
+| Método | Rota | | Descrição |
+|---|---|---|---|
+| GET | `/metrics` | ✅ | Vídeos do Instagram e do YouTube com os números de agora, as fotos de 1, 7 e 28 dias e a comparação com a mediana (`comparison.ratio`); estado de cada plataforma |
+| POST | `/metrics/refresh` | ✅ | Coleta agora (o botão "Atualizar métricas") e devolve o mesmo que o `GET` |
 
 ## IA
 

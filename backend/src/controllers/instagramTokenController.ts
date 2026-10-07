@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { logger } from '../utils/logger.js'
+import { GRAPH_API_BASE_URL } from '../services/graphApi.js'
 import axios from 'axios'
 import { InstagramAccountStorage } from '../services/storage/InstagramAccountStorage.js'
 import { generateId } from '../utils/idGenerator.js'
@@ -23,7 +24,7 @@ export const connectWithToken = async (req: Request, res: Response) => {
     logger.info('Connecting Instagram account with manual token...')
 
     // 1. Buscar páginas do usuário
-    const pageResponse = await axios.get('https://graph.facebook.com/v18.0/me/accounts', {
+    const pageResponse = await axios.get(`${GRAPH_API_BASE_URL}/me/accounts`, {
       params: { access_token: accessToken }
     })
 
@@ -37,7 +38,7 @@ export const connectWithToken = async (req: Request, res: Response) => {
     const page = pageResponse.data.data[0]
 
     // 2. Buscar Instagram Business Account vinculado
-    const igResponse = await axios.get(`https://graph.facebook.com/v18.0/${page.id}`, {
+    const igResponse = await axios.get(`${GRAPH_API_BASE_URL}/${page.id}`, {
       params: {
         fields: 'instagram_business_account',
         access_token: accessToken
@@ -54,7 +55,7 @@ export const connectWithToken = async (req: Request, res: Response) => {
     const igAccountId = igResponse.data.instagram_business_account.id
 
     // 3. Buscar dados do perfil Instagram
-    const profileResponse = await axios.get(`https://graph.facebook.com/v18.0/${igAccountId}`, {
+    const profileResponse = await axios.get(`${GRAPH_API_BASE_URL}/${igAccountId}`, {
       params: {
         fields: 'id,username,name,profile_picture_url,followers_count,follows_count,media_count',
         access_token: accessToken
