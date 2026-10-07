@@ -50,4 +50,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0018](0018-legenda-sincronizada-com-a-voz.md) | Legenda sincronizada com a voz | Aceita |
 | [0019](0019-roteiro-com-argumento-e-tons-proprios.md) | Roteiro com argumento e tons próprios | Aceita |
 | [0020](0020-imagens-especificas-memes-e-zoom.md) | Imagens específicas, memes e zoom na medida | Aceita |
-| [0021](0021-ideias-a-partir-do-desempenho.md) | Ideias de vídeo a partir do que funcionou no Instagram e no YouTube | Proposta |
+| [0021](0021-ideias-a-partir-do-desempenho.md) | Ideias de vídeo a partir do que funcionou no Instagram e no YouTube | Aceita |

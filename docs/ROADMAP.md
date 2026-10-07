@@ -88,6 +88,8 @@ Especificação: [AUTO_EDIT.md](AUTO_EDIT.md)
 
 ## Fase 4: ciclo de aprendizado (o "Search")
 
+Decidido no [ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md): métricas comparadas com a mediana do canal, fotos com 1, 7 e 28 dias, e uma tela Ideias com banco de ideias, que depois vira a fila da criação autônoma (ADR 0022, ainda por escrever).
+
 - [ ] Coletar periodicamente os insights de cada vídeo publicado (plays, alcance, salvamentos, compartilhamentos) e guardar o histórico.
 - [ ] Ligar cada post ao seu projeto (tema, estilo, gancho, duração, ritmo das batidas).
 - [ ] **Perfis de referência via Business Discovery API**, tornando Perfis e Análises funcionais.

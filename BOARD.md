@@ -6,11 +6,13 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-- [ ] ADR 0021 (Proposta): ideias de vídeo a partir do desempenho no Instagram e no YouTube; esperando a escolha do usuário
+_(nada; escolha a próxima em "A fazer")_
 
 ## A fazer
 
 - [ ] 🔴 Revogar o token versionado em `backend/scripts/add-token.js` e ler o token do argumento ou do `.env` (a revogação no painel da Meta é com você)
+- [ ] Métricas dos vídeos publicados ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md)): `views` no Instagram (as métricas antigas foram descontinuadas), Graph API atualizada, permissões `instagram_manage_insights` e `yt-analytics.readonly`, fotos com 1, 7 e 28 dias pelo agendador
+- [ ] Tela Ideias ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md)): brainstorm a partir das métricas, dos comentários e das buscas na web, banco em `data/ideas/`, refino por pedido e "Criar vídeo" que preenche o Novo vídeo
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
 - [ ] Remover a dependência `openai`, que não é usada (pendência do [ADR 0006](docs/decisions/0006-remover-openai.md))
@@ -24,11 +26,12 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 - [ ] Remover os logs que imprimem `INSTAGRAM_CLIENT_ID`
 - [ ] Criptografar os tokens em `data/instagram_accounts/`
 - [ ] Apagar o vídeo do Cloudinary depois de publicar
-- [ ] ADR 0022: criação autônoma de vídeos, sem publicar (depende do [ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md))
+- [ ] ADR 0022: criação autônoma de vídeos, sem publicar (escrever depois de implementar o [ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md); a maior decisão é a voz)
 - [ ] Demais itens da Fase 0 do [ROADMAP](docs/ROADMAP.md#fase-0-fundação-e-segurança-prioridade-imediata)
 
 ## Feito
 
+- [x] 2026-10-07 · ADR das ideias a partir do desempenho no Instagram e no YouTube ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md))
 - [x] 2026-10-07 · Enquadramento por cena na revisão: automático, tela cheia ou inteira (adendo ao [ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))
 - [x] 2026-10-07 · Imagens específicas (a IA olha antes de escolher), memes e zoom na medida ([ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))
 - [x] 2026-10-06 · Roteiro com argumento (até 4 buscas, mostradas na tela) e tons próprios na biblioteca ([ADR 0019](docs/decisions/0019-roteiro-com-argumento-e-tons-proprios.md))

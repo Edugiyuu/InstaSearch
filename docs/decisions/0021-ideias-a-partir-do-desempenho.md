@@ -1,6 +1,6 @@
 # 0021 — Ideias de vídeo a partir do que funcionou no seu Instagram e YouTube
 
-**Status:** Proposta · **Data:** 2026-10-07
+**Status:** Aceita · **Data:** 2026-10-07
 
 ## Contexto
 
@@ -28,7 +28,7 @@ O usuário quer duas coisas, nesta ordem:
 
 ## Decisão
 
-**Proposta, ainda não decidida.** Cinco escolhas abaixo; a recomendação do Claude é **1B, 2B, 3B, 4B e 5B**. O usuário escolhe antes de qualquer código.
+O usuário pediu para seguir a recomendação do Claude nas cinco escolhas: **1B, 2B, 3B, 4B e 5B**. A criação autônoma fica para o ADR 0022, escrito depois que o banco de ideias estiver funcionando (ver o fim deste).
 
 ### 1. De onde vêm as ideias
 
@@ -60,7 +60,7 @@ O usuário quer duas coisas, nesta ordem:
 - **5B (recomendada): lote + pedidos para refinar**, no mesmo esquema do "Peça um ajuste": "mais polêmicas", "só de Chainsaw Man", "algo para o episódio de domingo", "junta a ideia 2 com a 5". Uma semente opcional antes de gerar ("quero falar do Gojo"). Descartar uma ideia com um motivo ("já fiz", "não curto") fica guardado e entra no próximo lote, para a IA não repetir.
 - 5C: **um chat livre.** Mais flexível, mas as ideias se perdem no meio da conversa e não viram cartões que dá para guardar.
 
-### O que muda no código (se for 1B a 5B)
+### O que muda no código
 
 - `instagramGraphService.ts`: métrica `views` no lugar das descontinuadas, versão da Graph API atualizada, permissão `instagram_manage_insights` no login.
 - `youtubeService.ts`: permissão `yt-analytics.readonly` e leitura de visualizações engajadas e retenção.
@@ -80,7 +80,7 @@ As alternativas de cada escolha estão na seção acima, com o motivo de não se
 
 ## Próximo passo: criação autônoma, sem publicar (ADR 0022)
 
-Fica para um ADR próprio porque tem decisões grandes e independentes destas. Ideia de fluxo: o app pega uma ideia guardada → escreve o roteiro → narra → monta com a biblioteca → renderiza → deixa um **rascunho autônomo** esperando revisão. **Nunca publica.** Perguntas que esse ADR precisa responder:
+Fica para um ADR próprio porque tem decisões grandes e independentes destas. Ele vem **depois** de implementar este: com o banco de ideias e as métricas rodando, dá para decidir com dados reais quantos rascunhos por dia valem a pena e quais ideias a fila deve pegar primeiro. Ideia de fluxo: o app pega uma ideia guardada → escreve o roteiro → narra → monta com a biblioteca → renderiza → deixa um **rascunho autônomo** esperando revisão. **Nunca publica.** Perguntas que esse ADR precisa responder:
 
 - **A voz.** Hoje a narração é do usuário. Sem ela, o vídeo autônomo precisa de voz sintética (ElevenLabs ou uma voz local), ou o app prepara tudo e para no "falta gravar a voz". É a maior decisão, e mexe no "seu material primeiro" do [PURPOSE](../PURPOSE.md#princípios).
 - **Imagens que faltam.** Usar as sugestões da internet já buscadas ([0017](0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md)) sozinho, ou parar e pedir.
