@@ -73,6 +73,10 @@ backend/
 │   │   │   ├── collect.ts              # coleta no Instagram e no YouTube, 1x/dia e nas idades de 1, 7 e 28 dias
 │   │   │   ├── compare.ts              # fotos por idade e comparação com a mediana (sem rede; testado)
 │   │   │   └── types.ts                # VideoMetrics, MetricsSnapshot
+│   │   ├── ideas/                      # banco de ideias e brainstorm (ADR 0021)
+│   │   │   ├── ideas.ts                # prompt, lote, ajuste, guardar/descartar (data/ideas/)
+│   │   │   ├── clean.ts                # etiquetas [V1]/[C1] → provas reais; limpa a resposta da IA (testado)
+│   │   │   └── types.ts                # Idea, IdeaEvidence
 │   │   ├── graphApi.ts                 # versão e endereço da Graph API da Meta (v23.0)
 │   │   ├── instagramGraphService.ts    # Graph API: perfil, Reels, métricas, publicação
 │   │   ├── instagramAuthService.ts     # OAuth + renovação (graph.instagram.com)

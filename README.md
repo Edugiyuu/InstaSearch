@@ -57,7 +57,7 @@ Detalhes em [docs/AUTO_EDIT.md](docs/AUTO_EDIT.md) e o propósito completo em [d
 | Análise de perfis de referência | 🚧 Interface existe, mas ainda não coleta dados (vai usar a Business Discovery API) |
 | Geração de ideias de conteúdo a partir de análises | 🚧 Endpoint ainda é um stub |
 | Modo gravado (corte de silêncios e takes) | 📋 Planejado |
-| Ciclo de aprendizado (métricas → ideias) | ⚠️ Métricas prontas (tela Ideias); brainstorm em seguida ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md)) |
+| Ciclo de aprendizado: métricas → ideias de vídeo com as provas (tela Ideias) | ✅ Funciona ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md)) |
 
 Status detalhado e próximos passos em [docs/ROADMAP.md](docs/ROADMAP.md).
 

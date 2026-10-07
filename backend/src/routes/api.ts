@@ -19,6 +19,7 @@ import * as schedulerController from '../controllers/schedulerController.js'
 import * as videoAnalysisController from '../controllers/videoAnalysisController.js'
 import * as youtubeController from '../controllers/youtubeController.js'
 import * as insightsController from '../controllers/insightsController.js'
+import * as ideasController from '../controllers/ideasController.js'
 
 const router = Router()
 
@@ -60,9 +61,13 @@ router.get('/youtube/auth-url', youtubeController.getAuthUrl)
 router.get('/youtube/callback', youtubeController.handleCallback)
 router.delete('/youtube/account', youtubeController.disconnect)
 
-// Métricas dos vídeos publicados (ADR 0021)
+// Métricas dos vídeos publicados e banco de ideias (ADR 0021)
 router.get('/metrics', insightsController.listMetrics)
 router.post('/metrics/refresh', insightsController.refreshMetrics)
+router.get('/ideas', ideasController.listIdeas)
+router.post('/ideas/brainstorm', ideasController.brainstorm)
+router.put('/ideas/:id', ideasController.updateIdea)
+router.delete('/ideas/:id', ideasController.deleteIdea)
 
 // Instagram Data (Graph API)
 router.get('/instagram/data/profile', instagramDataController.getInstagramProfile)

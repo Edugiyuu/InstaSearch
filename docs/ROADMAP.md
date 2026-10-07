@@ -9,13 +9,13 @@ Legenda: ✅ pronto · ⚠️ funciona com ressalvas · 🚧 incompleto/stub · 
 | Tela (rota) | Estado | Observação |
 |---|---|---|
 | Início (`/`) | ✅ | Criação rápida, seus vídeos, contagem da biblioteca e próximas publicações (tudo real) |
-| Novo vídeo (`/novo`) | ✅ | Tema, estilo, duração e tom (da biblioteca, com "+ Novo tom"); a IA pesquisa até 4 vezes, escreve o roteiro com argumento e divide em cenas. Aceita narração pronta |
+| Novo vídeo (`/novo`) | ✅ | Tema (ou uma ideia guardada, de atalho), estilo, duração e tom (da biblioteca, com "+ Novo tom"); a IA pesquisa até 4 vezes, escreve o roteiro com argumento e divide em cenas. Aceita narração pronta |
 | Roteiro e voz (`/projeto/:id/roteiro`) | ✅ | Cenas editáveis, pedidos à IA, copiar narração, upload do áudio (a duração do áudio dita os cortes) |
 | Montagem (`/projeto/:id/montagem`) | ✅ | Escolhe imagens, figurinhas, efeitos sonoros e música da biblioteca e mostra as decisões |
 | Revisão (`/projeto/:id`) | ⚠️ | Prévia no `@remotion/player`, "Peça um ajuste", desfazer, ajustes rápidos (ritmo, efeitos, legenda quadrinho/completa/limpa, música, bordão de abertura e do final), salvar para depois. Legenda e cortes no tempo da voz (Whisper local, [ADR 0018](decisions/0018-legenda-sincronizada-com-a-voz.md)) |
 | Trocar imagem (`/projeto/:id/imagens`) | ✅ | Uma cena por vez: sugestões da internet já buscadas (clique e usa), colar, arrastar, link, Google ou biblioteca |
 | Publicar (modal) | ✅ | Legenda do post pela IA, render MP4 no Remotion com progresso, baixar MP4, publicar no Instagram (Reels) e no YouTube (Shorts) |
-| Ideias (`/ideias`) | ⚠️ | Desempenho de cada Reel e Short publicado, comparado com a mediana dos seus últimos vídeos na mesma idade (fotos de 1, 7 e 28 dias, [ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md)). Falta o brainstorm de ideias |
+| Ideias (`/ideias`) | ✅ | Aba Ideias: brainstorm em lote a partir das métricas, dos comentários e da web, com as provas de cada ideia, ajuste por pedido, guardar/descartar com motivo e "Criar vídeo". Aba Desempenho: cada Reel e Short comparado com a mediana dos seus últimos vídeos na mesma idade (fotos de 1, 7 e 28 dias). [ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md) |
 | Projetos (`/projetos`) | ✅ | Filtros: no roteiro, faltam imagens, prontos, salvos, publicados |
 | Biblioteca (`/biblioteca`) | ✅ | Abas Imagens, Vídeos, Figurinhas, Efeitos sonoros, Músicas, Bordões (abertura e final, [ADR 0016](decisions/0016-bordoes-de-abertura-e-final.md)) e Tons do roteiro ([ADR 0019](decisions/0019-roteiro-com-argumento-e-tons-proprios.md), escritos por você ou sugeridos pela IA). Catalogação pela IA; áudio de Reels/TikTok/Shorts por link (precisa do `yt-dlp`) |
 | Estilos (`/estilos`) | ✅ | Galeria, ajustes em palavras simples, prévia "Como fica"; mudar um embutido salva uma cópia |
@@ -89,12 +89,12 @@ Especificação: [AUTO_EDIT.md](AUTO_EDIT.md)
 
 ## Fase 4: ciclo de aprendizado (o "Search")
 
-Decidido no [ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md): métricas comparadas com a mediana do canal, fotos com 1, 7 e 28 dias, e uma tela Ideias com banco de ideias, que depois vira a fila da criação autônoma (ADR 0022, ainda por escrever).
+[ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md), pronto: métricas comparadas com a mediana do canal, fotos com 1, 7 e 28 dias, e a tela Ideias com o banco de ideias, que depois vira a fila da criação autônoma (ADR 0022, ainda por escrever).
 
 - [x] Coletar periodicamente as métricas de cada vídeo publicado (visualizações, alcance, retenção, salvamentos, compartilhamentos) e guardar fotos com 1, 7 e 28 dias (`services/insights/`).
 - [x] Ligar cada post ao seu projeto (pelo id salvo ao publicar; tema, estilo, tom e duração vêm do projeto).
 - [ ] **Perfis de referência via Business Discovery API**, tornando Perfis e Análises funcionais.
-- [ ] Implementar `POST /api/content/generate` de verdade: sugestões de **temas** baseadas no que funcionou.
+- [x] Sugestões de **temas** baseadas no que funcionou: tela Ideias e `POST /api/ideas/brainstorm` (no lugar do stub `POST /api/content/generate`, que fica nas ferramentas antigas).
 - [ ] Dashboard "o que funcionou": melhores ganchos, duração ideal, melhor horário.
 
 ## Fase 5: pronto para outras pessoas

@@ -19,7 +19,7 @@ Novo vídeo ─► Roteiro e voz ─► Montagem (automática) ─► Revisão �
 - **Gerar roteiro** chama a IA (Gemini, ou o Claude Sonnet 5.5 se o Gemini estiver fora). Antes de escrever, ela pesquisa na web (até 4 buscas) provas para a ideia central, e o roteiro segue a estrutura gancho → tese → provas concretas → conclusão → chamada para comentar. Abaixo do título aparece **quantas buscas ela fez e o que buscou** ([ADR 0019](decisions/0019-roteiro-com-argumento-e-tons-proprios.md)). Confira as provas: a IA ainda pode errar um detalhe.
 - O nome da IA que escreveu aparece num selo abaixo do título do roteiro e no cartão **Quem fez** da revisão ([detalhes](AI.md#quem-fez-cada-parte)).
 
-O atalho do Início (tema + estilo + "Começar") abre esta tela já preenchida.
+O atalho do Início (tema + estilo + "Começar") abre esta tela já preenchida. As **ideias guardadas** (tela Ideias) aparecem como atalho acima do tema: um clique preenche tema, estilo, tom e duração.
 
 ## 2. Roteiro e voz (`/projeto/:id/roteiro`)
 
@@ -142,6 +142,17 @@ pip install yt-dlp
 ```
 
 Alguns links do Instagram exigem login e podem falhar. Músicas com direitos autorais podem ser silenciadas pelo Instagram ou pelo YouTube.
+
+## Ideias (`/ideias`)
+
+O que gravar em seguida, a partir do que funcionou nos seus vídeos ([ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md)). Duas abas:
+
+- **Desempenho:** cada Reel e Short publicado, com visualizações, quanto é assistido, compartilhamentos + salvamentos por mil, curtidas e comentários. O destaque é a comparação com a **mediana dos seus últimos vídeos na mesma idade** ("2,4× a sua mediana, aos 7 dias"): o app tira uma foto dos números quando o vídeo faz 1, 7 e 28 dias, sozinho, e o botão **Atualizar métricas** coleta na hora. Com menos de 10 vídeos medidos, a tela avisa que ainda é cedo para tirar padrão. Precisa do Instagram e/ou do YouTube conectados com as permissões de métricas ([INSTAGRAM.md](INSTAGRAM.md#métricas-dos-reels-tela-ideias), [YOUTUBE.md](YOUTUBE.md#métricas-tela-ideias)).
+- **Ideias:** **Gerar ideias** (com um assunto opcional, "algo de Chainsaw Man") pede um lote de 6 para a IA. Ela lê o desempenho dos vídeos, os comentários mais curtidos do público e as ideias que você já guardou ou descartou, e pesquisa na web o que está acontecendo agora. Cada ideia traz tema, gancho, estilo, tom, duração, **o porquê** e as provas: os seus vídeos (com o número real), os comentários e o que achou na web. Ideia sem prova sua diz que veio só da pesquisa.
+  - **Guardar** leva a ideia para o banco; **Descartar** pede um motivo ("já fiz", "não curto"), que a IA lê nos próximos lotes para não repetir.
+  - **Peça um ajuste** troca o lote inteiro: "mais polêmicas", "só de One Piece", "junta a 2 com a 5" (os números são os dos cartões).
+  - **Criar vídeo** abre o Novo vídeo preenchido; quando o projeto nasce, a ideia passa para **Viraram vídeo**.
+  - As ideias novas que você não guardar são trocadas no próximo brainstorm.
 
 ## Estilos (`/estilos`)
 

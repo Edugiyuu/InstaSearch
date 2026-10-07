@@ -15,7 +15,7 @@ import * as youtube from '../youtubeService.js'
 import { listProjects } from '../shorts/projects.js'
 import type { ShortProject } from '../shorts/types.js'
 import { ageInDays, compareVideos, FEW_DATA, hasDueSnapshot, measured, withSnapshot } from './compare.js'
-import type { MetricsSnapshot, MetricsState, Platform, PlatformState, VideoMetrics } from './types.js'
+import type { AudienceComment, MetricsSnapshot, MetricsState, Platform, PlatformState, VideoMetrics } from './types.js'
 
 const videoStore = new FileStorage<VideoMetrics>('metrics/videos')
 const stateStore = new FileStorage<MetricsState>('metrics')
@@ -23,6 +23,18 @@ const stateStore = new FileStorage<MetricsState>('metrics')
 const HOUR = 60 * 60 * 1000
 /** Quantos vídeos recentes de cada plataforma acompanhar. */
 const MAX_VIDEOS = 50
+/** Dos vídeos acompanhados, de quantos (os mais recentes) ler os comentários para as ideias. */
+const COMMENT_VIDEOS = 15
+const COMMENTS_PER_VIDEO = 20
+
+/** Comentários com texto, os mais curtidos primeiro. */
+function cleanComments(list: { text: string; likes: number; at: string }[]): AudienceComment[] {
+  return list
+    .map(c => ({ text: c.text.replace(/\s+/g, ' ').trim().slice(0, 300), likes: c.likes || 0, at: c.at }))
+    .filter(c => c.text.length > 2)
+    .sort((a, b) => b.likes - a.likes)
+    .slice(0, COMMENTS_PER_VIDEO)
+}
 
 const emptyPlatform = (): PlatformState => ({ connected: false, ok: false, videos: 0 })
 
@@ -74,7 +86,8 @@ async function collectInstagram(existing: Map<string, VideoMetrics>, projects: M
     const reels = await instagramGraphService.listReels(MAX_VIDEOS)
     const now = Date.now()
     let failed = 0
-    for (const reel of reels) {
+    let commentsBlocked = false
+    for (const [index, reel] of reels.entries()) {
       const id = `instagram_${reel.id}`
       try {
         // um pedido por Reel, um de cada vez: o limite da Meta é de ~200 pedidos por hora
@@ -94,6 +107,17 @@ async function collectInstagram(existing: Map<string, VideoMetrics>, projects: M
         const base =
           existing.get(id) ??
           newVideo('instagram', reel.id, { publishedAt: reel.timestamp })
+        // comentários só dos mais recentes e com comentário; sem a permissão, segue sem eles
+        let topComments = base.topComments
+        if (!commentsBlocked && index < COMMENT_VIDEOS && (m.comments ?? 0) > 0) {
+          try {
+            const raw = await instagramGraphService.getMediaComments(reel.id, COMMENTS_PER_VIDEO * 2)
+            topComments = cleanComments(raw.map((c: any) => ({ text: String(c.text ?? ''), likes: Number(c.like_count ?? 0), at: c.timestamp })))
+          } catch (error: any) {
+            commentsBlocked = true
+            logger.warn(`⚠️ Comentários do Instagram: ${error.message}`)
+          }
+        }
         await videoStore.save(
           withSnapshot(
             {
@@ -104,6 +128,7 @@ async function collectInstagram(existing: Map<string, VideoMetrics>, projects: M
               projectId: project?.id,
               // o Instagram não diz a duração do Reel; dos vídeos do app, sabemos
               durationSec: project ? Math.round(project.audioDuration || project.duration) : base.durationSec,
+              topComments,
             },
             snap,
           ),
@@ -117,7 +142,11 @@ async function collectInstagram(existing: Map<string, VideoMetrics>, projects: M
       }
     }
     state.ok = true
-    if (failed) state.message = `${failed} Reel(s) sem métricas nesta coleta.`
+    const notes = [
+      failed ? `${failed} Reel(s) sem métricas nesta coleta.` : '',
+      commentsBlocked ? 'Não deu para ler os comentários: o token precisa da permissão instagram_manage_comments.' : '',
+    ].filter(Boolean)
+    if (notes.length) state.message = notes.join(' ')
   } catch (error: any) {
     state.message = error.message
     logger.warn(`⚠️ Métricas do Instagram: ${error.message}`)
@@ -150,7 +179,8 @@ async function collectYouTube(existing: Map<string, VideoMetrics>, projects: Map
       }
     }
 
-    for (const short of shorts) {
+    let commentsBlocked = false
+    for (const [index, short] of shorts.entries()) {
       const id = `youtube_${short.id}`
       const a = analytics.get(short.id)
       const project = projects.get(id)
@@ -166,6 +196,15 @@ async function collectYouTube(existing: Map<string, VideoMetrics>, projects: Map
         engagedViews: a?.engagedViews,
       }
       const base = existing.get(id) ?? newVideo('youtube', short.id, { publishedAt: short.publishedAt })
+      let topComments = base.topComments
+      if (!commentsBlocked && index < COMMENT_VIDEOS && short.comments > 0) {
+        try {
+          topComments = cleanComments(await youtube.listComments(short.id, COMMENTS_PER_VIDEO))
+        } catch (error: any) {
+          commentsBlocked = true
+          logger.warn(`⚠️ Comentários do YouTube: ${error.message}`)
+        }
+      }
       await videoStore.save(
         withSnapshot(
           {
@@ -176,6 +215,7 @@ async function collectYouTube(existing: Map<string, VideoMetrics>, projects: Map
             durationSec: short.durationSec,
             privacy: short.privacy,
             projectId: project?.id,
+            topComments,
           },
           snap,
         ),

@@ -77,6 +77,15 @@ O usuário pediu para seguir a recomendação do Claude nas cinco escolhas: **1B
 - **Graph API** na `v23.0`, num lugar só (`services/graphApi.ts`), com `GRAPH_API_VERSION` para trocar sem mexer no código.
 - **Permissões:** o YouTube guarda as permissões concedidas e Configurações pede para conectar de novo quando falta a de métricas; o Instagram confere `instagram_manage_insights` em `/me/permissions` antes de coletar e a tela Ideias avisa se ela faltar.
 
+### Como ficou no código: ideias (07/10)
+
+- **Comentários** lidos na própria coleta de métricas (os 20 mais curtidos de cada um dos 15 vídeos mais recentes), para o brainstorm não esperar dezenas de pedidos às APIs. No Instagram precisa de `instagram_manage_comments`; sem ela, a coleta segue e avisa.
+- **Provas que não mentem** (`ideas/clean.ts`, testado): vídeos e comentários entram no pedido com etiquetas (`[V3]`, `[C5]`); a IA cita as etiquetas e o app troca pelo título, link e número reais. Etiqueta inexistente é descartada, e estilo ou tom inventado vira o padrão. A IA não escreve link nenhum.
+- **Pesquisa** com instrução própria (`researchNote` em `llm.ts`): o que está acontecendo agora, e não as provas de um roteiro.
+- **Lote de 6**, cada ideia com a posição no lote (o número do cartão, o mesmo que a IA lê no ajuste "junta a 2 com a 5"). Um ajuste ou um brainstorm novo troca as ideias `nova` que não foram guardadas nem descartadas.
+- **Novo vídeo:** "Criar vídeo" abre a tela pela URL (`?tema=…&estilo=…&tom=…&duracao=…&ideia=…`), e as 3 ideias guardadas **mais recentes** viram atalho. O texto acima falava nas "mais fortes", mas não existe uma nota de força que não seja inventada; a ordem é a de quando você guardou.
+- **Primeiro teste (07/10)**, com o Claude Code e dados de teste: 6 ideias em 38 s, 4 buscas na web; todas citavam vídeos e comentários reais, e a que veio só da pesquisa disse isso. No primeiro teste, o "porquê" falava "V1" e "V3", etiquetas que o usuário não vê; o pedido passou a mandar chamar os vídeos pelo título.
+
 ## Alternativas consideradas
 
 As alternativas de cada escolha estão na seção acima, com o motivo de não serem a recomendação.

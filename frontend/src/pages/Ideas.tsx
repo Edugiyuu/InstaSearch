@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Idea, IdeaEvidence, IdeaStatus, newVideoLink } from '../api/ideas'
 import { formatCount, Platform, PLATFORM_LABEL, PlatformState, sharesPerThousand, VideoMetrics, watchedPercent } from '../api/insights'
-import { Spinner } from '../components/flow'
+import { AiBadge, SearchList, Segmented, Spinner } from '../components/flow'
+import { useIdeas } from '../hooks/useIdeas'
 import { useMetrics } from '../hooks/useInsights'
+import { useStyles, useTones } from '../hooks/useShorts'
 import './Ideas.css'
 
 type Filter = 'todos' | Platform
@@ -123,8 +126,11 @@ function PlatformCard({ platform, state, measured, fewData }: { platform: Platfo
   )
 }
 
-function Ideas() {
-  const { overview, loading, refreshing, error, refresh } = useMetrics()
+type Metrics = ReturnType<typeof useMetrics>
+
+/** Aba Desempenho: cada vídeo publicado, comparado com a mediana dos últimos (ADR 0021). */
+function Performance({ metrics }: { metrics: Metrics }) {
+  const { overview, loading, refreshing, refresh } = metrics
   const [filter, setFilter] = useState<Filter>('todos')
   const [sort, setSort] = useState<Sort>('recentes')
 
@@ -137,64 +143,331 @@ function Ideas() {
   const state = overview?.state
   const lastRun = state?.lastRunAt ? new Date(state.lastRunAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : null
 
+  if (loading) return <Spinner />
+  if (!overview || !state) return null
   return (
-    <div className="page ideas">
-      <div className="page-head">
-        <div>
-          <h1 className="page-title">Ideias</h1>
-          <p className="page-sub">O que funcionou nos seus vídeos. Cada um é comparado com a mediana dos seus últimos vídeos, na mesma idade.</p>
-        </div>
+    <>
+      <div className="id-toolbar">
+        <p className="meta">Cada vídeo é comparado com a mediana dos seus últimos vídeos, na mesma idade (1, 7 ou 28 dias).</p>
         <span className="spacer" />
-        <span className="meta id-last">{refreshing || overview?.collecting ? 'Coletando…' : lastRun ? `Última coleta: ${lastRun}` : 'Nenhuma coleta ainda'}</span>
+        <span className="meta id-last">{refreshing || overview.collecting ? 'Coletando…' : lastRun ? `Última coleta: ${lastRun}` : 'Nenhuma coleta ainda'}</span>
         <button className="btn-o" onClick={refresh} disabled={refreshing}>
           {refreshing ? <Spinner /> : '↻'} Atualizar métricas
         </button>
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      <div className="id-platforms">
+        <PlatformCard platform="instagram" state={state.instagram} measured={overview.measured.instagram} fewData={overview.fewData} />
+        <PlatformCard platform="youtube" state={state.youtube} measured={overview.measured.youtube} fewData={overview.fewData} />
+      </div>
 
-      {loading ? (
-        <Spinner />
-      ) : overview && state ? (
-        <>
-          <div className="id-platforms">
-            <PlatformCard platform="instagram" state={state.instagram} measured={overview.measured.instagram} fewData={overview.fewData} />
-            <PlatformCard platform="youtube" state={state.youtube} measured={overview.measured.youtube} fewData={overview.fewData} />
+      <div className="id-toolbar">
+        <div className="filter-tabs">
+          {(['todos', 'instagram', 'youtube'] as Filter[]).map(f => (
+            <button key={f} className={`filter-tab ${filter === f ? 'on' : ''}`} onClick={() => setFilter(f)}>
+              {f === 'todos' ? 'Todos' : PLATFORM_LABEL[f]}{' '}
+              <span className="c-muted">{overview.videos.filter(v => f === 'todos' || v.platform === f).length}</span>
+            </button>
+          ))}
+        </div>
+        <span className="spacer" />
+        <div className="chips">
+          <button className={`chip ${sort === 'recentes' ? 'on' : ''}`} onClick={() => setSort('recentes')}>Mais recentes</button>
+          <button className={`chip ${sort === 'melhores' ? 'on' : ''}`} onClick={() => setSort('melhores')}>Melhores primeiro</button>
+        </div>
+      </div>
+
+      {visible.length === 0 ? (
+        <p className="c-muted">
+          {overview.videos.length
+            ? 'Nada com esse filtro.'
+            : state.instagram.connected || state.youtube.connected
+              ? 'Nenhum vídeo medido ainda. Clique em "Atualizar métricas".'
+              : 'Conecte o Instagram ou o YouTube em Configurações para ver o desempenho dos seus vídeos.'}
+        </p>
+      ) : (
+        <div className="id-list">
+          {visible.map(v => (
+            <VideoRow key={v.id} video={v} />
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
+const DISCARD_REASONS = ['Já fiz', 'Não curto', 'Fora do nicho', 'Genérica demais']
+
+function Evidence({ item }: { item: IdeaEvidence }) {
+  const icon = item.kind === 'video' ? '▶' : item.kind === 'comentario' ? '💬' : '🔎'
+  const body =
+    item.kind === 'video' ? (
+      <>
+        {item.platform && <span className={`id-platform ${item.platform}`}>{PLATFORM_LABEL[item.platform]}</span>} “{item.text}”
+        {item.ratio !== undefined && <strong className={item.ratio >= 1.5 ? 'c-success' : item.ratio <= 0.67 ? 'c-danger' : ''}> · {decimal(item.ratio)}× a mediana</strong>}
+      </>
+    ) : item.kind === 'comentario' ? (
+      <>comentário: “{item.text}”</>
+    ) : (
+      <>na web: {item.text}</>
+    )
+  return (
+    <li>
+      <span className="id-ev-icon">{icon}</span>
+      {item.url ? (
+        <a href={item.url} target="_blank" rel="noreferrer">{body}</a>
+      ) : (
+        <span>{body}</span>
+      )}
+    </li>
+  )
+}
+
+function IdeaCard({
+  idea,
+  number,
+  styleName,
+  toneName,
+  onStatus,
+  onRemove,
+}: {
+  idea: Idea
+  /** Número no lote, para pedir "junta a 2 com a 5". */
+  number?: number
+  styleName: string
+  toneName: string
+  onStatus: (status: IdeaStatus, reason?: string) => void
+  onRemove: () => void
+}) {
+  const [discarding, setDiscarding] = useState(false)
+  const [reason, setReason] = useState('')
+  const open = idea.status === 'nova' || idea.status === 'guardada'
+
+  return (
+    <div className={`panel id-idea ${idea.status}`}>
+      <div className="id-idea-head">
+        {number !== undefined && <span className="id-idea-n">{number}</span>}
+        <strong className="id-idea-theme">{idea.theme}</strong>
+      </div>
+      {idea.hook && <p className="id-idea-hook">“{idea.hook}”</p>}
+      <p className="meta">
+        {styleName}
+        <span className="meta-sep" />
+        {toneName}
+        <span className="meta-sep" />
+        {idea.duration}s
+      </p>
+      {idea.why && <p className="id-idea-why">{idea.why}</p>}
+      {idea.evidence.length > 0 ? (
+        <ul className="id-evidence">
+          {idea.evidence.map((e, i) => (
+            <Evidence key={i} item={e} />
+          ))}
+        </ul>
+      ) : (
+        <p className="meta">Sem um vídeo ou comentário seu por trás: veio só da pesquisa e do seu pedido.</p>
+      )}
+      {idea.status === 'descartada' && idea.discardReason && <p className="meta">Descartada: {idea.discardReason}</p>}
+
+      {discarding ? (
+        <div className="id-discard">
+          <span className="meta">Por quê? A IA lê o motivo e evita ideias parecidas.</span>
+          <div className="chips">
+            {DISCARD_REASONS.map(r => (
+              <button key={r} className={`chip ${reason === r ? 'on' : ''}`} onClick={() => setReason(r)}>
+                {r}
+              </button>
+            ))}
           </div>
-
-          <div className="id-toolbar">
-            <div className="filter-tabs">
-              {(['todos', 'instagram', 'youtube'] as Filter[]).map(f => (
-                <button key={f} className={`filter-tab ${filter === f ? 'on' : ''}`} onClick={() => setFilter(f)}>
-                  {f === 'todos' ? 'Todos' : PLATFORM_LABEL[f]}{' '}
-                  <span className="c-muted">{overview.videos.filter(v => f === 'todos' || v.platform === f).length}</span>
-                </button>
-              ))}
-            </div>
-            <span className="spacer" />
-            <div className="chips">
-              <button className={`chip ${sort === 'recentes' ? 'on' : ''}`} onClick={() => setSort('recentes')}>Mais recentes</button>
-              <button className={`chip ${sort === 'melhores' ? 'on' : ''}`} onClick={() => setSort('melhores')}>Melhores primeiro</button>
-            </div>
+          <input className="field" value={reason} onChange={e => setReason(e.target.value)} placeholder="Ou escreva o motivo (opcional)" />
+          <div className="act-row">
+            <button className="btn-o" onClick={() => onStatus('descartada', reason)}>Descartar</button>
+            <button className="act" onClick={() => setDiscarding(false)}>Cancelar</button>
           </div>
-
-          {visible.length === 0 ? (
-            <p className="c-muted">
-              {overview.videos.length
-                ? 'Nada com esse filtro.'
-                : state.instagram.connected || state.youtube.connected
-                  ? 'Nenhum vídeo medido ainda. Clique em "Atualizar métricas".'
-                  : 'Conecte o Instagram ou o YouTube em Configurações para ver o desempenho dos seus vídeos.'}
-            </p>
-          ) : (
-            <div className="id-list">
-              {visible.map(v => (
-                <VideoRow key={v.id} video={v} />
-              ))}
-            </div>
+        </div>
+      ) : (
+        <div className="act-row">
+          {open && (
+            <Link to={newVideoLink(idea)} className="btn-y">
+              Criar vídeo →
+            </Link>
           )}
-        </>
-      ) : null}
+          {idea.status === 'nova' && (
+            <button className="btn-o" onClick={() => onStatus('guardada')}>
+              Guardar
+            </button>
+          )}
+          {open && (
+            <button className="act" onClick={() => setDiscarding(true)}>
+              Descartar
+            </button>
+          )}
+          {idea.status === 'feita' && idea.projectId && (
+            <Link to={`/projeto/${idea.projectId}`} className="btn-o">
+              Abrir o projeto
+            </Link>
+          )}
+          {idea.status === 'descartada' && (
+            <>
+              <button className="act" onClick={() => onStatus('guardada')}>Guardar de novo</button>
+              <button className="act" onClick={onRemove}>Apagar</button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Aba Ideias: brainstorm em lote, ajuste por pedido e o banco (ADR 0021, escolhas 4B e 5B). */
+function Brainstorm({ metrics }: { metrics: Metrics }) {
+  const { ideas, loading, thinking, error, brainstorm, setStatus, remove } = useIdeas()
+  const { styles } = useStyles()
+  const { tones } = useTones()
+  const [seed, setSeed] = useState('')
+  const [request, setRequest] = useState('')
+
+  const batch = ideas.filter(i => i.status === 'nova').sort((a, b) => a.position - b.position)
+  const kept = ideas.filter(i => i.status === 'guardada')
+  const done = ideas.filter(i => i.status === 'feita')
+  const discarded = ideas.filter(i => i.status === 'descartada')
+
+  // o que a IA vai ler, para a pessoa saber de onde as ideias vêm
+  const videos = (metrics.overview?.videos ?? []).filter(v => v.privacy !== 'private')
+  const comments = videos.reduce((n, v) => n + (v.topComments?.length ?? 0), 0)
+  const measured = (metrics.overview?.measured.instagram ?? 0) + (metrics.overview?.measured.youtube ?? 0)
+
+  const card = (idea: Idea, number?: number) => (
+    <IdeaCard
+      key={idea.id}
+      idea={idea}
+      number={number}
+      styleName={styles.find(s => s.id === idea.styleId)?.name ?? idea.styleId}
+      toneName={tones.find(t => t.id === idea.toneId)?.name ?? idea.toneId}
+      onStatus={(status, reason) => setStatus(idea.id, status, reason)}
+      onRemove={() => remove(idea.id)}
+    />
+  )
+
+  return (
+    <>
+      <div className="panel panel-pad id-brainstorm">
+        <span className="label">Brainstorm</span>
+        <div className="id-brainstorm-row">
+          <input
+            className="field"
+            value={seed}
+            onChange={e => setSeed(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && !thinking && brainstorm({ seed })}
+            placeholder="Sobre o quê? (opcional) Ex.: algo de Chainsaw Man, o episódio de domingo"
+            disabled={thinking}
+          />
+          <button className="btn-y" onClick={() => brainstorm({ seed })} disabled={thinking}>
+            {thinking ? 'Pensando…' : batch.length ? 'Gerar outras' : 'Gerar ideias'}
+          </button>
+        </div>
+        <p className="meta">
+          {videos.length
+            ? `A IA lê ${videos.length} vídeo(s) seu(s) (${measured} já com foto de 1, 7 ou 28 dias), ${comments} comentário(s) do público e as ideias que você já guardou ou descartou, e pesquisa na web o que está acontecendo agora.`
+            : 'Ainda não há métricas dos seus vídeos (veja a aba Desempenho): as ideias vêm só da pesquisa na web e do que você pedir.'}
+        </p>
+        {thinking && (
+          <p className="id-thinking">
+            <Spinner /> Olhando seus vídeos, lendo os comentários e pesquisando o que está acontecendo… (pode levar um minuto)
+          </p>
+        )}
+      </div>
+
+      {error && <p className="form-error">{error}</p>}
+      {loading && <Spinner />}
+
+      {batch.length > 0 && (
+        <section className="id-section">
+          <div className="id-section-head">
+            <h2>Ideias novas</h2>
+            {batch[0].seed && <span className="meta">sobre “{batch[0].seed}”</span>}
+            {batch[0].request && <span className="meta">ajuste: “{batch[0].request}”</span>}
+            <span className="spacer" />
+            <AiBadge label="Ideias" ai={batch[0].ai} compact />
+          </div>
+          <SearchList ai={batch[0].ai} />
+          <div className="id-ideas">{batch.map(idea => card(idea, idea.position))}</div>
+          <div className="id-adjust">
+            <input
+              className="field"
+              value={request}
+              onChange={e => setRequest(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && request.trim() && !thinking && brainstorm({ request, seed: batch[0].seed }).then(ok => ok && setRequest(''))}
+              placeholder="Peça um ajuste: mais polêmicas, só de Chainsaw Man, junta a 2 com a 5…"
+              disabled={thinking}
+            />
+            <button
+              className="btn-o"
+              disabled={thinking || !request.trim()}
+              onClick={() => brainstorm({ request, seed: batch[0].seed }).then(ok => ok && setRequest(''))}
+            >
+              Ajustar
+            </button>
+          </div>
+          <p className="meta">As ideias novas que você não guardar são trocadas no próximo brainstorm.</p>
+        </section>
+      )}
+
+      {kept.length > 0 && (
+        <section className="id-section">
+          <div className="id-section-head">
+            <h2>Guardadas</h2>
+            <span className="c-muted">{kept.length}</span>
+          </div>
+          <div className="id-ideas">{kept.map(idea => card(idea))}</div>
+        </section>
+      )}
+
+      {done.length > 0 && (
+        <section className="id-section">
+          <div className="id-section-head">
+            <h2>Viraram vídeo</h2>
+            <span className="c-muted">{done.length}</span>
+          </div>
+          <div className="id-ideas">{done.map(idea => card(idea))}</div>
+        </section>
+      )}
+
+      {discarded.length > 0 && (
+        <details className="id-section">
+          <summary>
+            Descartadas <span className="c-muted">{discarded.length}</span>
+          </summary>
+          <div className="id-ideas">{discarded.map(idea => card(idea))}</div>
+        </details>
+      )}
+
+      {!loading && !thinking && ideas.length === 0 && <p className="c-muted">Nenhuma ideia ainda. Clique em “Gerar ideias”.</p>}
+    </>
+  )
+}
+
+type Tab = 'ideias' | 'desempenho'
+const TABS: Record<Tab, string> = { ideias: 'Ideias', desempenho: 'Desempenho' }
+
+function Ideas() {
+  const metrics = useMetrics()
+  const [params, setParams] = useSearchParams()
+  const tab: Tab = params.get('aba') === 'desempenho' ? 'desempenho' : 'ideias'
+
+  return (
+    <div className="page ideas">
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">Ideias</h1>
+          <p className="page-sub">Próximos vídeos a partir do que funcionou nos seus: a IA sugere, você decide.</p>
+        </div>
+        <span className="spacer" />
+        <Segmented value={tab} options={TABS} onChange={t => setParams(t === 'ideias' ? {} : { aba: t }, { replace: true })} />
+      </div>
+
+      {metrics.error && <p className="form-error">{metrics.error}</p>}
+      {tab === 'ideias' ? <Brainstorm metrics={metrics} /> : <Performance metrics={metrics} />}
     </div>
   )
 }

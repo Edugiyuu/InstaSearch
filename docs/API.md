@@ -85,6 +85,17 @@ Detalhes: [INSTAGRAM.md](INSTAGRAM.md).
 | GET | `/metrics` | ✅ | Vídeos do Instagram e do YouTube com os números de agora, as fotos de 1, 7 e 28 dias e a comparação com a mediana (`comparison.ratio`); estado de cada plataforma |
 | POST | `/metrics/refresh` | ✅ | Coleta agora (o botão "Atualizar métricas") e devolve o mesmo que o `GET` |
 
+## Banco de ideias
+
+[ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md). Dados em `data/ideas/`.
+
+| Método | Rota | | Descrição |
+|---|---|---|---|
+| GET | `/ideas` | ✅ | Todas as ideias, das mais novas para as mais velhas |
+| POST | `/ideas/brainstorm` | ✅ | `{ seed?, request? }`. Lote novo (a IA pesquisa na web; até ~1 min). Com `request`, ajusta o lote atual. As ideias `nova` anteriores são trocadas. Devolve o banco inteiro |
+| PUT | `/ideas/:id` | ✅ | `{ status?, discardReason?, projectId? }`; status: `nova`, `guardada`, `descartada`, `feita` |
+| DELETE | `/ideas/:id` | ✅ | Apaga a ideia |
+
 ## IA
 
 | Método | Rota | | Corpo |

@@ -40,6 +40,8 @@ export interface VideoMetrics {
   privacy?: string
   current: MetricsSnapshot
   snapshots: MetricsSnapshot[]
+  /** Comentários mais curtidos, lidos na coleta (entram no brainstorm). */
+  topComments?: { text: string; likes: number; at: string }[]
   updatedAt: string
   comparison: Comparison
 }

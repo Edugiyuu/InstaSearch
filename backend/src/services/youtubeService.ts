@@ -361,3 +361,21 @@ export async function shortsAnalytics(ids: string[], since: string): Promise<Map
   }
   return result
 }
+
+/** Os comentários mais relevantes de um vídeo (1 unidade da cota). Comentários desativados devolvem lista vazia. */
+export async function listComments(videoId: string, max = 20): Promise<{ text: string; likes: number; at: string }[]> {
+  const token = await accessToken()
+  try {
+    const { data } = await axios.get('https://www.googleapis.com/youtube/v3/commentThreads', {
+      params: { part: 'snippet', videoId, maxResults: max, order: 'relevance', textFormat: 'plainText' },
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    return (data.items ?? []).map((item: any) => {
+      const c = item.snippet?.topLevelComment?.snippet ?? {}
+      return { text: String(c.textDisplay ?? ''), likes: Number(c.likeCount ?? 0), at: c.publishedAt }
+    })
+  } catch (error: any) {
+    if (error.response?.data?.error?.errors?.[0]?.reason === 'commentsDisabled') return []
+    youtubeError(error)
+  }
+}

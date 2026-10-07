@@ -151,3 +151,153 @@
     grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   }
 }
+
+/* Aba Ideias: brainstorm e banco de ideias */
+
+.id-brainstorm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.id-brainstorm .label {
+  margin-bottom: 0;
+}
+
+.id-brainstorm-row,
+.id-adjust {
+  display: flex;
+  gap: 10px;
+}
+
+.id-brainstorm-row .field,
+.id-adjust .field {
+  flex: 1;
+  height: 42px;
+}
+
+.id-thinking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.id-section {
+  margin-bottom: 32px;
+}
+
+.id-section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.id-section-head h2,
+details.id-section summary {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+details.id-section summary {
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.id-ideas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.id-idea {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.id-idea.descartada,
+.id-idea.feita {
+  opacity: 0.75;
+}
+
+.id-idea-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.id-idea-n {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.id-idea-theme {
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.id-idea-hook {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text);
+}
+
+.id-idea-why {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.id-evidence {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.id-evidence li {
+  display: flex;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.id-evidence a:hover {
+  color: var(--text);
+}
+
+.id-ev-icon {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+.id-idea .act-row {
+  margin-top: auto;
+  padding-top: 6px;
+  gap: 8px 16px;
+  align-items: center;
+}
+
+.id-discard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 6px;
+}

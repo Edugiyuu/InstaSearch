@@ -34,6 +34,8 @@ export interface AskOptions {
   effort?: 'low' | 'medium'
   /** Deixa a IA pesquisar na web antes de responder (no máximo MAX_SEARCHES buscas). */
   research?: boolean
+  /** O que pesquisar; sem valor, a instrução do roteiro (provas para a tese). As ideias pedem o que está acontecendo agora. */
+  researchNote?: string
 }
 
 type Provider = AiProvider
@@ -49,7 +51,7 @@ interface Answer {
 }
 
 // Até 4 buscas para achar argumento (ADR 0019); com 2, só para confirmar fatos, os roteiros saíam sem prova
-const MAX_SEARCHES = 4
+export const MAX_SEARCHES = 4
 const RESEARCH_NOTE = `Antes de escrever, pesquise na web, com até ${MAX_SEARCHES} buscas curtas e diferentes entre si, as provas que sustentam a ideia central do vídeo: acontecimentos concretos, o capítulo ou episódio em que aconteceram, números, falas marcantes e o que o público costuma discutir sobre o tema. Use as buscas para achar argumento, não só para conferir o que você já sabe. Não afirme nada que você não conseguiu confirmar. Não coloque links nem fontes na resposta.`
 
 // Sonnet 5.5 na API e no Claude Code: o Haiku 4.5 inventava fatos nos roteiros
@@ -95,7 +97,7 @@ function geminiSearchModel() {
 async function askGemini(prompt: string, opts: AskOptions): Promise<Answer> {
   const media = [...imagesOf(opts), ...(opts.audio ? [opts.audio] : [])]
   const research = opts.research && !media.length
-  const text = research ? `${prompt}\n\n${RESEARCH_NOTE}` : prompt
+  const text = research ? `${prompt}\n\n${opts.researchNote ?? RESEARCH_NOTE}` : prompt
   const parts = media.length ? [text, ...media.map(m => ({ inlineData: m }))] : text
   const result = await (research ? geminiSearchModel() : geminiModel()).generateContent(parts)
   // o Gemini não tem limite rígido de buscas (só a instrução): conta o que ele de fato fez
@@ -142,7 +144,7 @@ async function askClaude(prompt: string, opts: AskOptions): Promise<Answer> {
   const research = opts.research && !images.length
   content.push({
     type: 'text',
-    text: `${prompt}${research ? `\n\n${RESEARCH_NOTE}` : ''}\n\nResponda apenas com o JSON, sem texto antes ou depois.`,
+    text: `${prompt}${research ? `\n\n${opts.researchNote ?? RESEARCH_NOTE}` : ''}\n\nResponda apenas com o JSON, sem texto antes ou depois.`,
   })
 
   const messages: Anthropic.MessageParam[] = [{ role: 'user', content }]
@@ -232,7 +234,7 @@ async function askClaudeCode(prompt: string, opts: AskOptions): Promise<Answer> 
   let tempDir: string | null = null
   const images = imagesOf(opts)
   const research = opts.research && !images.length
-  let text = research ? `${prompt}\n\n${RESEARCH_NOTE}` : prompt
+  let text = research ? `${prompt}\n\n${opts.researchNote ?? RESEARCH_NOTE}` : prompt
   const args = [
     '-p',
     'Siga as instruções recebidas pela entrada padrão e responda só com o JSON pedido.',

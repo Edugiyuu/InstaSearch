@@ -26,6 +26,13 @@ export interface MetricsSnapshot {
   engagedViews?: number
 }
 
+/** Um comentário do público, guardado para as ideias (ADR 0021, escolha 1B). */
+export interface AudienceComment {
+  text: string
+  likes: number
+  at: string
+}
+
 export interface VideoMetrics {
   /** `${platform}_${mediaId}` */
   id: string
@@ -46,6 +53,8 @@ export interface VideoMetrics {
   current: MetricsSnapshot
   /** As fotos fixas (1, 7 e 28 dias), uma por idade. */
   snapshots: MetricsSnapshot[]
+  /** Os comentários mais curtidos e recentes (até 20), lidos na coleta. */
+  topComments?: AudienceComment[]
   updatedAt: string
 }
 
