@@ -6,7 +6,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-_(nada; escolha a próxima em "A fazer")_
+- [ ] ADR 0021 (Proposta): ideias de vídeo a partir do desempenho no Instagram e no YouTube; esperando a escolha do usuário
 
 ## A fazer
 
@@ -24,6 +24,7 @@ _(nada; escolha a próxima em "A fazer")_
 - [ ] Remover os logs que imprimem `INSTAGRAM_CLIENT_ID`
 - [ ] Criptografar os tokens em `data/instagram_accounts/`
 - [ ] Apagar o vídeo do Cloudinary depois de publicar
+- [ ] ADR 0022: criação autônoma de vídeos, sem publicar (depende do [ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md))
 - [ ] Demais itens da Fase 0 do [ROADMAP](docs/ROADMAP.md#fase-0-fundação-e-segurança-prioridade-imediata)
 
 ## Feito
