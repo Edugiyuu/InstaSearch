@@ -13,6 +13,7 @@ import { adjustBeats, generateScript } from './shortsAI.js'
 import { listSounds, syncSoundUsage } from './sounds.js'
 import { normalize } from './library.js'
 import { transcribeAudio, WHISPER_MODEL } from './transcription.js'
+import { BUILT_IN_TONES, getTone, toneByName } from './tones.js'
 import type { Beat, ProjectSettings, ShortProject, Transcript } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -71,17 +72,24 @@ export async function createProject(input: {
   theme: string
   styleId: string
   duration: number
-  tone: string
+  /** Tom da biblioteca (ADR 0019). */
+  toneId?: string
+  /** Antes dos tons na biblioteca: o nome ("Polêmico"). */
+  tone?: string
   narration?: string
 }) {
   const theme = input.theme?.trim()
   if (!theme && !input.narration?.trim()) throw new AppError('Escreva um tema', 400, 'VALIDATION')
   const duration = Math.min(40, Math.max(15, Number(input.duration) || 30))
   const style = await getStyle(input.styleId)
+  const tone =
+    (input.toneId ? await getTone(input.toneId) : null) ??
+    (input.tone ? await toneByName(input.tone) : null) ??
+    BUILT_IN_TONES.find(t => t.id === 'curioso')!
 
   const script = await generateScript({
     theme: theme || 'narração do usuário',
-    tone: input.tone || 'Curioso',
+    toneGuide: tone.guide,
     duration,
     style,
     narration: input.narration?.trim() || undefined,
@@ -94,7 +102,9 @@ export async function createProject(input: {
     theme: theme || script.title,
     styleId: style.id,
     duration,
-    tone: input.tone || 'Curioso',
+    tone: tone.name,
+    toneId: tone.id,
+    toneGuide: tone.guide,
     narration: script.narration,
     beats: script.beats,
     settings: { pace: style.pace, effects: style.effects, caption: style.caption, ...(await defaultCatchphrases()) },

@@ -18,7 +18,7 @@ import {
   shortsApi,
   soundUrl,
 } from '../api/shorts'
-import { AiBadge, Segmented, Spinner, useToast } from '../components/flow'
+import { AiBadge, SearchList, Segmented, Spinner, useToast } from '../components/flow'
 import PublishModal from '../components/PublishModal'
 import { useCatchphrases, useLibrary, useProject, useSounds, useStyles } from '../hooks/useShorts'
 import { ShortPlayer, ShortPlayerHandle } from '../video/ShortPlayer'
@@ -403,6 +403,7 @@ function Review() {
               <span className="label">Quem fez</span>
               <AiBadge label="Roteiro" ai={project.ai?.script} />
               <AiBadge label="Imagens" ai={project.ai?.images} />
+              <SearchList ai={project.ai?.script} />
             </div>
           )}
 

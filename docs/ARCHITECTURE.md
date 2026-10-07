@@ -65,6 +65,7 @@ backend/
 │   │   │   ├── library.ts              # imagens e figurinhas: busca, escolha por cena, uso, fila de catalogação
 │   │   │   ├── sounds.ts               # efeitos sonoros e músicas, importação por link (yt-dlp)
 │   │   │   ├── styles.ts               # estilos embutidos + os do usuário
+│   │   │   ├── tones.ts                # tons do roteiro: embutidos + os do usuário (ADR 0019)
 │   │   │   └── types.ts                # ShortProject, Beat, LibraryImage, SoundItem…
 │   │   ├── videoService.ts             # ffprobe, merge, optimize, extractFrames
 │   │   ├── aiService.ts                # Gemini: prompts das telas antigas e da legenda do post

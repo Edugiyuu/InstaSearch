@@ -32,7 +32,7 @@ export interface AskOptions {
   audio?: { data: string; mimeType: string }
   /** Quanto o Claude pensa antes de responder. Padrão: medium; catalogar e escolher imagens usam low. */
   effort?: 'low' | 'medium'
-  /** Deixa a IA confirmar fatos na web antes de responder (no máximo MAX_SEARCHES buscas). */
+  /** Deixa a IA pesquisar na web antes de responder (no máximo MAX_SEARCHES buscas). */
   research?: boolean
 }
 
@@ -43,12 +43,14 @@ const imagesOf = (opts: AskOptions) => opts.images ?? (opts.image ? [opts.image]
 
 interface Answer {
   text: string
+  /** Contadas de verdade em cada provedor (ADR 0019), junto com o que foi buscado. */
   searches?: number
+  queries?: string[]
 }
 
-// Pesquisa mínima: só para confirmar fatos, nunca para ler páginas inteiras
-const MAX_SEARCHES = 2
-const RESEARCH_NOTE = `Antes de escrever, confirme na web só os fatos de que você não tem certeza (nomes, acontecimentos, capítulos, episódios), com no máximo ${MAX_SEARCHES} buscas curtas. Não busque o que você já sabe com certeza. Não afirme nada que você não conseguiu confirmar. Não coloque links nem fontes na resposta.`
+// Até 4 buscas para achar argumento (ADR 0019); com 2, só para confirmar fatos, os roteiros saíam sem prova
+const MAX_SEARCHES = 4
+const RESEARCH_NOTE = `Antes de escrever, pesquise na web, com até ${MAX_SEARCHES} buscas curtas e diferentes entre si, as provas que sustentam a ideia central do vídeo: acontecimentos concretos, o capítulo ou episódio em que aconteceram, números, falas marcantes e o que o público costuma discutir sobre o tema. Use as buscas para achar argumento, não só para conferir o que você já sabe. Não afirme nada que você não conseguiu confirmar. Não coloque links nem fontes na resposta.`
 
 // Sonnet 5.5 na API e no Claude Code: o Haiku 4.5 inventava fatos nos roteiros
 const CLAUDE_MODEL = 'claude-sonnet-5-5'
@@ -96,8 +98,9 @@ async function askGemini(prompt: string, opts: AskOptions): Promise<Answer> {
   const text = research ? `${prompt}\n\n${RESEARCH_NOTE}` : prompt
   const parts = media.length ? [text, ...media.map(m => ({ inlineData: m }))] : text
   const result = await (research ? geminiSearchModel() : geminiModel()).generateContent(parts)
-  const searches = result.response.candidates?.[0]?.groundingMetadata?.webSearchQueries?.length
-  return { text: result.response.text(), searches: research ? searches ?? 0 : undefined }
+  // o Gemini não tem limite rígido de buscas (só a instrução): conta o que ele de fato fez
+  const queries: string[] = research ? result.response.candidates?.[0]?.groundingMetadata?.webSearchQueries ?? [] : []
+  return { text: result.response.text(), ...(research ? { searches: queries.length, queries } : {}) }
 }
 
 /** Erros em que vale tentar o outro provedor: cota, sobrecarga, rede. */
@@ -144,6 +147,7 @@ async function askClaude(prompt: string, opts: AskOptions): Promise<Answer> {
 
   const messages: Anthropic.MessageParam[] = [{ role: 'user', content }]
   let searches = 0
+  const queries: string[] = []
   // o Sonnet 5.5 pensa antes de responder (adaptive); o esforço controla quanto.
   // stream + finalMessage evita o tempo limite em respostas longas
   for (let round = 0; ; round++) {
@@ -157,6 +161,9 @@ async function askClaude(prompt: string, opts: AskOptions): Promise<Answer> {
       })
       .finalMessage()
     searches += response.usage.server_tool_use?.web_search_requests ?? 0
+    for (const block of response.content) {
+      if (block.type === 'server_tool_use' && block.name === 'web_search') queries.push(String((block.input as { query?: string })?.query ?? ''))
+    }
 
     if (response.stop_reason === 'refusal') {
       throw new AppError('O Claude recusou esse pedido. Tente reformular o tema.', 422, 'AI_REFUSAL')
@@ -167,7 +174,7 @@ async function askClaude(prompt: string, opts: AskOptions): Promise<Answer> {
       continue
     }
     const text = response.content.map(b => (b.type === 'text' ? b.text : '')).join('')
-    return { text, searches: research ? searches : undefined }
+    return { text, ...(research ? { searches, queries: queries.filter(Boolean) } : {}) }
   }
 }
 
@@ -229,7 +236,9 @@ async function askClaudeCode(prompt: string, opts: AskOptions): Promise<Answer> 
   const args = [
     '-p',
     'Siga as instruções recebidas pela entrada padrão e responda só com o JSON pedido.',
-    '--output-format', 'json',
+    // stream-json: um evento por linha, inclusive cada busca feita (para contar e mostrar o que foi buscado)
+    '--output-format', 'stream-json',
+    '--verbose',
     '--model', CLAUDE_CODE_MODEL,
     '--effort', opts.effort ?? DEFAULT_EFFORT,
     '--no-session-persistence',
@@ -263,14 +272,22 @@ async function askClaudeCode(prompt: string, opts: AskOptions): Promise<Answer> 
 
   try {
     const out = await runClaudeCli(args, `${text}\n\nResponda apenas com o JSON, sem texto antes ou depois.`)
-    const result = JSON.parse(out) as {
-      is_error?: boolean
-      result?: string
-      subtype?: string
-      duration_api_ms?: number
-      num_turns?: number
-      usage?: { input_tokens?: number; output_tokens?: number }
-    }
+    const events = parseStream(out)
+    const result = events.find(e => e.type === 'result') as
+      | {
+          is_error?: boolean
+          result?: string
+          subtype?: string
+          duration_api_ms?: number
+          usage?: { input_tokens?: number; output_tokens?: number }
+        }
+      | undefined
+    if (!result) throw new Error('o Claude Code não devolveu resultado')
+    const queries: string[] = events.flatMap(e =>
+      e.type === 'assistant'
+        ? (e.message?.content ?? []).filter((c: any) => c.type === 'tool_use' && c.name === 'WebSearch').map((c: any) => String(c.input?.query ?? ''))
+        : [],
+    )
     logger.info(
       `Claude Code: ${((result.duration_api_ms ?? 0) / 1000).toFixed(1)}s na IA · ${result.usage?.input_tokens ?? '?'} tokens de entrada, ${result.usage?.output_tokens ?? '?'} de saída`,
     )
@@ -280,11 +297,24 @@ async function askClaudeCode(prompt: string, opts: AskOptions): Promise<Answer> 
       return askClaudeCode(prompt, { ...opts, research: false })
     }
     if (result.is_error) throw new Error(result.result || result.subtype || 'erro no Claude Code')
-    // cada busca é uma rodada a mais na conversa
-    return { text: result.result ?? '', searches: research ? Math.max(0, (result.num_turns ?? 1) - 1) : undefined }
+    return { text: result.result ?? '', ...(research ? { searches: queries.length, queries: queries.filter(Boolean) } : {}) }
   } finally {
     if (tempDir) await fs.rm(tempDir, { recursive: true, force: true }).catch(() => undefined)
   }
+}
+
+/** Saída stream-json do Claude Code: um objeto JSON por linha. Linhas que não são JSON são ignoradas. */
+function parseStream(out: string): any[] {
+  return out
+    .split(/\r?\n/)
+    .filter(line => line.trim().startsWith('{'))
+    .flatMap(line => {
+      try {
+        return [JSON.parse(line)]
+      } catch {
+        return []
+      }
+    })
 }
 
 // ── Escolha do provedor ──────────────────────────────────
@@ -366,6 +396,7 @@ export async function askJsonMeta<T>(prompt: string, opts: AskOptions = {}): Pro
         model: provider === 'gemini' ? process.env.GEMINI_MODEL || 'gemini-2.5-flash' : CLAUDE_MODEL,
         fallback: provider !== primary,
         searches: answer.searches,
+        queries: answer.queries?.length ? answer.queries : undefined,
         at: new Date().toISOString(),
       }
       return { data: parseJson<T>(answer.text), ai }

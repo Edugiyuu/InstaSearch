@@ -11,15 +11,12 @@ Novo vídeo ─► Roteiro e voz ─► Montagem (automática) ─► Revisão �
 ## 1. Novo vídeo (`/novo`)
 
 - Escreva o **tema** ("Por que o Luffy nunca mata ninguém?").
-- Escolha o **estilo** (Comentário de anime, Curiosidades, Ranking…), a **duração** (15 a 40 s) e o **tom**.
-  - **Polêmico:** opinião forte que divide e termina com uma pergunta para a pessoa escolher um lado nos comentários.
-  - **Curioso:** um fato que pouca gente sabe, com um detalhe surpreendente por cena.
-  - **Mistério:** promete uma resposta no gancho e só revela no final, para segurar até o fim.
-  - **Papo reto:** fala direto com quem assiste, como um amigo, sem enrolação.
-
-  A instrução completa que cada tom manda para a IA fica em `TONE_GUIDE` ([shortsAI.ts](../backend/src/services/shorts/shortsAI.ts)).
+- Escolha o **estilo** (Comentário de anime, Curiosidades, Ranking…), a **duração** (15 a 40 s) e o **tom**. Os tons ficam na **Biblioteca → Tons** ([ADR 0019](decisions/0019-roteiro-com-argumento-e-tons-proprios.md)):
+  - Vêm 4 com o app: **Polêmico**, **Curioso**, **Mistério** e **Papo reto**. Para mudar um, **Duplicar e editar** cria uma cópia sua.
+  - **+ Novo tom** (na biblioteca ou direto nos chips do Novo vídeo): escreva o tom à mão ou descreva para a IA ("advogado de defesa: defende um personagem odiado como num tribunal…") e, se quiser, cole um roteiro de que você gosta como exemplo. A IA sugere nome, resumo e a instrução; você revisa e salva.
+  - Cada vídeo guarda uma cópia do tom usado: editar ou apagar o tom depois não muda vídeos antigos.
 - Já tem o texto? Marque **"Já tenho o texto da narração"** e cole. A IA só divide em cenas, sem mudar o texto.
-- **Gerar roteiro** chama a IA (Gemini, ou o Claude Sonnet 5.5 se o Gemini estiver fora). Antes de escrever, ela confirma na web os fatos de que não tem certeza (no máximo 2 buscas).
+- **Gerar roteiro** chama a IA (Gemini, ou o Claude Sonnet 5.5 se o Gemini estiver fora). Antes de escrever, ela pesquisa na web (até 4 buscas) provas para a ideia central, e o roteiro segue a estrutura gancho → tese → provas concretas → conclusão → chamada para comentar. Abaixo do título aparece **quantas buscas ela fez e o que buscou** ([ADR 0019](decisions/0019-roteiro-com-argumento-e-tons-proprios.md)). Confira as provas: a IA ainda pode errar um detalhe.
 - O nome da IA que escreveu aparece num selo abaixo do título do roteiro e no cartão **Quem fez** da revisão ([detalhes](AI.md#quem-fez-cada-parte)).
 
 O atalho do Início (tema + estilo + "Começar") abre esta tela já preenchida.

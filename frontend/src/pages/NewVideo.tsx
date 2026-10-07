@@ -2,17 +2,11 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { errorMessage, PACE_LABEL, shortsApi } from '../api/shorts'
 import { Spinner, Stepper, StyleThumb } from '../components/flow'
-import { useStyles } from '../hooks/useShorts'
+import ToneEditor from '../components/ToneEditor'
+import { useStyles, useTones } from '../hooks/useShorts'
 import './NewVideo.css'
 
 const DURATIONS = [15, 20, 30, 40]
-// tons que seguram gente em vídeo curto; o backend tem a instrução completa de cada um (TONE_GUIDE)
-const TONES = [
-  { name: 'Polêmico', hint: 'Opinião forte que divide e faz a pessoa comentar' },
-  { name: 'Curioso', hint: 'Fato que pouca gente sabe, um detalhe surpreendente por cena' },
-  { name: 'Mistério', hint: 'Promete uma resposta no começo e só revela no final' },
-  { name: 'Papo reto', hint: 'Fala direto com quem assiste, como um amigo, sem enrolação' },
-]
 
 function NewVideo() {
   const navigate = useNavigate()
@@ -21,7 +15,10 @@ function NewVideo() {
   const [theme, setTheme] = useState(params.get('tema') ?? '')
   const [styleId, setStyleId] = useState(params.get('estilo') ?? 'comentario-anime')
   const [duration, setDuration] = useState(30)
-  const [tone, setTone] = useState('Polêmico')
+  // tons da biblioteca (ADR 0019); o "Polêmico" embutido é o padrão
+  const { tones, setTones } = useTones()
+  const [toneId, setToneId] = useState('polemico')
+  const [creatingTone, setCreatingTone] = useState(false)
   const [hasNarration, setHasNarration] = useState(false)
   const [narration, setNarration] = useState('')
   const [busy, setBusy] = useState(false)
@@ -37,7 +34,7 @@ function NewVideo() {
         theme: theme.trim(),
         styleId,
         duration,
-        tone,
+        toneId,
         narration: hasNarration ? narration : undefined,
       })
       navigate(`/projeto/${project.id}/roteiro`)
@@ -86,13 +83,26 @@ function NewVideo() {
         <div>
           <span className="label">Tom</span>
           <div className="chips">
-            {TONES.map(t => (
-              <button key={t.name} className={`chip ${tone === t.name ? 'on' : ''}`} onClick={() => setTone(t.name)} title={t.hint}>
+            {tones.map(t => (
+              <button key={t.id} className={`chip ${toneId === t.id ? 'on' : ''}`} onClick={() => setToneId(t.id)} title={t.summary}>
                 {t.name}
               </button>
             ))}
+            <button className="chip" onClick={() => setCreatingTone(true)} title="Escreva um tom ou peça para a IA criar; ele fica na biblioteca">
+              + Novo tom
+            </button>
           </div>
-          <p className="meta nv-tone-hint">{TONES.find(t => t.name === tone)?.hint}</p>
+          <p className="meta nv-tone-hint">{tones.find(t => t.id === toneId)?.summary}</p>
+          {creatingTone && (
+            <ToneEditor
+              onClose={() => setCreatingTone(false)}
+              onSaved={t => {
+                setTones(list => [...list, t])
+                setToneId(t.id)
+                setCreatingTone(false)
+              }}
+            />
+          )}
         </div>
       </div>
 

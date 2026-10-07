@@ -600,3 +600,26 @@ textarea.field {
   padding: 2px 8px;
   font-size: 11px;
 }
+
+/* Buscas que a IA fez antes de escrever o roteiro (ADR 0019) */
+.search-list {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.search-list ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-list li {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}

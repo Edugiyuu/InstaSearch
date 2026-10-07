@@ -759,3 +759,44 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* Tons do roteiro (ADR 0019) */
+.tone-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.tone-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  text-align: left;
+}
+
+.tone-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tone-summary {
+  color: var(--text);
+}
+
+.tone-guide {
+  flex: 1;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.tone-new {
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  border-style: dashed;
+  color: var(--text);
+}

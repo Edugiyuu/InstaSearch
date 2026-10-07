@@ -139,6 +139,11 @@ router.get('/shorts/styles', shortsController.listStyles)
 router.post('/shorts/styles', shortsController.saveStyle)
 router.put('/shorts/styles/:id', shortsController.saveStyle)
 router.delete('/shorts/styles/:id', shortsController.deleteStyle)
+router.get('/shorts/tones', shortsController.listTones)
+router.post('/shorts/tones', shortsController.saveTone)
+router.post('/shorts/tones/suggest', shortsController.suggestToneHandler)
+router.put('/shorts/tones/:id', shortsController.saveTone)
+router.delete('/shorts/tones/:id', shortsController.deleteTone)
 
 // Biblioteca de imagens
 router.get('/library', shortsController.listImages)

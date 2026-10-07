@@ -108,35 +108,26 @@ const BEAT_FORMAT = `Cada batida:
   "focus": "área da imagem para dar zoom, se fizer sentido: rosto, mão, olhos, corpo"
 }`
 
-/** O que cada tom da tela Novo vídeo pede para a IA. Tons desconhecidos vão como texto. */
-const TONE_GUIDE: Record<string, string> = {
-  'Polêmico':
-    'polêmico. Defenda uma opinião forte que divide o público, sem ofender ninguém, e sustente com fatos. Termine com uma pergunta que obrigue a pessoa a escolher um lado nos comentários',
-  'Curioso':
-    'curioso. Abra com uma pergunta ou um fato que pouca gente sabe e entregue a resposta aos poucos, um detalhe surpreendente por cena',
-  'Mistério':
-    'mistério. No gancho, prometa uma resposta ou um segredo e só revele no final; cada frase deixa uma pergunta aberta para a pessoa continuar assistindo',
-  'Papo reto':
-    'papo reto. Fale direto com quem assiste, como um amigo contando: frases curtas, gírias leves ("mano", "olha isso"), sem enrolação, já no ponto no primeiro segundo',
-}
-
 export async function generateScript(input: {
   theme: string
-  tone: string
+  /** A instrução do tom (ADR 0019), ex.: "polêmico. Defenda uma opinião forte…" */
+  toneGuide: string
   duration: number
   style: ShortStyle
   narration?: string
 }): Promise<{ title: string; narration: string; beats: Beat[]; ai: AiCredit }> {
-  const { theme, tone, duration, style, narration } = input
+  const { theme, toneGuide, duration, style, narration } = input
   const beatCount = Math.round(duration / PACE_SECONDS[style.pace])
   const words = Math.round(duration * 2.6)
 
   const task = narration
     ? `O usuário já tem a narração. NÃO mude o texto: divida exatamente esta narração em batidas, na ordem:\n"""${narration}"""`
     : `Escreva a narração de um Short sobre: "${theme}".
-- Cerca de ${words} palavras (${duration} segundos falados).
+- No máximo ${words} palavras (${duration} segundos falados). Conte: passar disso deixa o vídeo mais longo que o pedido.
 - Comece com um gancho forte nos primeiros 2 segundos.
-- Tom: ${TONE_GUIDE[tone] ?? tone}.`
+- Tom: ${toneGuide}.
+- Estrutura de argumento: gancho → a tese em uma frase → 2 provas concretas (um acontecimento, o capítulo ou episódio, um número ou uma fala; uma 3ª só se couber no limite de palavras), cada uma com a sua batida → conclusão que responde ao gancho → chamada para comentar.
+- Cada prova é específica e dá para conferir. Nada de frase genérica ("ele é muito forte", "todo mundo sabe").`
 
   const prompt = `Você é roteirista e editor de Shorts verticais (YouTube Shorts, Reels, TikTok) em português do Brasil.
 
@@ -440,4 +431,42 @@ Responda só com JSON:
       reason: c.reason ? String(c.reason) : undefined,
     }))
   return { choices, ai }
+}
+
+/** Corta no limite sem partir uma palavra no meio. */
+function shorten(text: string, max: number) {
+  if (text.length <= max) return text
+  const cut = text.slice(0, max)
+  return `${cut.slice(0, cut.lastIndexOf(' ') > 0 ? cut.lastIndexOf(' ') : max).replace(/[,;:\s]+$/, '')}…`
+}
+
+/**
+ * A IA escreve um tom a partir da descrição do usuário (e de um exemplo, se houver).
+ * Só sugere: o usuário revisa e salva (ADR 0011, 0019).
+ */
+export async function suggestTone(input: { description: string; example?: string }): Promise<{ name: string; summary: string; guide: string; ai: AiCredit }> {
+  const example = input.example?.trim()
+  const prompt = `Você ajuda um criador de Shorts (anime, mangá, cultura pop) em português do Brasil a definir o TOM dos roteiros: como a narração fala e argumenta.
+
+O que o criador quer: "${input.description.trim()}"
+${example ? `Exemplo de fala ou roteiro de que ele gosta (imite o jeito de falar, não o assunto):
+"""${example.slice(0, 3000)}"""
+` : ''}
+Escreva o tom no mesmo formato destes, que já existem:
+- "polêmico. Defenda uma opinião forte que divide o público, sem ofender ninguém, e sustente com fatos. Termine com uma pergunta que obrigue a pessoa a escolher um lado nos comentários"
+- "papo reto. Fale direto com quem assiste, como um amigo contando: frases curtas, gírias leves ("mano", "olha isso"), sem enrolação, já no ponto no primeiro segundo"
+
+O "guide" começa com uma ou duas palavras que nomeiam o tom, seguidas de ponto, e depois diz em 2 a 4 frases como abrir, como falar (vocabulário, tamanho das frases, pessoa), como argumentar e como terminar.
+
+Responda só com JSON:
+{ "name": "nome curto, 1 a 3 palavras, com inicial maiúscula", "summary": "uma frase de até 90 caracteres que explica o tom para o criador", "guide": "a instrução completa" }`
+  const { data, ai } = await askJsonMeta<{ name?: string; summary?: string; guide?: string }>(prompt, { effort: 'low' })
+  const guide = String(data.guide ?? '').trim()
+  if (!guide) throw new AppError('A IA não devolveu o tom. Tente descrever de outro jeito.', 502, 'AI_EMPTY')
+  return {
+    name: String(data.name ?? 'Meu tom').trim().slice(0, 40),
+    summary: shorten(String(data.summary ?? '').trim(), 160),
+    guide: guide.slice(0, 1200),
+    ai,
+  }
 }

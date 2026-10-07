@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { audioUrl, Beat, errorMessage, shortsApi } from '../api/shorts'
-import { AiBadge, copyText, Spinner, Stepper, useToast } from '../components/flow'
+import { AiBadge, copyText, SearchList, Spinner, Stepper, useToast } from '../components/flow'
 import { useProject } from '../hooks/useShorts'
 import './Script.css'
 
@@ -85,6 +85,7 @@ function Script() {
               {lastReply?.ai && <AiBadge label="Última mudança" ai={lastReply.ai} />}
             </div>
           )}
+          <SearchList ai={project.ai?.script} />
         </div>
       </div>
 

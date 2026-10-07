@@ -104,6 +104,30 @@ export function Spinner() {
 }
 
 /** "Roteiro: Claude Sonnet 5.5 (seu plano) · 2 buscas na web" */
+/**
+ * O que a IA pesquisou na web antes de escrever (ADR 0019): quantas buscas e quais.
+ * Some quando o pedido não podia pesquisar (searches indefinido).
+ */
+export function SearchList({ ai }: { ai?: AiCredit }) {
+  if (ai?.searches === undefined) return null
+  if (ai.searches === 0) return <p className="search-list meta">🔎 Não pesquisou na web antes de escrever.</p>
+  return (
+    <div className="search-list">
+      <span className="meta">
+        🔎 Pesquisou <strong>{ai.searches} {ai.searches === 1 ? 'vez' : 'vezes'}</strong> na web antes de escrever
+        {ai.queries?.length ? ':' : '.'}
+      </span>
+      {!!ai.queries?.length && (
+        <ul>
+          {ai.queries.map((q, i) => (
+            <li key={i}>{q}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 export function AiBadge({ label, ai, compact = false }: { label?: string; ai?: AiCredit; compact?: boolean }) {
   if (!ai) return null
   const details = aiDetails(ai)

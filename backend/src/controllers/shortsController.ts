@@ -19,6 +19,8 @@ import * as publish from '../services/shorts/publish.js'
 import * as catchphrases from '../services/shorts/catchphrases.js'
 import { fetchThumb, searchWebImages } from '../services/shorts/imageSearch.js'
 import { ensureWhisper, whisperStatus } from '../services/shorts/transcription.js'
+import * as tones from '../services/shorts/tones.js'
+import { suggestTone } from '../services/shorts/shortsAI.js'
 
 const MAX_IMAGE = 15 * 1024 * 1024
 
@@ -314,6 +316,33 @@ export const deleteStyle = asyncHandler(async (req: Request, res: Response) => {
   }
   await styles.deleteStyle(req.params.id)
   res.json({ success: true })
+})
+
+// ── Tons do roteiro (ADR 0019) ───────────────────────────
+
+export const listTones = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ success: true, data: await tones.listTones() })
+})
+
+export const saveTone = asyncHandler(async (req: Request, res: Response) => {
+  if (!String(req.body?.name ?? '').trim()) throw new AppError('Dê um nome ao tom', 400, 'VALIDATION')
+  if (!String(req.body?.guide ?? '').trim()) throw new AppError('Escreva como a IA deve falar nesse tom', 400, 'VALIDATION')
+  res.json({ success: true, data: await tones.saveTone({ ...req.body, id: req.params.id ?? req.body.id }) })
+})
+
+export const deleteTone = asyncHandler(async (req: Request, res: Response) => {
+  if (tones.BUILT_IN_TONES.some(t => t.id === req.params.id)) {
+    throw new AppError('Tons que vêm com o app não podem ser apagados', 400, 'BUILT_IN')
+  }
+  await tones.deleteTone(req.params.id)
+  res.json({ success: true })
+})
+
+/** Body: { description, example? } → a IA sugere nome, resumo e instrução; nada é salvo ainda. */
+export const suggestToneHandler = asyncHandler(async (req: Request, res: Response) => {
+  const description = String(req.body?.description ?? '').trim()
+  if (description.length < 5) throw new AppError('Descreva o tom que você quer', 400, 'VALIDATION')
+  res.json({ success: true, data: await suggestTone({ description, example: req.body?.example ? String(req.body.example) : undefined }) })
 })
 
 // ── MP4 e publicação ─────────────────────────────────────

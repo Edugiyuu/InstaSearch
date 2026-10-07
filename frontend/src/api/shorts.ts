@@ -72,7 +72,22 @@ export interface AiCredit {
   fallback: boolean
   /** buscas na web feitas antes de responder */
   searches?: number
+  /** O que foi buscado, na ordem (ADR 0019). */
+  queries?: string[]
   at: string
+}
+
+/** Tom do roteiro (ADR 0019): como a narração fala e argumenta. */
+export interface Tone {
+  id: string
+  name: string
+  /** Uma frase; aparece no chip do Novo vídeo. */
+  summary: string
+  /** A instrução completa que vai para a IA. */
+  guide: string
+  builtIn: boolean
+  createdBy?: 'usuario' | 'ia'
+  updatedAt?: string
 }
 
 /** "claude-sonnet-5-5" → "Claude Sonnet 5.5"; "gemini-2.5-flash" → "Gemini 2.5 Flash" */
@@ -115,6 +130,9 @@ export interface ShortProject {
   styleId: string
   duration: number
   tone: string
+  /** O tom da biblioteca usado e uma cópia da instrução dele (ADR 0019). */
+  toneId?: string
+  toneGuide?: string
   narration: string
   beats: Beat[]
   settings: ProjectSettings
@@ -281,7 +299,7 @@ const data = <T,>(p: Promise<{ data: { data: T } }>) => p.then(r => r.data.data)
 export const shortsApi = {
   listProjects: () => data<ShortProject[]>(api.get('/shorts/projects')),
   getProject: (id: string) => data<ShortProject>(api.get(`/shorts/projects/${id}`)),
-  createProject: (input: { theme: string; styleId: string; duration: number; tone: string; narration?: string }) =>
+  createProject: (input: { theme: string; styleId: string; duration: number; toneId: string; narration?: string }) =>
     data<ShortProject>(api.post('/shorts/projects', input, { timeout: 180000 })),
   updateProject: (id: string, changes: Partial<ShortProject>) => data<ShortProject>(api.put(`/shorts/projects/${id}`, changes)),
   deleteProject: (id: string) => api.delete(`/shorts/projects/${id}`),
@@ -341,6 +359,14 @@ export const shortsApi = {
 
   aiStatus: () => data<AiStatus>(api.get('/shorts/ai-status')),
   listStyles: () => data<ShortStyle[]>(api.get('/shorts/styles')),
+  listTones: () => data<Tone[]>(api.get('/shorts/tones')),
+  /** Tom embutido ou sem id: cria um novo (mudar um embutido gera uma cópia). */
+  saveTone: (tone: Partial<Tone>) =>
+    data<Tone>(tone.builtIn || !tone.id ? api.post('/shorts/tones', tone) : api.put(`/shorts/tones/${tone.id}`, tone)),
+  deleteTone: (id: string) => api.delete(`/shorts/tones/${id}`),
+  /** A IA sugere nome, resumo e instrução a partir da descrição; nada é salvo. */
+  suggestTone: (description: string, example?: string) =>
+    data<Pick<Tone, 'name' | 'summary' | 'guide'> & { ai: AiCredit }>(api.post('/shorts/tones/suggest', { description, example }, { timeout: 180000 })),
   saveStyle: (style: ShortStyle) =>
     data<ShortStyle>(style.builtIn || !style.id ? api.post('/shorts/styles', style) : api.put(`/shorts/styles/${style.id}`, style)),
   deleteStyle: (id: string) => api.delete(`/shorts/styles/${id}`),

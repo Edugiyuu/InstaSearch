@@ -6,7 +6,7 @@ Onde a IA é usada, como configurar o Gemini e como o app passa para o **Claude 
 
 | Recurso | Status | Entrada → saída | Código |
 |---|---|---|---|
-| Roteiro | ✅ | tema + estilo + tom + duração → título, narração e cenas (legenda, o que a imagem mostra, efeito, efeito sonoro, figurinha) | `shortsAI.generateScript` |
+| Roteiro | ✅ | tema + estilo + tom (da biblioteca) + duração → título, narração e cenas (legenda, o que a imagem mostra, efeito, efeito sonoro, figurinha) | `shortsAI.generateScript` |
 | Dividir uma narração pronta em cenas | ✅ | texto do usuário → cenas, sem mudar o texto | `shortsAI.generateScript` (com `narration`) |
 | "Peça um ajuste" | ✅ | cenas numeradas como na tela + cena aberta + pedido → cenas novas + resposta; o app desfaz mudanças fora das cenas citadas ([ADR 0017](decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md)) | `shortsAI.adjustBeats`, `sceneEdits` |
 | Escolher as imagens das cenas | ✅ | roteiro inteiro + catálogo da biblioteca → uma imagem por cena, com motivo e área de zoom | `shortsAI.pickImagesWithAI` |
@@ -22,17 +22,19 @@ Gasto típico por vídeo: 1 chamada para o roteiro, 1 para escolher as imagens, 
 
 ### Pesquisa na web (só no roteiro)
 
-Ao escrever um roteiro do zero, a IA pode **confirmar fatos na web antes de escrever**, para não inventar nomes, idades, capítulos ou acontecimentos. A pesquisa é mínima para economizar tokens:
+Ao escrever um roteiro do zero, a IA **pesquisa na web antes de escrever**, para achar argumento e não inventar nomes, capítulos ou acontecimentos ([ADR 0019](decisions/0019-roteiro-com-argumento-e-tons-proprios.md)). Com 2 buscas só para confirmar fatos, os roteiros saíam sem prova; agora:
 
 - Só no **roteiro escrito do zero**. Com "Já tenho o texto da narração", nos ajustes, na catalogação e na escolha de imagens, não pesquisa.
-- No máximo **2 buscas** (`MAX_SEARCHES` em `llm.ts`), e só do que a IA não tem certeza. Muitas vezes ela não busca nada.
+- Até **4 buscas** (`MAX_SEARCHES` em `llm.ts`), atrás das provas da tese: acontecimentos, capítulo ou episódio, números, falas.
+- O roteiro pede a estrutura gancho → tese → 2 provas concretas (3 se couber) → conclusão → chamada para comentar, com no máximo ~2,6 palavras por segundo.
+- As buscas são **contadas de verdade** e guardadas com o texto de cada uma (`AiCredit.queries`), e a tela mostra as duas coisas.
 - Só a busca; a IA não abre páginas inteiras.
 
 | Provedor | Como pesquisa | Limite |
 |---|---|---|
-| Gemini | Busca do Google embutida (*grounding*) | o Gemini decide; a instrução pede no máximo 2 |
-| Claude API | ferramenta `web_search_20260209` | `max_uses: 2` |
-| Claude Code | ferramenta `WebSearch` (sem `WebFetch`) | `--max-turns 4`; se passar do limite, responde de novo sem pesquisar |
+| Gemini | Busca do Google embutida (*grounding*); as buscas vêm em `webSearchQueries` | o Gemini decide; a instrução pede até 4 (num teste ele fez 5, e a tela mostra 5) |
+| Claude API | ferramenta `web_search_20260209`; cada busca é um bloco `server_tool_use` | `max_uses: 4` |
+| Claude Code | ferramenta `WebSearch` (sem `WebFetch`); saída `stream-json` para ler cada busca | `--max-turns 6`; se passar do limite, responde de novo sem pesquisar |
 
 Exemplo real ("Qual é a verdadeira idade do Gojo?"): 1 busca, ~28 s, e o roteiro saiu com a idade e o aniversário certos.
 
@@ -40,7 +42,7 @@ Exemplo real ("Qual é a verdadeira idade do Gojo?"): 1 busca, ~28 s, e o roteir
 
 O app guarda qual IA respondeu e mostra na tela:
 
-- **Roteiro:** selo abaixo do título ("Roteiro: Claude Sonnet 5.5 (seu plano) · 1 busca na web").
+- **Roteiro:** selo abaixo do título ("Roteiro: Gemini 2.5 Flash · 4 buscas na web") e, embaixo, o que foi buscado. O mesmo aparece no cartão "Quem fez" da revisão.
 - **Revisão:** cartão "Quem fez", com quem escreveu o roteiro e quem escolheu as imagens. Cada resposta do "Peça um ajuste" tem o nome da IA embaixo.
 - **Montagem:** as etapas dizem quem escreveu e quem escolheu as imagens.
 

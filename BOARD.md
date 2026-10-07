@@ -17,6 +17,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Backlog
 
+- [ ] Configurar o ESLint no frontend: não há arquivo de configuração, então o `npm run lint` falha antes de analisar qualquer arquivo
 - [ ] Configurar o Jest no frontend (timeline do vídeo e `video/align.ts`)
 - [ ] IA: desistir do Gemini mais cedo quando a rede falha (hoje espera ~60 s antes de passar para o Claude; alternativa 1B do [ADR 0017](docs/decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md))
 - [ ] Migrar `@google/generative-ai` → `@google/genai`
@@ -27,6 +28,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-06 · Roteiro com argumento (até 4 buscas, mostradas na tela) e tons próprios na biblioteca ([ADR 0019](docs/decisions/0019-roteiro-com-argumento-e-tons-proprios.md))
 - [x] 2026-10-06 · Legenda e cortes no tempo da voz, com o Whisper local ([ADR 0018](docs/decisions/0018-legenda-sincronizada-com-a-voz.md))
 - [x] 2026-10-06 · Troca de imagem sem esperar a catalogação e chat que acerta a cena ([ADR 0017](docs/decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md))
 - [x] 2026-10-06 · Jest no backend, com os primeiros testes ([ADR 0015](docs/decisions/0015-framework-de-testes.md))

@@ -26,6 +26,20 @@ export interface ShortStyle {
   updatedAt?: string
 }
 
+/** Tom do roteiro (ADR 0019): como a narração fala e argumenta. */
+export interface Tone {
+  id: string
+  name: string
+  /** Uma frase; aparece no chip do Novo vídeo. */
+  summary: string
+  /** A instrução completa que vai para a IA ("polêmico. Defenda uma opinião forte…"). */
+  guide: string
+  builtIn: boolean
+  /** Quem escreveu: o usuário à mão ou a IA a partir de uma descrição (revisada por ele). */
+  createdBy?: 'usuario' | 'ia'
+  updatedAt?: string
+}
+
 export type SceneKind = 'full' | 'evidence'
 export type Effect = 'none' | 'arrow' | 'cross' | 'circle' | 'emoji'
 export type Motion = 'zoom-in' | 'zoom-out' | 'shake' | 'pan'
@@ -87,6 +101,8 @@ export interface AiCredit {
   fallback: boolean
   /** buscas na web feitas antes de responder */
   searches?: number
+  /** O que foi buscado, na ordem (ADR 0019). */
+  queries?: string[]
   at: string
 }
 
@@ -109,7 +125,12 @@ export interface ShortProject {
   styleId: string
   /** Duração alvo em segundos (15 a 40). */
   duration: number
+  /** Nome do tom, para mostrar. */
   tone: string
+  /** O tom da biblioteca usado (ADR 0019). */
+  toneId?: string
+  /** Cópia da instrução do tom quando o roteiro foi escrito: editar ou apagar o tom não muda o projeto. */
+  toneGuide?: string
   narration: string
   beats: Beat[]
   settings: ProjectSettings

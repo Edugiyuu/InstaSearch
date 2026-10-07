@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Catchphrase, errorMessage, LibraryImage, ShortProject, shortsApi, ShortStyle, SoundItem } from '../api/shorts'
+import { Catchphrase, errorMessage, LibraryImage, ShortProject, shortsApi, ShortStyle, SoundItem, Tone } from '../api/shorts'
 
 export function useProject(id: string | undefined) {
   const [project, setProject] = useState<ShortProject | null>(null)
@@ -72,6 +72,30 @@ export function useLibrary() {
 
   const byId = useMemo(() => new Map(images.map(i => [i.id, i])), [images])
   return { images, setImages, byId, loading, error, reload }
+}
+
+/** Tons do roteiro (ADR 0019): os embutidos e os do usuário. */
+export function useTones() {
+  const [tones, setTones] = useState<Tone[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const reload = useCallback(async () => {
+    try {
+      setTones(await shortsApi.listTones())
+      setError(null)
+    } catch (e) {
+      setError(errorMessage(e))
+    } finally {
+      setLoaded(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    reload()
+  }, [reload])
+
+  return { tones, setTones, loaded, error, reload }
 }
 
 export function useStyles() {

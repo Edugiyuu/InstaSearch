@@ -5,6 +5,7 @@ import { Spinner, useToast } from '../components/flow'
 import { useLibrary } from '../hooks/useShorts'
 import SoundLibrary from './SoundLibrary'
 import CatchphraseLibrary from './CatchphraseLibrary'
+import ToneLibrary from './ToneLibrary'
 import TagEditor from '../components/TagEditor'
 import './Library.css'
 
@@ -15,6 +16,7 @@ const TABS = [
   { id: 'sfx', label: 'Efeitos sonoros' },
   { id: 'musica', label: 'Músicas' },
   { id: 'bordoes', label: 'Bordões' },
+  { id: 'tons', label: 'Tons' },
 ] as const
 
 type Tab = (typeof TABS)[number]['id']
@@ -41,6 +43,7 @@ function Library() {
       {tab === 'sfx' && <SoundLibrary key="sfx" kind="sfx" />}
       {tab === 'musica' && <SoundLibrary key="musica" kind="musica" />}
       {tab === 'bordoes' && <CatchphraseLibrary />}
+      {tab === 'tons' && <ToneLibrary />}
     </div>
   )
 }

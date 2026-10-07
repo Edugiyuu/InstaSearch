@@ -9,14 +9,14 @@ Legenda: ✅ pronto · ⚠️ funciona com ressalvas · 🚧 incompleto/stub · 
 | Tela (rota) | Estado | Observação |
 |---|---|---|
 | Início (`/`) | ✅ | Criação rápida, seus vídeos, contagem da biblioteca e próximas publicações (tudo real) |
-| Novo vídeo (`/novo`) | ✅ | Tema, estilo, duração e tom; o Gemini escreve o roteiro e divide em cenas. Aceita narração pronta |
+| Novo vídeo (`/novo`) | ✅ | Tema, estilo, duração e tom (da biblioteca, com "+ Novo tom"); a IA pesquisa até 4 vezes, escreve o roteiro com argumento e divide em cenas. Aceita narração pronta |
 | Roteiro e voz (`/projeto/:id/roteiro`) | ✅ | Cenas editáveis, pedidos à IA, copiar narração, upload do áudio (a duração do áudio dita os cortes) |
 | Montagem (`/projeto/:id/montagem`) | ✅ | Escolhe imagens, figurinhas, efeitos sonoros e música da biblioteca e mostra as decisões |
 | Revisão (`/projeto/:id`) | ⚠️ | Prévia no `@remotion/player`, "Peça um ajuste", desfazer, ajustes rápidos (ritmo, efeitos, legenda quadrinho/completa/limpa, música, bordão de abertura e do final), salvar para depois. Legenda e cortes no tempo da voz (Whisper local, [ADR 0018](decisions/0018-legenda-sincronizada-com-a-voz.md)) |
 | Trocar imagem (`/projeto/:id/imagens`) | ✅ | Uma cena por vez: sugestões da internet já buscadas (clique e usa), colar, arrastar, link, Google ou biblioteca |
 | Publicar (modal) | ✅ | Legenda do post pela IA, render MP4 no Remotion com progresso, baixar MP4, publicar no Instagram (Reels) e no YouTube (Shorts) |
 | Projetos (`/projetos`) | ✅ | Filtros: no roteiro, faltam imagens, prontos, salvos, publicados |
-| Biblioteca (`/biblioteca`) | ✅ | Abas Imagens, Vídeos, Figurinhas, Efeitos sonoros, Músicas e Bordões (abertura e final, [ADR 0016](decisions/0016-bordoes-de-abertura-e-final.md)). Catalogação pela IA; áudio de Reels/TikTok/Shorts por link (precisa do `yt-dlp`) |
+| Biblioteca (`/biblioteca`) | ✅ | Abas Imagens, Vídeos, Figurinhas, Efeitos sonoros, Músicas, Bordões (abertura e final, [ADR 0016](decisions/0016-bordoes-de-abertura-e-final.md)) e Tons do roteiro ([ADR 0019](decisions/0019-roteiro-com-argumento-e-tons-proprios.md), escritos por você ou sugeridos pela IA). Catalogação pela IA; áudio de Reels/TikTok/Shorts por link (precisa do `yt-dlp`) |
 | Estilos (`/estilos`) | ✅ | Galeria, ajustes em palavras simples, prévia "Como fica"; mudar um embutido salva uma cópia |
 | Calendário (`/calendario`) | ✅ | Posts reais, status do agendador, publicar agora, cancelar, horário sugerido |
 | Configurações (`/configuracoes`) | ✅ | Instagram (token) e IA reais; voz, mídia e sistema marcados como "prévia" |
