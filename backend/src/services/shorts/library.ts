@@ -9,6 +9,7 @@ import { logger } from '../../utils/logger.js'
 import { catalogImage, ImageChoice, pickImagesWithAI } from './shortsAI.js'
 import { listSounds, soundIsType } from './sounds.js'
 import { normalize } from './text.js'
+import { imageSize } from './videoScenes.js'
 
 export { normalize }
 import type { AiCredit, AssemblyLogEntry, Beat, ImageStatus, LibraryImage, MediaKind, SoundItem } from './types.js'
@@ -76,6 +77,8 @@ export interface ImageHint {
   characters?: string[]
   tags?: string[]
   description?: string
+  /** Os personagens da dica foram conferidos (pela visão na montagem, ou a fonte é confiável). */
+  charactersChecked?: boolean
   /**
    * false = não chama a IA para catalogar (economiza; dá para catalogar depois na biblioteca).
    * 'background' = salva já e cataloga em segundo plano: quem troca a imagem de uma cena não espera a IA.
@@ -99,6 +102,8 @@ export async function addImage(
     : extensionFor(mimeType)
   const file = `${id}${ext}`
   await fs.writeFile(path.join(LIBRARY_FILES_DIR, file), data)
+  // o tamanho decide o enquadramento no vídeo (ADR 0020)
+  const size = await imageSize(path.join(LIBRARY_FILES_DIR, file)).catch(() => null)
 
   const base: LibraryImage = {
     id,
@@ -111,6 +116,8 @@ export async function addImage(
     regions: [],
     usedIn: [],
     catalogued: false,
+    ...(hint.charactersChecked && hint.characters?.length ? { charactersChecked: true } : {}),
+    ...(size ?? {}),
     source,
     createdAt: new Date().toISOString(),
   }
@@ -226,7 +233,9 @@ async function catalogInBackground(id: string) {
     const fresh = await storage.findById(id)
     if (!fresh) return
     const kind = fresh.kind === 'figurinha' ? 'figurinha' : info.kind
-    await storage.save({ ...fresh, ...info, kind, catalogued: true, cataloguing: false })
+    // a catalogação nem sempre reconhece o personagem; se ela não achou ninguém, vale o que já foi conferido
+    const characters = info.characters.length || !fresh.charactersChecked ? info.characters : fresh.characters
+    await storage.save({ ...fresh, ...info, characters, kind, catalogued: true, cataloguing: false })
     logger.info(`🏷️ Imagem ${id} catalogada: ${info.name}`)
   } catch (error: any) {
     // igual a quando a IA não responde no envio: fica salva, sem catalogação, e dá para tentar de novo
@@ -235,18 +244,55 @@ async function catalogInBackground(id: string) {
   }
 }
 
-/** Ao subir o servidor: volta para a fila o que ficou pela metade. */
+/** Imagem com personagens que ninguém conferiu (antes do ADR 0020, o preenchimento automático copiava os da cena). */
+const unchecked = (i: LibraryImage) => !i.catalogued && !i.charactersChecked && i.characters.length > 0 && !['video', 'cena'].includes(i.kind)
+
+/**
+ * Ao subir o servidor: volta para a fila o que ficou pela metade e as imagens com personagens
+ * não conferidos (catalogar de novo corrige o rótulo; se a IA falhar, tenta no próximo início).
+ */
 export async function resumeCataloguing() {
-  const pending = (await storage.findAll()).filter(i => i.cataloguing)
-  if (pending.length) logger.info(`🏷️ Retomando a catalogação de ${pending.length} imagem(ns)`)
+  const all = await storage.findAll()
+  const toCheck = all.filter(i => !i.cataloguing && unchecked(i))
+  for (const img of toCheck) await storage.save({ ...img, cataloguing: true })
+  const pending = all.filter(i => i.cataloguing || toCheck.includes(i))
+  if (pending.length) logger.info(`🏷️ Catalogando ${pending.length} imagem(ns) em segundo plano (${toCheck.length} com personagens não conferidos)`)
   pending.forEach(i => enqueueCatalog(i.id))
+  void measureLibrary(all)
+}
+
+/** Mede as imagens antigas, sem tamanho (uma vez): o enquadramento no vídeo depende dele. */
+async function measureLibrary(all: LibraryImage[]) {
+  const missing = all.filter(i => i.kind !== 'video' && !i.width && (i.kind === 'cena' ? i.thumb : i.file))
+  let measured = 0
+  for (const img of missing) {
+    const size = await imageSize(path.join(LIBRARY_FILES_DIR, img.kind === 'cena' ? img.thumb! : img.file)).catch(() => null)
+    if (!size) continue
+    await storage.update(img.id, size)
+    measured++
+  }
+  if (measured) logger.info(`📐 ${measured} imagem(ns) medidas para o enquadramento`)
+}
+
+/**
+ * A imagem mostra algum dos personagens que a cena pede? Só vale com os personagens conferidos
+ * (catalogada pela IA, escrita pelo usuário ou confirmada pela visão). Cena sem personagem: qualquer uma serve.
+ */
+function showsWanted(beat: Beat, img: LibraryImage) {
+  if (!beat.characters.length) return true
+  if (!img.catalogued && !img.charactersChecked) return false
+  return matchCharacters(beat.characters, img, haystack(img)) > 0
 }
 
 export async function updateImage(id: string, changes: Partial<LibraryImage>) {
   const allowed: Partial<LibraryImage> = {}
   if (changes.name !== undefined) allowed.name = String(changes.name)
   if (Array.isArray(changes.tags)) allowed.tags = changes.tags.map(t => String(t).toLowerCase())
-  if (Array.isArray(changes.characters)) allowed.characters = changes.characters.map(String)
+  // personagens escritos pelo usuário contam como conferidos (ADR 0020)
+  if (Array.isArray(changes.characters)) {
+    allowed.characters = changes.characters.map(String)
+    allowed.charactersChecked = true
+  }
   if (Array.isArray(changes.regions)) allowed.regions = changes.regions
   // vídeo e cena não viram imagem (nem imagem vira cena)
   const fixed = (k?: MediaKind) => k === 'video' || k === 'cena'
@@ -373,7 +419,9 @@ export async function matchBeats(beats: Beat[], projectId: string, opts: MatchOp
 
     const choice = aiChoices?.get(beat.id)
     if (choice) {
-      const img = choice.imageId ? byId.get(choice.imageId) : undefined
+      const picked = choice.imageId ? byId.get(choice.imageId) : undefined
+      // o prompt já proíbe outro personagem, mas a IA às vezes usa mesmo assim (o Wamuu numa cena do Vanilla Ice)
+      const img = picked && showsWanted(beat, picked) ? picked : undefined
       const status: ImageStatus = img ? choice.fit : 'missing'
       if (img) usedHere.set(img.id, (usedHere.get(img.id) ?? 0) + 1)
       // o zoom vai para a área que a IA indicou, se a imagem tiver essa área marcada
@@ -383,7 +431,9 @@ export async function matchBeats(beats: Beat[], projectId: string, opts: MatchOp
         status,
         message: img
           ? `“${beat.text}” → ${img.name}${choice.reason ? ` · ${choice.reason}` : ''}`
-          : `“${beat.text}” → falta imagem: ${beat.query}`,
+          : picked
+            ? `“${beat.text}” → recusei “${picked.name}”: ${picked.catalogued || picked.charactersChecked ? 'não mostra' : 'personagens ainda não conferidos, e a cena pede'} ${beat.characters.join(' e ')}`
+            : `“${beat.text}” → falta imagem: ${beat.query}`,
       })
       return { ...beat, imageId: img?.id, imageStatus: status, focus }
     }
@@ -396,7 +446,8 @@ export async function matchBeats(beats: Beat[], projectId: string, opts: MatchOp
 
     for (const img of images) {
       const hay = haystack(img)
-      const chars = matchCharacters(beat.characters, img, hay)
+      // personagem só conta se foi conferido: sem isso, o rótulo pode ser só o que outra cena pediu
+      const chars = showsWanted(beat, img) ? matchCharacters(beat.characters, img, hay) : 0
       const hits = words.filter(w => hay.includes(w)).length
       const repeats = usedHere.get(img.id) ?? 0
       const others = img.usedIn.filter(p => p !== projectId).length

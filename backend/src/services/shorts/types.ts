@@ -74,6 +74,19 @@ export interface Beat {
   sfxLocked?: boolean
   /** true quando o usuário escolheu a imagem; a montagem não troca mais. */
   locked?: boolean
+  /**
+   * Imagem diferente da cena literal (ADR 0020): um meme conhecido ou uma variação do personagem
+   * (versão mulher, chibi…). A montagem procura isso primeiro nesta cena.
+   */
+  twist?: BeatTwist
+}
+
+export interface BeatTwist {
+  kind: 'meme' | 'variacao'
+  /** O que buscar (ex.: "polnareff wheelchair meme"). */
+  query: string
+  /** Etiquetas do Danbooru da variação (ex.: "genderswap", "chibi"). */
+  tags?: string[]
 }
 
 export interface ProjectSettings {
@@ -227,6 +240,14 @@ export interface LibraryImage {
   catalogued: boolean
   /** Na fila da catalogação em segundo plano (a imagem já pode ser usada). */
   cataloguing?: boolean
+  /**
+   * Os personagens foram conferidos: pela visão da IA na montagem, pelo usuário na biblioteca ou
+   * pela fonte (etiquetas do Danbooru, retrato do AniList). Catalogada pela IA também conta (ADR 0020).
+   */
+  charactersChecked?: boolean
+  /** Tamanho em pixels (nas cenas de vídeo, o da miniatura): decide o enquadramento no vídeo. */
+  width?: number
+  height?: number
   source?: string
   createdAt: string
 }

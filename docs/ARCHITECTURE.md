@@ -102,7 +102,7 @@ Respostas de sucesso seguem o formato `{ "success": true, "data": ... }`.
 frontend/src/
 ├── App.tsx              # rotas (React Router 6, layout routes)
 ├── api/shorts.ts        # tipos e cliente do fluxo tema → Short (espelha backend/src/services/shorts/types.ts)
-├── video/               # composição Remotion: ShortVideo (cenas, efeitos, figurinhas, legendas, sons), timeline, ShortPlayer, align (roteiro × voz)
+├── video/               # composição Remotion: ShortVideo (cenas, efeitos, figurinhas, legendas, sons), timeline, ShortPlayer, align (roteiro × voz), framing (enquadramento e zoom)
 ├── components/          # AppShell (menu lateral), PublishModal, TagEditor, flow.tsx (stepper, miniaturas, botões segmentados)...
 ├── pages/               # uma página por rota (ver ROADMAP.md, "Estado atual por tela")
 ├── hooks/               # useShorts (projetos, biblioteca, sons, estilos), useVideoPublish, usePosts, useMyInstagram...

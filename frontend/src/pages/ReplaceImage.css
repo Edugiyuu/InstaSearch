@@ -396,3 +396,9 @@
     display: none;
   }
 }
+
+/* Meme ou variação sugeridos pelo roteiro (ADR 0020) */
+.ri-twist {
+  align-self: flex-start;
+  margin: -4px 0 10px;
+}

@@ -27,7 +27,16 @@ const SCENES: SceneKind[] = ['full', 'evidence']
 const EFFECTS: Effect[] = ['none', 'arrow', 'cross', 'circle', 'emoji']
 const MOTIONS: Motion[] = ['zoom-in', 'zoom-out', 'shake', 'pan']
 
-type RawBeat = Partial<Omit<Beat, 'characters'>> & { characters?: unknown; tags?: unknown; sound?: unknown }
+type RawBeat = Partial<Omit<Beat, 'characters' | 'twist'>> & { characters?: unknown; tags?: unknown; sound?: unknown; twist?: unknown }
+
+/** "twist" que veio da IA → meme ou variação da cena (ADR 0020); qualquer outra coisa é ignorada. */
+function cleanTwist(value: unknown): Beat['twist'] {
+  const t = value as { kind?: unknown; query?: unknown; tags?: unknown } | null
+  const query = String(t?.query ?? '').trim()
+  if (!t || !query || (t.kind !== 'meme' && t.kind !== 'variacao')) return undefined
+  const tags = Array.isArray(t.tags) ? t.tags.map(x => String(x).trim().toLowerCase().replace(/\s+/g, '_')).filter(Boolean).slice(0, 2) : []
+  return { kind: t.kind, query: query.slice(0, 80), ...(tags.length ? { tags } : {}) }
+}
 
 /** Efeitos sonoros da biblioteca que o chat pode pôr nas cenas pelo nome. */
 export interface SoundOption {
@@ -85,6 +94,8 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
         // som escolhido pelo usuário (editor ou chat) fica até ele trocar
         sfxId: sound ? sound.sfxId : previous?.sfxLocked || previous?.sfx === b.sfx ? previous?.sfxId : undefined,
         sfxLocked: sound ? true : previous?.sfxLocked,
+        // sem "twist" na resposta: mantém o de antes; null tira
+        twist: b.twist === undefined && previous ? previous.twist : cleanTwist(b.twist),
       }
     })
 }
@@ -105,8 +116,15 @@ const BEAT_FORMAT = `Cada batida:
   "sticker": "só se effect = emoji: a reação em 1 a 3 palavras, para escolher uma figurinha (ex.: 'chocado', 'rindo', 'pensando', 'bravo')",
   "sfx": "efeito sonoro no corte, ou omita: ${SFX.join(' | ')}",
   "motion": "zoom-in" | "zoom-out" | "shake" | "pan",
-  "focus": "área da imagem para dar zoom, se fizer sentido: rosto, mão, olhos, corpo"
+  "focus": "área da imagem para dar zoom, se fizer sentido: rosto, mão, olhos, corpo",
+  "twist": "só em algumas batidas (veja a regra de memes): { \"kind\": \"meme\" | \"variacao\", \"query\": \"busca curta em inglês\", \"tags\": [\"etiqueta do Danbooru da variação, ex.: genderswap, chibi\"] }; omita nas outras"
 }`
+
+/** Memes e variações (ADR 0020): a imagem que engaja, não só a cena literal. */
+const TWIST_RULE = `Memes e imagens diferentes: em cerca de 1 a cada 4 ou 5 batidas, nos momentos de piada, virada ou reação, preencha "twist" com algo que o público reconhece e comenta:
+- "meme": o meme conhecido do personagem ou daquele momento, mesmo que o assunto seja pesado (ex.: o Polnareff na cadeira de rodas → "polnareff wheelchair meme"). Escreva a busca em inglês, com o nome do personagem e "meme".
+- "variacao": o personagem de um jeito inesperado, em fanart (versão mulher, chibi, outro traço; ex.: "polnareff genderswap fanart", tags ["genderswap"]).
+Só memes e variações que existem de verdade; nada sexual. Nas outras batidas, omita "twist".`
 
 export async function generateScript(input: {
   theme: string
@@ -140,6 +158,7 @@ Depois divida a narração em cerca de ${beatCount} batidas visuais. Em cada bat
 Efeitos (setas, X, círculos, figurinhas de reação): ${EFFECTS_SHARE[style.effects]}; use "none" no resto.
 Efeitos sonoros: "boom" ou "impacto" no gancho e nas revelações, "whoosh" em setas e cortes rápidos, "erro" com X, "pop" com figurinha de reação, "click" em provas; cerca de metade das batidas tem sfx.
 Use "evidence" para 1 a cada 5 batidas, quando o trecho cita uma prova, um print ou uma comparação.
+${TWIST_RULE}
 Concatenar os "say" de todas as batidas tem que dar exatamente a narração.
 
 ${BEAT_FORMAT}
@@ -176,8 +195,8 @@ export async function adjustBeats(input: {
   const openScene = input.openScene && input.openScene <= beats.length ? input.openScene : undefined
   const soundName = (id?: string) => sounds.find(s => s.id === id)?.name ?? 'nenhum'
   // "cena" é o número que o usuário vê; sem ele a IA contava a posição na lista e errava por uma
-  const compact = beats.map(({ id, say, text, query, searchTags, characters, scene, effect, emoji, sticker, sfx, sfxId, motion, focus }, i) => ({
-    cena: i + 1, id, say, text, query, tags: searchTags, characters, scene, effect, emoji, sticker, sfx, sound: soundName(sfxId), motion, focus,
+  const compact = beats.map(({ id, say, text, query, searchTags, characters, scene, effect, emoji, sticker, sfx, sfxId, motion, focus, twist }, i) => ({
+    cena: i + 1, id, say, text, query, tags: searchTags, characters, scene, effect, emoji, sticker, sfx, sound: soundName(sfxId), motion, focus, twist,
   }))
 
   const prompt = `Você edita um Short vertical em português do Brasil. O vídeo é uma lista de batidas; em cada batida o vídeo corta para uma imagem nova.
@@ -195,6 +214,7 @@ Aplique o pedido. Regras:
 - A cena aberta na prévia agora é a cena ${openScene}: "esta cena", "essa cena" e "aqui" se referem a ela.` : ''}
 - Mantenha o "id" das batidas que continuam; batidas novas vêm sem id.
 - Só mude o que o pedido pede. Se o pedido cita cenas, não mexa nas outras.
+- "twist" (meme ou variação da imagem): mantenha como está, a menos que o pedido fale de memes ou de imagens diferentes; para tirar, use null. Quando pedir mais ou menos memes, siga esta regra: ${TWIST_RULE}
 - Se o pedido for sobre ritmo, efeitos ou legenda do vídeo inteiro, mude "settings" (pace: calmo|normal|rapido|frenetico, effects: poucos|medida|muitos, caption: quadrinho|completa|limpa|sem).
 - "narration" é a junção dos "say".
 - "sound" é o efeito sonoro que toca na batida. Para trocar, use o nome exato de um destes: ${sounds.length ? sounds.map(s => `"${s.name}"`).join(', ') : '(a biblioteca não tem efeitos sonoros)'}; para tirar, "nenhum". Não mude o "sound" das batidas que o pedido não cita.
@@ -392,7 +412,7 @@ export async function pickImagesWithAI(input: {
     )
     .join('\n')
   const scenes = beats
-    .map((b, n) => `${b.id} | cena ${n + 1} | fala: "${b.say}" | legenda: ${b.text} | precisa mostrar: ${b.query}${b.characters.length ? ` | personagens: ${b.characters.join(', ')}` : ''}${b.scene === 'evidence' ? ' | é uma prova/print' : ''}`)
+    .map((b, n) => `${b.id} | cena ${n + 1} | fala: "${b.say}" | legenda: ${b.text} | precisa mostrar: ${b.query}${b.characters.length ? ` | personagens: ${b.characters.join(', ')}` : ''}${b.scene === 'evidence' ? ' | é uma prova/print' : ''}${b.twist ? ` | prefere ${b.twist.kind === 'meme' ? 'um meme' : 'uma variação'}: ${b.twist.query}` : ''}`)
     .join('\n')
 
   const prompt = `Você é o editor de um Short vertical chamado "${title}". Escolha a melhor imagem da biblioteca para cada cena.
@@ -469,4 +489,62 @@ Responda só com JSON:
     guide: guide.slice(0, 1200),
     ai,
   }
+}
+
+export interface WebPickScene {
+  beat: Beat
+  /** Miniaturas das sugestões da internet, na ordem. */
+  thumbs: { data: Buffer; mimeType: string }[]
+}
+
+/**
+ * A IA olha as sugestões da internet de várias cenas de uma vez e escolhe, em cada cena, a que
+ * mostra o personagem certo fazendo o que a cena pede, ou nenhuma (ADR 0020). Sem isso, a
+ * montagem escolhia às cegas, pela proporção e pela resolução.
+ * Devolve, por cena, o índice da miniatura escolhida (ou null) e o motivo.
+ */
+export async function pickWebImagesWithAI(
+  scenes: WebPickScene[],
+): Promise<{ picks: { index: number | null; reason: string; characters: string[] }[]; ai: AiCredit }> {
+  const images = scenes.flatMap(s => s.thumbs.map(t => ({ data: t.data.toString('base64'), mimeType: t.mimeType })))
+  const offsets: number[] = []
+  let count = 0
+  const list = scenes
+    .map((s, i) => {
+      offsets.push(count)
+      const numbers = s.thumbs.map(() => ++count)
+      const b = s.beat
+      const wants = b.twist ? ` Esta cena prefere ${b.twist.kind === 'meme' ? `um meme (“${b.twist.query}”)` : `uma variação do personagem (“${b.twist.query}”)`}; se nenhuma imagem for isso, a cena literal serve.` : ''
+      return `Cena ${i + 1}: precisa mostrar ${b.query}${b.characters.length ? ` (personagens: ${b.characters.join(', ')})` : ''}.${wants} Imagens ${numbers.join(', ')}.`
+    })
+    .join('\n')
+
+  const prompt = `Você escolhe imagens para as cenas de um Short vertical sobre anime e mangá. As imagens vêm numeradas na ordem em que foram enviadas (1, 2, 3…).
+
+${list}
+
+Para cada cena, escolha entre as imagens dela a que melhor mostra o que a cena precisa. Regras:
+- O personagem certo é obrigatório. Nunca escolha outro personagem, mesmo parecido ou da mesma série.
+- A ação ou emoção pedida é preferência: se nenhuma imagem mostra a ação, mas alguma mostra bem o personagem, escolha essa.
+- Entre as que mostram o personagem, prefira a que mostra a ação ou emoção pedida, e o personagem em destaque (não perdido no meio de muita gente).
+- Evite capa de volume, colagem de várias imagens, texto ou marca d'água grandes, a não ser que a cena peça isso.
+- Meme: só se for mesmo um meme daquele personagem ou momento. Variação: fanart do personagem daquele jeito.
+- Use null só quando nenhuma imagem mostra o personagem pedido: melhor faltar do que pôr o personagem errado.
+
+Responda só com JSON:
+{ "picks": [ { "cena": 1, "imagem": 3, "personagens": ["só os personagens pedidos que aparecem na imagem escolhida"], "motivo": "até 8 palavras" } ] }`
+
+  const { data, ai } = await askJsonMeta<{ picks?: { cena?: number; imagem?: number | null; personagens?: unknown; motivo?: string }[] }>(prompt, {
+    images,
+    effort: 'low',
+  })
+  const picks = scenes.map((s, i) => {
+    const answer = data.picks?.find(p => Number(p.cena) === i + 1)
+    const local = answer?.imagem ? Number(answer.imagem) - offsets[i] - 1 : -1
+    // só personagens que a cena pediu: a IA confirma quais aparecem, não inventa outros
+    const seen = Array.isArray(answer?.personagens) ? answer.personagens.map(String) : []
+    const characters = s.beat.characters.filter(c => seen.some(v => v.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(v.toLowerCase())))
+    return { index: local >= 0 && local < s.thumbs.length ? local : null, reason: String(answer?.motivo ?? '').slice(0, 80), characters }
+  })
+  return { picks, ai }
 }

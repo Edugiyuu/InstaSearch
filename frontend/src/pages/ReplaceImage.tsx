@@ -273,6 +273,18 @@ function ReplaceImage() {
                 Google ↗
               </a>
             </form>
+            {beat.twist && (
+              // o roteiro sugeriu um meme ou uma variação para esta cena (ADR 0020)
+              <button
+                className="act ri-twist"
+                onClick={() => {
+                  setQuery(beat.twist!.query)
+                  searchWeb(beat.twist!.query, beat.characters, beat.twist!.tags ?? [])
+                }}
+              >
+                {beat.twist.kind === 'meme' ? '😂 Buscar o meme' : '✨ Buscar a variação'}: “{beat.twist.query}”
+              </button>
+            )}
 
             {webLoading ? (
               <div className="ri-web">

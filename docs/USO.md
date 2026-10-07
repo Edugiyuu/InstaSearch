@@ -32,7 +32,7 @@ O atalho do Início (tema + estilo + "Começar") abre esta tela já preenchida.
 
 Você não faz nada aqui. O app:
 
-1. Escolhe uma imagem da biblioteca para cada cena (ver "Quem escolhe as imagens" abaixo).
+1. Escolhe uma imagem da biblioteca para cada cena (ver "Quem escolhe as imagens" abaixo). Numa cena que pede um personagem, só entra imagem em que esse personagem foi **conferido** (catalogado pela IA ou escrito por você); se a IA escolher outro personagem, o app recusa e a cena fica como "falta imagem" ([ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md)).
 2. Coloca **figurinhas** da sua biblioteca nas cenas de reação, quando alguma combina. O vídeo não desenha emojis: sem figurinha que combine, a cena fica sem reação.
 3. Coloca **efeitos sonoros** nos cortes: whoosh nas setas, erro nos X, pop nas figurinhas, boom no gancho, click nas provas.
 4. Escolhe uma **música** que combina com o clima do estilo.
@@ -96,7 +96,8 @@ Uma cena por vez ("Cena 1 de 3"):
   - Imagens que já estão na sua biblioteca não aparecem de novo.
   - **Google** (opcional): resultados do Google Imagens, se você colocar a `SERPER_API_KEY` (ver abaixo). O Google Imagens só funciona com JavaScript, então sem a chave o app usa o Bing.
   - Não gostou? **↻ Outras opções** traz outras imagens para a mesma cena (cada clique, uma leva nova). Ou mude o texto da busca ("Goku sorrindo criança") e clique em **Buscar**. **Ver mais** mostra o resto.
-- **✨ Preencher as N cenas automaticamente** (no topo): busca e coloca a melhor sugestão em cada cena que falta, de uma vez. Prefere imagens que batem com a cena, em pé (vídeo vertical), com boa resolução, sem personagens a mais e sem repetir. Não gasta IA: as imagens entram na biblioteca com os personagens e a descrição da cena, e você pode catalogá-las depois. O mesmo botão está no cartão "Precisa de você" da revisão.
+- **✨ Preencher as N cenas automaticamente** (no topo): busca as sugestões de cada cena que falta, separa as 4 melhores e **a IA olha as miniaturas** (umas 5 cenas por chamada) para escolher a que mostra o personagem certo; a ação pedida é preferência, o personagem é obrigatório. Se nenhuma mostra o personagem, a cena fica para você, em vez de entrar uma imagem errada. Só os personagens que a IA viu vão para a biblioteca ([ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md)). O mesmo botão está no cartão "Precisa de você" da revisão.
+- **Memes e variações:** o roteiro marca algumas cenas (piada, virada, reação; cerca de 1 a cada 4 ou 5) com um meme ("polnareff wheelchair meme") ou uma variação do personagem (versão mulher, chibi). O preenchimento automático procura isso primeiro, e na tela de troca aparece o botão **😂 Buscar o meme** (ou **✨ Buscar a variação**). Uma busca com "meme", "fanart", "genderswap" ou "chibi" mostra os resultados da web primeiro, não os painéis do mangá. Peça "mais memes" ou "sem memes" no chat.
 - **Tem outra imagem? Cole aqui**: Ctrl+V de uma imagem copiada, arrastar um arquivo, colar um link ou clicar para escolher. **Google ↗** abre o Google Imagens numa aba.
 - Embaixo, imagens da sua biblioteca que combinam.
 - Toda imagem nova vai para a biblioteca e é catalogada em segundo plano; serve para os próximos vídeos.

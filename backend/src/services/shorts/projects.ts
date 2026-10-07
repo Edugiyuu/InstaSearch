@@ -8,13 +8,13 @@ import { logger } from '../../utils/logger.js'
 import { getStyle } from './styles.js'
 import { CHANNEL_CATCHPHRASE_ID, defaultCatchphrases } from './catchphrases.js'
 import { forgetProject, importImageFromUrl, matchBeats, pickSfx, syncUsage } from './library.js'
-import { searchWebImages, type WebImage } from './imageSearch.js'
-import { adjustBeats, generateScript } from './shortsAI.js'
+import { fetchThumb, searchWebImages, type WebImage } from './imageSearch.js'
+import { adjustBeats, generateScript, pickWebImagesWithAI } from './shortsAI.js'
 import { listSounds, syncSoundUsage } from './sounds.js'
 import { normalize } from './library.js'
 import { transcribeAudio, WHISPER_MODEL } from './transcription.js'
 import { BUILT_IN_TONES, getTone, toneByName } from './tones.js'
-import type { Beat, ProjectSettings, ShortProject, Transcript } from './types.js'
+import type { AiCredit, Beat, ProjectSettings, ShortProject, Transcript } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const AUDIO_DIR = path.join(__dirname, '../../../data/short_projects/audio')
@@ -233,71 +233,160 @@ export async function setBeatImage(id: string, beatId: string, imageId: string |
 /** Cenas que ainda precisam de imagem: sem imagem, ou com uma parecida que o usuário não aprovou. */
 const needsImage = (b: Beat) => !b.locked && b.imageStatus !== 'match'
 
-/** Entre as sugestões, a que melhor serve num vídeo vertical e ainda não foi usada. */
-function bestCandidate(images: WebImage[], used: Set<string>, wanted: number) {
-  const free = images.filter(i => !used.has(i.url)).slice(0, 8)
-  // as primeiras batem com a cena; entre elas, prefere imagem em pé, com boa resolução
-  // e sem gente a mais (cena só do Gojo não quer o Gojo com o Toji)
+/**
+ * As sugestões que valem mostrar para a IA, das melhores para as piores: as primeiras batem com a
+ * cena; entre elas, prefere imagem em pé, com boa resolução e sem gente a mais (cena só do Gojo
+ * não quer o Gojo com o Toji).
+ */
+function rankCandidates(images: WebImage[], wanted: number) {
   const score = (i: WebImage, n: number) => {
     const tall = i.width && i.height ? (i.height >= i.width * 0.9 ? 2 : 0) : 1
     const sharp = i.width && i.width >= 700 ? 1 : 0
     const extra = Math.max(0, new Set(i.characters ?? []).size - Math.max(1, wanted))
     return tall + sharp - extra * 0.8 - n * 0.35
   }
-  return free.map((img, n) => ({ img, s: score(img, n) })).sort((a, b) => b.s - a.s)[0]?.img
+  return images
+    .slice(0, 8)
+    .map((img, n) => ({ img, s: score(img, n) }))
+    .sort((a, b) => b.s - a.s)
+    .map(r => r.img)
+}
+
+/** Fontes cujos personagens vêm das etiquetas (Danbooru) ou do cadastro (AniList), e não de um título qualquer. */
+const trustedSource = (img: WebImage) => (img.source === 'danbooru' || img.source === 'anilist') && !!img.characters?.length
+
+/** Sugestões por cena mostradas à IA, e cenas por chamada de visão (≈ 20 miniaturas). */
+const PER_SCENE = 4
+const SCENES_PER_CALL = 5
+
+/** 3 por vez: rápido sem abusar das fontes. */
+async function inParallel<T>(items: T[], work: (item: T) => Promise<void>) {
+  const queue = [...items]
+  const worker = async () => {
+    for (let item = queue.shift(); item !== undefined; item = queue.shift()) await work(item)
+  }
+  await Promise.all([worker(), worker(), worker()])
 }
 
 /**
- * Botão "Buscar imagens automaticamente": para cada cena que precisa, busca na internet,
- * baixa a melhor sugestão e coloca na cena. Sem IA (não gasta cota): a imagem entra na
- * biblioteca com o que a fonte informa e pode ser catalogada depois.
+ * Preenche as cenas sem imagem com sugestões da internet (ADR 0020):
+ * 1. busca (o meme ou a variação primeiro, quando a cena pede) e separa até 4 candidatas;
+ * 2. a IA olha as miniaturas, várias cenas por chamada, e escolhe a que mostra o personagem certo, ou nenhuma;
+ * 3. importa a escolhida, que é catalogada em segundo plano (ADR 0017).
+ * Se a IA de visão não responder, usa a mais bem colocada, sem marcar os personagens como conferidos.
  */
 export async function autoFillImages(id: string) {
   const project = await getProject(id)
   const pending = project.beats.filter(needsImage)
   const { imageType } = await getStyle(project.styleId)
-  const used = new Set<string>()
   const results: { beatId: string; ok: boolean; message: string }[] = []
+  const search = (query: string, beat: Beat, tags: string[]) =>
+    searchWebImages({ query, characters: beat.characters, tags, context: project.title, imageType })
 
-  // 3 cenas por vez: rápido sem abusar das fontes
-  const queue = [...pending]
-  const worker = async () => {
-    for (let beat = queue.shift(); beat; beat = queue.shift()) {
-      try {
-        const found = await searchWebImages({
-          query: beat.query || beat.text,
-          characters: beat.characters,
-          tags: beat.searchTags,
-          context: project.title,
-          imageType,
-        })
-        const pick = bestCandidate(found.images, used, beat.characters.length)
-        if (!pick) {
-          results.push({ beatId: beat.id, ok: false, message: `Nada encontrado para “${beat.query}”` })
-          continue
-        }
-        used.add(pick.url)
-        const img = await importImageFromUrl(pick.url, {
-          fallbackUrl: pick.thumb !== pick.url ? pick.thumb : undefined,
-          name: (beat.characters.join(' e ') || pick.title).slice(0, 40),
-          characters: beat.characters.length ? beat.characters : pick.characters,
-          tags: beat.searchTags?.map(t => t.replace(/_/g, ' ')) ?? [],
-          description: beat.query,
-          catalog: false,
-        })
-        const b = project.beats.find(x => x.id === beat.id)!
-        b.imageId = img.id
-        b.imageStatus = 'match'
-        b.locked = true
-        results.push({ beatId: beat.id, ok: true, message: `“${beat.text}” → ${pick.title}` })
-      } catch (error: any) {
-        results.push({ beatId: beat.id, ok: false, message: `“${beat.text}”: ${String(error.message).slice(0, 80)}` })
+  // 1. busca
+  const options = new Map<string, WebImage[]>()
+  await inParallel(pending, async beat => {
+    try {
+      const literal = await search(beat.query || beat.text, beat, beat.searchTags ?? [])
+      const twist = beat.twist ? await search(beat.twist.query, beat, beat.twist.tags ?? []).catch(() => null) : null
+      const wanted = beat.characters.length
+      const list = twist
+        ? [...rankCandidates(twist.images, wanted).slice(0, 2), ...rankCandidates(literal.images, wanted)]
+        : rankCandidates(literal.images, wanted)
+      const unique = list.filter((img, i) => list.findIndex(o => o.url === img.url) === i).slice(0, PER_SCENE)
+      if (unique.length) options.set(beat.id, unique)
+      else results.push({ beatId: beat.id, ok: false, message: `Nada encontrado para “${beat.query}”` })
+    } catch (error: any) {
+      results.push({ beatId: beat.id, ok: false, message: `“${beat.text}”: ${String(error.message).slice(0, 80)}` })
+    }
+  })
+
+  // 2. a IA olha as miniaturas (só as que o servidor consegue baixar)
+  const scenes: { beat: Beat; shown: WebImage[]; thumbs: { data: Buffer; mimeType: string }[] }[] = []
+  await inParallel(
+    pending.filter(b => options.has(b.id)),
+    async beat => {
+      const shown: WebImage[] = []
+      const thumbs: { data: Buffer; mimeType: string }[] = []
+      for (const img of options.get(beat.id)!) {
+        const thumb = await fetchThumb(img.thumb).catch(() => null)
+        if (!thumb) continue
+        shown.push(img)
+        thumbs.push({ data: thumb.data, mimeType: thumb.type })
       }
+      scenes.push({ beat, shown, thumbs })
+    },
+  )
+  scenes.sort((a, b) => pending.indexOf(a.beat) - pending.indexOf(b.beat))
+
+  const chosen = new Map<string, { img: WebImage; checked: boolean; reason?: string; characters?: string[] }>()
+  let ai: AiCredit | undefined
+  for (let i = 0; i < scenes.length; i += SCENES_PER_CALL) {
+    const batch = scenes.slice(i, i + SCENES_PER_CALL)
+    const viewable = batch.filter(s => s.thumbs.length)
+    // sem miniatura para olhar: fica para o usuário, em vez de entrar às cegas
+    batch
+      .filter(s => !s.thumbs.length)
+      .forEach(s => results.push({ beatId: s.beat.id, ok: false, message: `“${s.beat.text}”: não deu para conferir as sugestões; escolha na tela de troca` }))
+    if (!viewable.length) continue
+    try {
+      const out = await pickWebImagesWithAI(viewable.map(s => ({ beat: s.beat, thumbs: s.thumbs })))
+      ai = out.ai
+      viewable.forEach((s, k) => {
+        const pick = out.picks[k]
+        if (pick.index !== null) chosen.set(s.beat.id, { img: s.shown[pick.index], checked: true, reason: pick.reason, characters: pick.characters })
+        else
+          results.push({
+            beatId: s.beat.id,
+            ok: false,
+            message: `“${s.beat.text}”: nenhuma sugestão mostra ${s.beat.characters.join(' e ') || s.beat.query}; escolha na tela de troca`,
+          })
+      })
+    } catch (error: any) {
+      logger.warn(`⚠️ A visão não escolheu as imagens (${String(error.message).slice(0, 100)}); usando a mais bem colocada`)
+      for (const s of viewable) chosen.set(s.beat.id, { img: s.shown[0], checked: false })
     }
   }
-  await Promise.all([worker(), worker(), worker()])
+
+  // 3. importa a escolhida; a mesma imagem não entra em duas cenas
+  const used = new Set<string>()
+  const toImport: Beat[] = []
+  for (const beat of pending) {
+    const pick = chosen.get(beat.id)
+    if (!pick) continue
+    if (used.has(pick.img.url)) {
+      results.push({ beatId: beat.id, ok: false, message: `“${beat.text}”: a melhor sugestão já está em outra cena; escolha na tela de troca` })
+      continue
+    }
+    used.add(pick.img.url)
+    toImport.push(beat)
+  }
+  await inParallel(toImport, async beat => {
+    const { img: pick, checked, reason, characters: seen = [] } = chosen.get(beat.id)!
+    try {
+      const fromSource = trustedSource(pick)
+      const img = await importImageFromUrl(pick.url, {
+        fallbackUrl: pick.thumb !== pick.url ? pick.thumb : undefined,
+        name: pick.title.slice(0, 40),
+        // personagens só os conferidos: os que a visão viu, ou as etiquetas da fonte; nunca só os que a cena pediu
+        characters: checked && seen.length ? seen : fromSource ? pick.characters : [],
+        charactersChecked: (checked && seen.length > 0) || fromSource,
+        catalog: 'background',
+      })
+      const b = project.beats.find(x => x.id === beat.id)!
+      b.imageId = img.id
+      b.imageStatus = 'match'
+      b.locked = true
+      const twist = beat.twist && options.get(beat.id)!.indexOf(pick) < 2 ? ` (${beat.twist.kind === 'meme' ? 'meme' : 'variação'})` : ''
+      const note = checked ? (reason ? ` · ${reason}` : '') : ' · sem conferir: a IA de visão não respondeu'
+      results.push({ beatId: beat.id, ok: true, message: `“${beat.text}” → ${pick.title}${twist}${note}` })
+    } catch (error: any) {
+      results.push({ beatId: beat.id, ok: false, message: `“${beat.text}”: ${String(error.message).slice(0, 80)}` })
+    }
+  })
 
   await syncUsage(id, project.beats)
+  if (ai) project.ai = { ...project.ai, images: ai }
   const saved = await save(project)
   const added = results.filter(r => r.ok).length
   logger.info(`🖼️ Imagens automáticas em ${id}: ${added} de ${pending.length}`)

@@ -4,6 +4,7 @@ import { CSSProperties } from 'react'
 import { AbsoluteFill, Audio, Freeze, Img, interpolate, OffthreadVideo, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import type { ProjectSettings, Region } from '../api/shorts'
 import { CatchphraseProps, focusRegion, MediaProps, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
+import { framing, regionOnScreen } from './framing'
 
 const RED = '#E52222'
 const YELLOW = '#FFD60A'
@@ -65,7 +66,7 @@ function BeatScene({ timed, settings }: { timed: TimedBeat; settings: ProjectSet
         <FullImage src={image.src} timed={timed} region={region} punch={settings.pace !== 'calmo'} />
       )}
 
-      {image && <BeatEffect timed={timed} region={beat.scene === 'evidence' ? undefined : region} />}
+      {image && <BeatEffect timed={timed} region={beat.scene === 'evidence' ? undefined : regionOnScreen(region, image.width, image.height)} />}
 
       {settings.caption === 'completa' ? (
         <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} />
@@ -91,42 +92,59 @@ function FullImage({ src, timed, region, punch }: { src: string; timed: TimedBea
   const cx = center ? center.x + center.w / 2 : 0.5
   const cy = center ? center.y + center.h / 2 : 0.4
 
+  // o zoom conta o recorte que o cover já faz; imagem larga fica inteira (ADR 0020)
+  const fr = framing(timed.image?.width, timed.image?.height, region)
+  const cap = (s: number) => Math.min(s, fr.maxScale)
+
   let scale = 1
   let x = 0
   let y = 0
   switch (timed.beat.motion) {
     case 'zoom-out':
-      scale = interpolate(p, [0, 1], [1.38, 1.08])
+      scale = interpolate(p, [0, 1], [cap(1.38), cap(1.08)])
       break
     case 'shake': {
       const decay = Math.max(0, 1 - frame / 12)
-      scale = interpolate(p, [0, 1], [1.16, 1.24])
+      scale = interpolate(p, [0, 1], [cap(1.16), cap(1.24)])
       x = Math.sin(frame * 2.3) * 26 * decay
       y = Math.cos(frame * 1.9) * 20 * decay
       break
     }
-    case 'pan':
-      scale = 1.22
-      x = interpolate(p, [0, 1], [-70, 70])
+    case 'pan': {
+      scale = cap(1.22)
+      // anda só o que o zoom deixa de sobra, para não mostrar a borda
+      const room = Math.min(70, (scale - 1) * 540)
+      x = interpolate(p, [0, 1], [-room, room])
       break
+    }
     default:
-      // zoom-in: com área marcada, termina perto do rosto/mão
-      scale = interpolate(p, [0, 1], [1.06, region ? Math.min(1.9, 0.75 / Math.max(region.w, region.h, 0.3)) : 1.26])
+      // zoom-in: termina perto da área marcada (rosto/mão); num close, só um zoom leve
+      scale = interpolate(p, [0, 1], [cap(1.04), fr.zoomEnd])
   }
   if (punch) scale += interpolate(frame, [0, 5], [0.08, 0], { extrapolateRight: 'clamp' })
 
+  const fit = fr.mode === 'fit'
   const imgStyle: CSSProperties = {
     width: '100%',
     height: '100%',
-    objectFit: 'cover',
-    objectPosition: `${cx * 100}% ${cy * 100}%`,
-    transformOrigin: `${cx * 100}% ${cy * 100}%`,
+    objectFit: fit ? 'contain' : 'cover',
+    objectPosition: fit ? '50% 50%' : `${cx * 100}% ${cy * 100}%`,
+    transformOrigin: fit ? '50% 50%' : `${cx * 100}% ${cy * 100}%`,
     transform: `translate(${x}px, ${y}px) scale(${scale})`,
   }
 
   return (
-    <AbsoluteFill>
-      {clip ? <ClipVideo src={src} clip={clip} frames={timed.frames} style={imgStyle} /> : <Img src={src} style={imgStyle} />}
+    <AbsoluteFill style={{ background: '#000' }}>
+      {fit && (
+        // a própria imagem, desfocada, preenche o que sobra em cima e embaixo
+        <Img
+          src={timed.image?.poster ?? src}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(36px) brightness(0.5)', transform: 'scale(1.2)' }}
+        />
+      )}
+      <AbsoluteFill>
+        {clip ? <ClipVideo src={src} clip={clip} frames={timed.frames} style={imgStyle} /> : <Img src={src} style={imgStyle} />}
+      </AbsoluteFill>
       {/* escurece o pé do quadro para a legenda aparecer */}
       <AbsoluteFill style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 100%)' }} />
     </AbsoluteFill>

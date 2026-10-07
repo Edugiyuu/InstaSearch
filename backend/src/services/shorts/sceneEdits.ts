@@ -60,7 +60,7 @@ export function citedScenes(request: string, count: number, openScene?: number):
 
 /** O que importa comparar numa batida (o resto é derivado ou interno). */
 const visible = (b: Beat) =>
-  JSON.stringify([b.say, b.text, b.query, b.characters, b.scene, b.effect, b.emoji, b.sticker, b.sfx, b.sfxId, b.motion, b.focus, b.imageId])
+  JSON.stringify([b.say, b.text, b.query, b.characters, b.scene, b.effect, b.emoji, b.sticker, b.sfx, b.sfxId, b.motion, b.focus, b.imageId, b.twist ?? null])
 
 export const sameBeat = (a: Beat, b: Beat) => visible(a) === visible(b)
 

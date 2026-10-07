@@ -9,7 +9,8 @@ Onde a IA é usada, como configurar o Gemini e como o app passa para o **Claude 
 | Roteiro | ✅ | tema + estilo + tom (da biblioteca) + duração → título, narração e cenas (legenda, o que a imagem mostra, efeito, efeito sonoro, figurinha) | `shortsAI.generateScript` |
 | Dividir uma narração pronta em cenas | ✅ | texto do usuário → cenas, sem mudar o texto | `shortsAI.generateScript` (com `narration`) |
 | "Peça um ajuste" | ✅ | cenas numeradas como na tela + cena aberta + pedido → cenas novas + resposta; o app desfaz mudanças fora das cenas citadas ([ADR 0017](decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md)) | `shortsAI.adjustBeats`, `sceneEdits` |
-| Escolher as imagens das cenas | ✅ | roteiro inteiro + catálogo da biblioteca → uma imagem por cena, com motivo e área de zoom | `shortsAI.pickImagesWithAI` |
+| Escolher as imagens das cenas | ✅ | roteiro inteiro + catálogo da biblioteca → uma imagem por cena, com motivo e área de zoom; o servidor recusa outro personagem ([ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md)) | `shortsAI.pickImagesWithAI` |
+| Escolher entre as sugestões da internet | ✅ | miniaturas (até 4 por cena, ~5 cenas por chamada) → a que mostra o personagem, quais personagens aparecem, ou nenhuma | `shortsAI.pickWebImagesWithAI` |
 | Catalogar imagens e figurinhas | ✅ | imagem → nome, personagens, etiquetas, descrição, áreas (rosto, mão…). Na troca de imagem de uma cena, roda em segundo plano (fila em `library.ts`) | `shortsAI.catalogImage` |
 | Catalogar efeitos sonoros e músicas | ✅ (só Gemini) | áudio → nome e etiquetas | `shortsAI.catalogSound` |
 | Legenda do post | ✅ | título + narração → legenda + hashtags (com reserva no Claude, via `llm.askJson`) | `aiService.generateCaption` |

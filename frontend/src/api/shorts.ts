@@ -48,6 +48,8 @@ export interface Beat {
   /** o usuário escolheu o som (editor ou chat); a montagem não troca */
   sfxLocked?: boolean
   locked?: boolean
+  /** Meme ou variação do personagem que a montagem procura primeiro (ADR 0020). */
+  twist?: { kind: 'meme' | 'variacao'; query: string; tags?: string[] }
 }
 
 export type ImagePicker = 'ia' | 'palavras'
@@ -252,6 +254,11 @@ export interface LibraryImage {
   catalogued: boolean
   /** Na fila da catalogação em segundo plano (a imagem já pode ser usada). */
   cataloguing?: boolean
+  /** Personagens conferidos (pela IA, por você ou pela fonte); só assim contam na montagem (ADR 0020). */
+  charactersChecked?: boolean
+  /** Tamanho em pixels; decide o enquadramento no vídeo. */
+  width?: number
+  height?: number
   source?: string
   createdAt: string
 }

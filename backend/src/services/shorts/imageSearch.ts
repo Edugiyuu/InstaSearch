@@ -160,7 +160,9 @@ export async function searchWebImages(input: WebSearchInput): Promise<WebSearchR
   const page = Math.max(1, Math.min(20, Math.floor(input.page ?? 1)))
   const names = (input.characters?.length ? input.characters : guessNames(q)).map(c => c.trim()).filter(Boolean).slice(0, 2)
   const tags = sceneTags(q, input.tags)
-  const mangaFirst = input.imageType === 'manga' || /mang|painel|quadrinho/.test(normalize(q))
+  // meme, fanart e variações (ADR 0020): vale o que a web acha, não o painel do mangá nem o retrato oficial
+  const creative = /\b(memes?|fanart|genderswap|genderbend|chibi|cosplay)\b/.test(normalize(q))
+  const mangaFirst = !creative && (input.imageType === 'manga' || /mang|painel|quadrinho/.test(normalize(q)))
   const key = `${normalize(q)}|${names.map(normalize).join(',')}|${normalize(context)}|${tags.join(',')}|${page}|${mangaFirst}`
   const hit = cache.get(key)
   if (hit && Date.now() - hit.at < CACHE_MS) return withoutLibrary(hit.value)
@@ -173,7 +175,7 @@ export async function searchWebImages(input: WebSearchInput): Promise<WebSearchR
     safe('AniList', () => resolveCharacters(names, `${q} ${context}`)),
   ])
   // o retrato oficial é sempre o mesmo: só na primeira página
-  const a = page === 1 && people?.length ? anilistImages(people) : null
+  const a = page === 1 && people?.length && !creative ? anilistImages(people) : null
   // painéis do mangá: nome completo (AniList) + série + etiquetas da cena em inglês ("Satoru Gojo smile manga panel")
   const fullNames = names.map((n, i) => people?.[i]?.name || n)
   const series = people?.find(p => p?.series.length)?.series[0] ?? ''
@@ -189,7 +191,7 @@ export async function searchWebImages(input: WebSearchInput): Promise<WebSearchR
         page,
       ),
     ),
-    names.length ? safe('Mangá', () => searchBing(mangaQuery, page, 'manga')) : null,
+    names.length && !creative ? safe('Mangá', () => searchBing(mangaQuery, page, 'manga')) : null,
   ])
 
   // o que bate com a cena vem primeiro; o retrato e o resto do personagem depois.

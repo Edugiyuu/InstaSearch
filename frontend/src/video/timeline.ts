@@ -13,6 +13,9 @@ export interface MediaProps {
   /** a cena de vídeo: src é o vídeo e o trecho vai de clip.start a clip.end */
   clip?: { start: number; end: number }
   poster?: string
+  /** Tamanho em pixels, quando conhecido: decide o enquadramento (ADR 0020). */
+  width?: number
+  height?: number
 }
 
 /** O que a composição precisa de cada batida: o texto, a imagem e quando entra. */
@@ -76,10 +79,12 @@ export function voiceTiming(project: ShortProject): VoiceTiming | null {
 /** Menor batida possível com a voz: uma fala muito rápida não some da tela. */
 const MIN_VOICE_FRAMES = 4
 
-const libraryMedia = (img: LibraryImage): MediaProps =>
-  img.kind === 'cena' && img.clip
-    ? { src: mediaUrl(img), regions: img.regions, clip: img.clip, poster: imageUrl(img) }
-    : { src: imageUrl(img), regions: img.regions }
+const libraryMedia = (img: LibraryImage): MediaProps => {
+  const size = img.width && img.height ? { width: img.width, height: img.height } : {}
+  return img.kind === 'cena' && img.clip
+    ? { src: mediaUrl(img), regions: img.regions, clip: img.clip, poster: imageUrl(img), ...size }
+    : { src: imageUrl(img), regions: img.regions, ...size }
+}
 
 /**
  * Quadro (desde o começo da narração) em que cada batida começa, pela voz: quando a primeira

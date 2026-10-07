@@ -28,6 +28,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-07 · Imagens específicas (a IA olha antes de escolher), memes e zoom na medida ([ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))
 - [x] 2026-10-06 · Roteiro com argumento (até 4 buscas, mostradas na tela) e tons próprios na biblioteca ([ADR 0019](docs/decisions/0019-roteiro-com-argumento-e-tons-proprios.md))
 - [x] 2026-10-06 · Legenda e cortes no tempo da voz, com o Whisper local ([ADR 0018](docs/decisions/0018-legenda-sincronizada-com-a-voz.md))
 - [x] 2026-10-06 · Troca de imagem sem esperar a catalogação e chat que acerta a cena ([ADR 0017](docs/decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md))
