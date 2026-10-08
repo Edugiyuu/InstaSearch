@@ -10,7 +10,6 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## A fazer
 
-- [ ] 🔴 Revogar o token versionado em `backend/scripts/add-token.js` e ler o token do argumento ou do `.env` (a revogação no painel da Meta é com você)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
 - [ ] Remover a dependência `openai`, que não é usada (pendência do [ADR 0006](docs/decisions/0006-remover-openai.md))
@@ -30,6 +29,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-08 · Token do Instagram fora do código: `add-token.js` lê do argumento ou do `.env`, e o token antigo foi invalidado na Meta
 - [x] 2026-10-08 · Editor de tom: campos não encolhem mais quando o modal passa da altura da tela
 - [x] 2026-10-07 · Tela Ideias: brainstorm a partir das métricas, dos comentários e da web, com as provas de cada ideia, ajuste por pedido, banco em `data/ideas/` e "Criar vídeo" ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md))
 - [x] 2026-10-07 · Métricas dos vídeos publicados na tela Ideias: `views` no Instagram, retenção no YouTube, Graph API v23.0, fotos com 1, 7 e 28 dias e comparação com a mediana ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md))

@@ -6,11 +6,14 @@ import fs from 'fs/promises'
 import path from 'path'
 import { nanoid } from 'nanoid'
 
-// Token gerado no Meta for Developers
-const ACCESS_TOKEN = 'EAATr6RZCzzIwBQtiVe2E7iy1WgZCqEKDidJSK9PnhGa22lzj9t8mI9p8L7eyFwJT5klx0C2SgWH9IaJxI1UmZBCFL3l1ceuge8684TZBBS3JZCJbphIVJFbxzjvKarh9qfIfYwNRmjbaqZBY8sHJBMOB8b9k7yNw7jQxe4kbKL57W0zmUvpwFQ8kqmWNR8zzeP'
+// Token gerado no Meta for Developers: argumento da linha de comando ou INSTAGRAM_ACCESS_TOKEN no .env.
+// Nunca escreva o token aqui: este arquivo é versionado (ver docs/INSTAGRAM.md).
+const ACCESS_TOKEN = process.argv[2] || process.env.INSTAGRAM_ACCESS_TOKEN
 
-// Instagram Business Account ID (encontrado via Graph API Explorer)
-const INSTAGRAM_ACCOUNT_ID = '928238559709510'
+if (!ACCESS_TOKEN) {
+  console.error('❌ Falta o token. Use: node scripts/add-token.js <token>, ou preencha INSTAGRAM_ACCESS_TOKEN no backend/.env')
+  process.exit(1)
+}
 
 const dataDir = path.join(process.cwd(), 'data', 'instagram_accounts')
 

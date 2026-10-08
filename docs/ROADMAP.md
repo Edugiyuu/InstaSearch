@@ -30,7 +30,7 @@ Dados do fluxo novo ficam em `backend/data/`: `short_projects/`, `library/` (ima
 ## Fase 0: fundação e segurança (prioridade imediata)
 
 **Segurança**
-- [ ] 🔴 **Revogar o token de acesso que está versionado em `backend/scripts/add-token.js`** e mudar o script para ler o token de argumento ou do `.env`. O arquivo está no histórico do GitHub; avaliar reescrever o histórico.
+- [x] 🔴 **Revogar o token de acesso que estava versionado em `backend/scripts/add-token.js`** e mudar o script para ler o token de argumento ou do `.env` (2026-10-08). O token antigo foi invalidado pela Meta, mas continua no histórico do GitHub; reescrever o histórico ficou opcional.
 - [ ] Remover os logs que imprimem `INSTAGRAM_CLIENT_ID` (`index.ts`, `instagramAuthService.ts`).
 - [ ] Criptografar os tokens em `data/instagram_accounts/` (AES-GCM com chave no `.env`).
 
