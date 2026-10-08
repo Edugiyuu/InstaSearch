@@ -39,7 +39,7 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0007](0007-claude-haiku-como-reserva.md) | Claude Haiku 4.5 como modelo da reserva | Substituída por 0008 |
 | [0008](0008-claude-sonnet-como-reserva.md) | Claude Sonnet 5.5 (esforço médio) como modelo da reserva | Aceita |
 | [0009](0009-remotion-para-composicao.md) | Remotion para compor, pré-visualizar e renderizar | Aceita |
-| [0010](0010-biblioteca-de-imagens-em-vez-de-geracao.md) | Biblioteca pessoal de imagens em vez de gerar imagens por IA | Aceita |
+| [0010](0010-biblioteca-de-imagens-em-vez-de-geracao.md) | Biblioteca pessoal de imagens em vez de gerar imagens por IA | Substituída em parte por 0022 |
 | [0011](0011-editor-automatico.md) | Editor automático, não editor manual | Aceita |
 | [0012](0012-render-em-processo-separado.md) | Render em MP4 num processo separado, com o código do frontend | Aceita |
 | [0013](0013-workflow-kanban-github-projects.md) | Workflow Kanban no GitHub Projects | Substituída por 0014 |
@@ -51,3 +51,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0019](0019-roteiro-com-argumento-e-tons-proprios.md) | Roteiro com argumento e tons próprios | Aceita |
 | [0020](0020-imagens-especificas-memes-e-zoom.md) | Imagens específicas, memes e zoom na medida | Aceita |
 | [0021](0021-ideias-a-partir-do-desempenho.md) | Ideias de vídeo a partir do que funcionou no Instagram e no YouTube | Aceita |
+| [0022](0022-imagens-da-web-e-controles-da-cena.md) | Imagens só da web, sem biblioteca de imagens, e controles à mão na cena | Aceita |

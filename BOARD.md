@@ -10,6 +10,10 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## A fazer
 
+- [ ] Revisão: controles da cena numa linha sob a faixa de cenas, com pop-ups (imagem, fundo, som, figurinha), sem rolar ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 3B)
+- [ ] Fundo da cena: pop-up com 5 opções (Automático, Tela cheia, Inteira, Moldura no quadriculado, Moldura sobre a imagem), com miniaturas ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 4A)
+- [ ] Figurinhas: ajuste "Nenhuma / Poucas / Muitas" e escolha na cena ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 2C)
+- [ ] Imagens só da web: tirar da montagem as imagens da biblioteca, o ajuste "Quem escolhe as imagens" e a aba Imagens ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 1B)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
 - [ ] Remover a dependência `openai`, que não é usada (pendência do [ADR 0006](docs/decisions/0006-remover-openai.md))
@@ -24,7 +28,7 @@ _(nada; escolha a próxima em "A fazer")_
 - [ ] Criptografar os tokens em `data/instagram_accounts/`
 - [ ] Apagar o vídeo do Cloudinary depois de publicar
 - [ ] Validar os ids que vêm da URL antes de virarem nome de arquivo em todas as rotas (hoje `/shorts/projects/..%2F…` chega ao `FileStorage`; as ideias já validam)
-- [ ] ADR 0022: criação autônoma de vídeos, sem publicar (escrever depois de implementar o [ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md); a maior decisão é a voz)
+- [ ] ADR 0023: criação autônoma de vídeos, sem publicar (escrever depois de implementar o [ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md); a maior decisão é a voz)
 - [ ] Demais itens da Fase 0 do [ROADMAP](docs/ROADMAP.md#fase-0-fundação-e-segurança-prioridade-imediata)
 
 ## Feito

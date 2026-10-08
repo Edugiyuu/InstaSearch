@@ -1,6 +1,6 @@
 # 0010 — Biblioteca pessoal de imagens em vez de gerar imagens por IA
 
-**Status:** Aceita · **Data:** 2026-10-03 (retroativo)
+**Status:** Substituída em parte por [0022](0022-imagens-da-web-e-controles-da-cena.md) (as imagens passam a vir só da web; figurinhas, sons e o resto da biblioteca continuam) · **Data:** 2026-10-03 (retroativo)
 
 ## Contexto
 
