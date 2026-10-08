@@ -59,13 +59,21 @@ A tela mostra cada decisão ("“NARUTO” → naruto e sakura · Naruto e Sakur
 | Bordão de abertura | Nenhum · seus bordões | Toca antes da narração, com o som dele; a narração, as cenas e a música começam depois. Vídeos novos já vêm com o bordão marcado como padrão. Crie em **Biblioteca → Bordões** |
 | Bordão do final | Nenhum · seus bordões | Entra depois da última cena. Se o final tem som próprio (clipe ou montado com áudio), a música para quando ele começa |
 
+### Controles da cena
+
+Logo abaixo da barra de cenas fica uma linha com os controles da cena que está tocando (clique numa cena na barra para ir até ela). Cada botão mostra o valor atual e abre um menu pequeno ali mesmo; o menu fecha ao escolher, ao clicar fora, com Esc ou ao trocar de cena ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)):
+
+- **🖼 Trocar:** abre a tela "Trocar imagem" da cena.
+- **⛶ Enquadramento** (ex.: "Auto · inteira"): ver "Enquadramento" na seção 5.
+- **🔊 Efeito sonoro** (ex.: "🔊 fahhh") e **▶**, que toca o som da cena.
+
 ### Efeitos sonoros de cada cena
 
-Embaixo do vídeo, **🔊 Efeito sonoro desta cena** mostra o som da cena que está tocando (clique numa cena na barra para ir até ela). Escolha:
+No menu **🔊**, escolha:
 
 - **Automático**: a montagem escolhe pelo tipo de efeito (whoosh nas setas, erro nos X, pop nas figurinhas, boom no gancho), procurando pelo nome e pelas etiquetas dos sons.
 - **Sem som**: a cena fica sem efeito.
-- **Qualquer efeito da sua biblioteca** ("fahhh", "vine boom"…): toca nessa cena. ▶ ouve o som.
+- **Qualquer efeito da sua biblioteca** ("fahhh", "vine boom"…): toca nessa cena. O ▶ ao lado de cada um ouve o som sem escolher.
 
 O que você escolhe fica travado: montar de novo ou pedir ajustes não troca. Na barra de cenas, um pontinho laranja marca as cenas com som.
 
@@ -97,7 +105,7 @@ Uma cena por vez ("Cena 1 de 3"):
   - **Google** (opcional): resultados do Google Imagens, se você colocar a `SERPER_API_KEY` (ver abaixo). O Google Imagens só funciona com JavaScript, então sem a chave o app usa o Bing.
   - Não gostou? **↻ Outras opções** traz outras imagens para a mesma cena (cada clique, uma leva nova). Ou mude o texto da busca ("Goku sorrindo criança") e clique em **Buscar**. **Ver mais** mostra o resto.
 - **✨ Preencher as N cenas automaticamente** (no topo): busca as sugestões de cada cena que falta, separa as 4 melhores e **a IA olha as miniaturas** (umas 5 cenas por chamada) para escolher a que mostra o personagem certo; a ação pedida é preferência, o personagem é obrigatório. Se nenhuma mostra o personagem, a cena fica para você, em vez de entrar uma imagem errada. Só os personagens que a IA viu vão para a biblioteca ([ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md)). O mesmo botão está no cartão "Precisa de você" da revisão.
-- **Enquadramento** (no painel da cena, na revisão): **Automático** (imagem larga inteira sobre o fundo desfocado; em pé, tela cheia), **Tela cheia** (corta para ocupar a tela) ou **Inteira** (sempre a imagem toda). Vale na prévia e no MP4 ([ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md)).
+- **Enquadramento** (no botão ⛶ da linha da cena, na revisão): **Automático** (imagem larga inteira sobre o fundo desfocado; em pé, tela cheia), **Tela cheia** (corta para ocupar a tela) ou **Inteira** (sempre a imagem toda). Vale na prévia e no MP4 ([ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md)).
 - **Memes e variações:** o roteiro marca algumas cenas (piada, virada, reação; cerca de 1 a cada 4 ou 5) com um meme ("polnareff wheelchair meme") ou uma variação do personagem (versão mulher, chibi). O preenchimento automático procura isso primeiro, e na tela de troca aparece o botão **😂 Buscar o meme** (ou **✨ Buscar a variação**). Uma busca com "meme", "fanart", "genderswap" ou "chibi" mostra os resultados da web primeiro, não os painéis do mangá. Peça "mais memes" ou "sem memes" no chat.
 - **Tem outra imagem? Cole aqui**: Ctrl+V de uma imagem copiada, arrastar um arquivo, colar um link ou clicar para escolher. **Google ↗** abre o Google Imagens numa aba.
 - Embaixo, imagens da sua biblioteca que combinam.

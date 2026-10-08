@@ -24,6 +24,7 @@ import { useCatchphrases, useLibrary, useProject, useSounds, useStyles } from '.
 import { ShortPlayer, ShortPlayerHandle } from '../video/ShortPlayer'
 import { voiceTiming } from '../video/timeline'
 import { framing } from '../video/framing'
+import { ScenePick, ScenePickOption } from '../components/ScenePick'
 import './Review.css'
 
 /** "se ligaa · clipe pronto · 3,2s" na lista de bordões (sem repetir o tipo quando o nome já é ele) */
@@ -67,6 +68,12 @@ function VoiceSync({ project, onSync }: { project: ShortProject; onSync: () => v
 /** O que o automático faz com esta imagem: inteira se for larga, tela cheia se for em pé (ADR 0020). */
 const framingLabel = (img: { width?: number; height?: number }) =>
   framing(img.width, img.height).mode === 'fit' ? 'inteira' : 'tela cheia'
+
+type FramingChoice = 'auto' | 'cover' | 'fit'
+const FRAMING_LABEL: Record<FramingChoice, string> = { auto: 'Automático', cover: 'Tela cheia', fit: 'Inteira' }
+/** O que o botão do enquadramento mostra: a escolha, ou o que o automático faz com esta imagem. */
+const framingName = (choice: FramingChoice | undefined, img: { width?: number; height?: number }) =>
+  !choice || choice === 'auto' ? `Auto · ${framingLabel(img)}` : FRAMING_LABEL[choice]
 
 const SUGGESTIONS = ['Gancho mais curto', 'Final mais polêmico', 'Mais setas e X', 'Tira uma cena do meio', 'Legenda menor']
 
@@ -205,7 +212,7 @@ function Review() {
   }
 
   /** Tela cheia, imagem inteira ou automático nesta cena (ADR 0020). */
-  const setFraming = async (value: 'auto' | 'cover' | 'fit') => {
+  const setFraming = async (value: FramingChoice) => {
     if (!beat) return
     try {
       setProject(await shortsApi.setBeatFraming(project.id, beat.id, value === 'auto' ? null : value))
@@ -255,52 +262,58 @@ function Review() {
             ))}
           </div>
           {beat && (
+            // key: ao mudar de cena, os menus abertos fecham
+            <div className="rv-scene" key={beat.id}>
+              <button className="sp-chip" onClick={() => navigate(`/projeto/${project.id}/imagens?cena=${beat.id}`)} title="Trocar a imagem desta cena">
+                🖼 Trocar
+              </button>
+              {beatImage && beat.scene !== 'evidence' && (
+                <ScenePick label={`⛶ ${framingName(beat.framing, beatImage)}`} title="Enquadramento desta cena">
+                  {close => (Object.keys(FRAMING_LABEL) as FramingChoice[]).map(k => (
+                    <ScenePickOption key={k} on={(beat.framing ?? 'auto') === k} onClick={() => { setFraming(k); close() }}>
+                      {k === 'auto' ? `Automático (${framingLabel(beatImage)})` : FRAMING_LABEL[k]}
+                    </ScenePickOption>
+                  ))}
+                </ScenePick>
+              )}
+              {sfxList.length === 0 ? (
+                <Link to="/biblioteca?aba=sfx" className="sp-chip">🔊 + Efeitos sonoros</Link>
+              ) : (
+                <>
+                  <ScenePick className="rv-scene-sfx" label={`🔊 ${beatSound?.name ?? 'sem som'}`} title="Efeito sonoro desta cena">
+                    {close => (
+                      <>
+                        <ScenePickOption on={!beat.sfxLocked} onClick={() => { setSfx('auto'); close() }}>
+                          Automático ({beat.sfxLocked ? 'a montagem escolhe' : beatSound?.name ?? 'sem som'})
+                        </ScenePickOption>
+                        <ScenePickOption on={!!beat.sfxLocked && !beat.sfxId} onClick={() => { setSfx('none'); close() }}>
+                          Sem som
+                        </ScenePickOption>
+                        <p className="sp-sep">Seus efeitos</p>
+                        {sfxList.map(s => (
+                          <ScenePickOption
+                            key={s.id}
+                            on={!!beat.sfxLocked && beat.sfxId === s.id}
+                            onClick={() => { setSfx(s.id); close() }}
+                            extra={<button className="btn-g rv-sfx-play" onClick={() => playSound(s.id)} title={`Ouvir ${s.name}`}>▶</button>}
+                          >
+                            {s.name}
+                          </ScenePickOption>
+                        ))}
+                      </>
+                    )}
+                  </ScenePick>
+                  <button className="sp-chip" onClick={() => playSound(beat.sfxId)} disabled={!beatSound} title="Ouvir o efeito desta cena">▶</button>
+                </>
+              )}
+            </div>
+          )}
+          {beat && (
             <p className="rv-now">
               <span className="c-muted">Cena {current + 1}/{project.beats.length}</span>
               <span className="rv-now-text">“{beat.say}”</span>
               <span className={beatImage ? 'c-muted' : 'c-danger'}>{beatImage ? beatImage.name : 'falta imagem'}</span>
-              <button className="act rv-swap" onClick={() => navigate(`/projeto/${project.id}/imagens?cena=${beat.id}`)}>
-                🖼 Trocar imagem
-              </button>
             </p>
-          )}
-          {beat && beatImage && beat.scene !== 'evidence' && (
-            <div className="rv-sfx">
-              <span className="rv-sfx-label">🖼 Enquadramento desta cena</span>
-              <Segmented
-                value={beat.framing ?? 'auto'}
-                options={{ auto: `Automático (${framingLabel(beatImage)})`, cover: 'Tela cheia', fit: 'Inteira' }}
-                onChange={setFraming}
-              />
-            </div>
-          )}
-          {beat && (
-            <div className="rv-sfx">
-              <span className="rv-sfx-label">🔊 Efeito sonoro desta cena</span>
-              {sfxList.length === 0 ? (
-                <Link to="/biblioteca?aba=sfx" className="act">+ Adicionar efeitos à biblioteca</Link>
-              ) : (
-                <div className="rv-sfx-row">
-                  <select
-                    className="rv-sfx-pick"
-                    value={beat.sfxLocked ? beat.sfxId ?? 'none' : 'auto'}
-                    onChange={e => setSfx(e.target.value)}
-                    aria-label="Efeito sonoro desta cena"
-                  >
-                    <option value="auto">Automático ({beat.sfxLocked ? 'a montagem escolhe' : beatSound?.name ?? 'sem som'})</option>
-                    <option value="none">Sem som</option>
-                    <optgroup label="Seus efeitos">
-                      {sfxList.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </optgroup>
-                  </select>
-                  <button className="btn-g rv-sfx-play" onClick={() => playSound(beat.sfxId)} disabled={!beatSound} title="Ouvir o efeito">
-                    ▶
-                  </button>
-                </div>
-              )}
-            </div>
           )}
         </section>
 

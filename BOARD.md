@@ -10,7 +10,6 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## A fazer
 
-- [ ] Revisão: controles da cena numa linha sob a faixa de cenas, com pop-ups (imagem, fundo, som, figurinha), sem rolar ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 3B)
 - [ ] Fundo da cena: pop-up com 5 opções (Automático, Tela cheia, Inteira, Moldura no quadriculado, Moldura sobre a imagem), com miniaturas ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 4A)
 - [ ] Figurinhas: ajuste "Nenhuma / Poucas / Muitas" e escolha na cena ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 2C)
 - [ ] Imagens só da web: tirar da montagem as imagens da biblioteca, o ajuste "Quem escolhe as imagens" e a aba Imagens ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 1B)
@@ -33,6 +32,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-08 · Revisão: controles da cena (trocar imagem, enquadramento, som) numa linha sob a faixa de cenas, com menus, sem rolar ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md))
 - [x] 2026-10-08 · Token do Instagram fora do código: `add-token.js` lê do argumento ou do `.env`, e o token antigo foi invalidado na Meta
 - [x] 2026-10-08 · Editor de tom: campos não encolhem mais quando o modal passa da altura da tela
 - [x] 2026-10-07 · Tela Ideias: brainstorm a partir das métricas, dos comentários e da web, com as provas de cada ideia, ajuste por pedido, banco em `data/ideas/` e "Criar vídeo" ([ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md))

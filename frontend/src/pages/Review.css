@@ -41,10 +41,12 @@
 .rv-video {
   position: sticky;
   top: 22px;
+  /* largura do player, da faixa e da linha da cena: a altura da tela menos o topo, a faixa e a linha */
+  --rv-w: min(100%, calc((100vh - 250px) * 9 / 16));
 }
 
 .rv-player {
-  width: min(100%, calc((100vh - 200px) * 9 / 16));
+  width: var(--rv-w);
   margin: 0 auto;
 }
 
@@ -53,7 +55,7 @@
   gap: 2px;
   height: 14px;
   margin: 12px auto 0;
-  width: min(100%, calc((100vh - 200px) * 9 / 16));
+  width: var(--rv-w);
 }
 
 .rv-tick {
@@ -87,7 +89,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  width: min(100%, calc((100vh - 200px) * 9 / 16));
+  width: var(--rv-w);
   margin: 10px auto 0;
   font-size: 12px;
 }
@@ -97,9 +99,20 @@
   font-weight: 500;
 }
 
-.rv-swap {
-  align-self: flex-start;
-  margin-top: 6px;
+/* uma linha só: o som (nome mais comprido) encolhe com reticências */
+.rv-scene > * {
+  flex-shrink: 0;
+}
+
+.rv-scene > .rv-scene-sfx {
+  flex-shrink: 1;
+}
+
+.rv-scene {
+  display: flex;
+  gap: 6px;
+  width: var(--rv-w);
+  margin: 10px auto 0;
 }
 
 /* Chat */
@@ -355,36 +368,6 @@
   margin-left: -2px;
   border-radius: 50%;
   background: var(--sfx);
-}
-
-.rv-sfx {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: min(100%, calc((100vh - 200px) * 9 / 16));
-  margin: 12px auto 0;
-}
-
-.rv-sfx-label {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.rv-sfx-row {
-  display: flex;
-  gap: 6px;
-}
-
-.rv-sfx-pick {
-  flex: 1;
-  min-width: 0;
-  height: 36px;
-  padding: 0 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--panel-2);
-  color: var(--text);
-  font-size: 13px;
 }
 
 .rv-sfx-play {
