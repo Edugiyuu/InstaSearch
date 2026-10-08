@@ -4,6 +4,11 @@
   gap: 8px;
 }
 
+/* O modal rola quando passa da altura da tela; sem isto, o flex encolhe os campos em vez de rolar */
+.tone-editor > * {
+  flex-shrink: 0;
+}
+
 .te-title {
   font-size: 22px;
   font-weight: 800;
