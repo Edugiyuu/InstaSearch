@@ -187,11 +187,13 @@ export const importImageUrl = asyncHandler(async (req: Request, res: Response) =
 
 /** GET /library/web-search?q=&characters=a,b&tags=a,b&context=&page= → sugestões da internet para uma cena. */
 /** Tipo de imagem do estilo do projeto (mangá, anime…), para ordenar as sugestões. */
-async function projectImageType(projectId: string) {
+/** A obra e o tema do vídeo, para a busca da tela de troca (ADR 0024). */
+async function projectAbout(projectId: string) {
   try {
-    return (await styles.getStyle((await projects.getProject(projectId)).styleId)).imageType
+    const project = await projects.getProject(projectId)
+    return { subject: project.subject, context: `${project.theme} ${project.title}` }
   } catch {
-    return undefined
+    return {}
   }
 }
 
@@ -203,13 +205,15 @@ export const webImageSearch = asyncHandler(async (req: Request, res: Response) =
       .split(',')
       .map(c => c.trim())
       .filter(Boolean)
+  const about = typeof req.query.projectId === 'string' && req.query.projectId ? await projectAbout(req.query.projectId) : {}
   const result = await searchWebImages({
     query: q.slice(0, 200),
-    characters: list(req.query.characters),
+    // sem o parâmetro, o servidor tira os nomes do texto; vazio, a cena não tem ninguém
+    characters: req.query.characters === undefined ? undefined : list(req.query.characters),
     tags: list(req.query.tags).slice(0, 6),
-    context: String(req.query.context ?? '').slice(0, 200),
+    subject: about.subject,
+    context: (about.context ?? String(req.query.context ?? '')).slice(0, 300),
     page: Number(req.query.page) || 1,
-    imageType: typeof req.query.projectId === 'string' ? await projectImageType(req.query.projectId) : undefined,
   })
   res.json({ success: true, data: result })
 })

@@ -27,7 +27,7 @@ _(nada; escolha a próxima em "A fazer")_
 - [ ] Criptografar os tokens em `data/instagram_accounts/`
 - [ ] Apagar o vídeo do Cloudinary depois de publicar
 - [ ] Validar os ids que vêm da URL antes de virarem nome de arquivo em todas as rotas (hoje `/shorts/projects/..%2F…` chega ao `FileStorage`; as ideias já validam)
-- [ ] ADR 0024: criação autônoma de vídeos, sem publicar (escrever depois de implementar o [ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md); a maior decisão é a voz)
+- [ ] ADR da criação autônoma de vídeos, sem publicar (escrever depois de implementar o [ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md); a maior decisão é a voz)
 - [ ] Instagram: ler a expiração real do token (`/debug_token`) em vez de estimar 60 dias
 - [ ] Instagram: trocar sozinho para um token de Página, que não expira
 - [ ] Instagram: unificar o OAuth (Instagram Login × Facebook Login) ou remover o fluxo quebrado
@@ -38,6 +38,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-09 · Imagens do assunto certo: a obra do vídeo (`subject`) vai na busca e nas duas IAs que escolhem (web e biblioteca), lugar não vira mais personagem, "mangá" só quando a obra tem mangá, memes sobre o tema e prompts para qualquer tema, não só anime ([ADR 0024](docs/decisions/0024-imagens-do-assunto-do-video.md))
 - [x] 2026-10-09 · Fundo da cena: pop-up com 5 opções (Automático, Tela cheia, Inteira, Moldura no quadriculado, Moldura sobre a imagem), com miniaturas feitas com a imagem da cena ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 4A)
 - [x] 2026-10-09 · Documentação enxuta: README de visão geral, guias em `docs/` (uso, instalação, arquitetura), CONTRIBUTING e 15 diagramas em SVG; saem 14 docs antigos e os scripts de teste manual ([ADR 0023](docs/decisions/0023-documentacao-enxuta-com-diagramas.md))
 - [x] 2026-10-08 · Revisão: controles da cena (trocar imagem, enquadramento, som) numa linha sob a faixa de cenas, com menus, sem rolar ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md))

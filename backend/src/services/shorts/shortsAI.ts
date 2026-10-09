@@ -110,9 +110,9 @@ const BEAT_FORMAT = `Cada batida:
 {
   "say": "trecho exato da narração falado nesta batida (3 a 8 palavras)",
   "text": "legenda na tela: 1 a 3 palavras-chave do trecho, em MAIÚSCULAS",
-  "query": "o que a imagem precisa mostrar, curto e concreto (ex.: 'sukuna sorrindo, mangá')",
+  "query": "o que a imagem precisa mostrar, curto e concreto: algo que existe no assunto do vídeo (um personagem ou pessoa, um lugar, uma cena, o pôster, o logo), e não uma imagem genérica que ilustra a frase (em 'muda o foco', o personagem novo, não um olho). Ex.: 'Lucy olhando a lua', 'pôster da 2ª temporada'. Só escreva 'mangá' quando a imagem for de mangá",
   "tags": ["2 a 4 etiquetas do Danbooru, em inglês, que descrevem essa imagem: expressão, pose, ação, enquadramento (ex.: 'smirk', 'hands_in_pockets', 'from_below', 'close-up')"],
-  "characters": ["nomes dos personagens que aparecem na imagem"],
+  "characters": ["nomes dos personagens ou pessoas que aparecem na imagem; vazio se não aparece ninguém (um lugar, um logo, um pôster)"],
   "scene": "full" (imagem em tela cheia) ou "evidence" (imagem emoldurada sobre fundo quadriculado, para provas, prints e comparações),
   "effect": "none" | "arrow" | "cross" | "circle" | "emoji",
   "emoji": "só se effect = emoji",
@@ -123,10 +123,14 @@ const BEAT_FORMAT = `Cada batida:
   "twist": "só em algumas batidas (veja a regra de memes): { \"kind\": \"meme\" | \"variacao\", \"query\": \"busca curta em inglês\", \"tags\": [\"etiqueta do Danbooru da variação, ex.: genderswap, chibi\"] }; omita nas outras"
 }`
 
+/** A obra do vídeo (ADR 0024): vai em toda busca de imagem, então precisa ser o nome que se busca. */
+const SUBJECT_HINT =
+  "de que obra, pessoa, jogo, time ou marca é o vídeo, com o nome completo que se busca na internet (ex.: 'Cyberpunk: Edgerunners', 'Miraculous Ladybug', 'Neymar'); vazio se o vídeo não é sobre nada específico"
+
 /** Memes e variações (ADR 0020): a imagem que engaja, não só a cena literal. */
 const TWIST_RULE = `Memes e imagens diferentes: em cerca de 1 a cada 4 ou 5 batidas, nos momentos de piada, virada ou reação, preencha "twist" com algo que o público reconhece e comenta:
-- "meme": o meme conhecido do personagem ou daquele momento, mesmo que o assunto seja pesado (ex.: o Polnareff na cadeira de rodas → "polnareff wheelchair meme"). Escreva a busca em inglês, com o nome do personagem e "meme".
-- "variacao": o personagem de um jeito inesperado, em fanart (versão mulher, chibi, outro traço; ex.: "polnareff genderswap fanart", tags ["genderswap"]).
+- "meme": um meme sobre o assunto do vídeo, mesmo que o assunto seja pesado. Pode ser o meme conhecido do personagem, da obra ou daquele momento (ex.: o Polnareff na cadeira de rodas → "polnareff wheelchair meme"), ou um meme famoso de reação que combina com a fala (ex.: algo deu errado → "this is fine meme"). Escreva a busca em inglês, terminando em "meme"; com o nome do personagem ou da obra quando o meme é deles.
+- "variacao": o personagem da batida de um jeito inesperado, em fanart (versão mulher, chibi, outro traço; ex.: "polnareff genderswap fanart", tags ["genderswap"]). Só em batidas que mostram esse personagem.
 Só memes e variações que existem de verdade; nada sexual. Nas outras batidas, omita "twist".`
 
 export async function generateScript(input: {
@@ -136,7 +140,7 @@ export async function generateScript(input: {
   duration: number
   style: ShortStyle
   narration?: string
-}): Promise<{ title: string; narration: string; beats: Beat[]; ai: AiCredit }> {
+}): Promise<{ title: string; subject: string; narration: string; beats: Beat[]; ai: AiCredit }> {
   const { theme, toneGuide, duration, style, narration } = input
   const beatCount = Math.round(duration / PACE_SECONDS[style.pace])
   const words = Math.round(duration * 2.6)
@@ -155,7 +159,7 @@ export async function generateScript(input: {
 ${task}
 
 Estilo do canal: "${style.name}" (${style.summary}). ${style.notes}
-Imagens preferidas: ${IMAGE_TYPE[style.imageType]}.
+Imagens preferidas: ${IMAGE_TYPE[style.imageType]}, quando o assunto tem. Um anime original não tem mangá; um jogo, um filme, uma série ou uma pessoa real pedem cena, print ou foto.
 
 Depois divida a narração em cerca de ${beatCount} batidas visuais. Em cada batida o vídeo corta para uma imagem nova.
 Efeitos (setas, X, círculos, figurinhas de reação): ${EFFECTS_SHARE[style.effects]}; use "none" no resto.
@@ -167,16 +171,17 @@ Concatenar os "say" de todas as batidas tem que dar exatamente a narração.
 ${BEAT_FORMAT}
 
 Responda só com JSON:
-{ "title": "título curto do vídeo (até 6 palavras)", "narration": "narração completa", "beats": [ ... ] }`
+{ "title": "título curto do vídeo (até 6 palavras)", "subject": "${SUBJECT_HINT}", "narration": "narração completa", "beats": [ ... ] }`
 
   // escrevendo do zero, a IA confirma os fatos na web (pouco); com a narração pronta, só divide
-  const { data: out, ai } = await askJsonMeta<{ title?: string; narration?: string; beats?: RawBeat[] }>(prompt, {
+  const { data: out, ai } = await askJsonMeta<{ title?: string; subject?: string; narration?: string; beats?: RawBeat[] }>(prompt, {
     research: !narration,
   })
   const beats = cleanBeats(out.beats ?? [])
   if (beats.length === 0) throw new AppError('A IA não devolveu nenhuma batida. Tente de novo.', 502, 'AI_EMPTY')
   return {
     title: out.title?.trim() || theme,
+    subject: String(out.subject ?? '').trim().slice(0, 80),
     narration: narration ?? out.narration?.trim() ?? beats.map(b => b.say).join(' '),
     beats,
     ai,
@@ -193,8 +198,10 @@ export async function adjustBeats(input: {
   sounds?: SoundOption[]
   /** Cena aberta na prévia, como na tela (a primeira é 1): é a "esta cena" do pedido. */
   openScene?: number
+  /** A obra do vídeo (ADR 0024), ou o tema nos projetos antigos: as cenas novas buscam imagens dela. */
+  subject?: string
 }): Promise<{ reply: string; beats: Beat[]; narration: string; settings: ProjectSettings; ai: AiCredit }> {
-  const { request, beats, narration, settings, style, sounds = [] } = input
+  const { request, beats, narration, settings, style, sounds = [], subject } = input
   const openScene = input.openScene && input.openScene <= beats.length ? input.openScene : undefined
   const soundName = (id?: string) => sounds.find(s => s.id === id)?.name ?? 'nenhum'
   // "cena" é o número que o usuário vê; sem ele a IA contava a posição na lista e errava por uma
@@ -204,7 +211,8 @@ export async function adjustBeats(input: {
 
   const prompt = `Você edita um Short vertical em português do Brasil. O vídeo é uma lista de batidas; em cada batida o vídeo corta para uma imagem nova.
 
-Estilo: "${style.name}". ${style.notes}
+${subject ? `Assunto do vídeo: ${subject}. As imagens das batidas são desse assunto.
+` : ''}Estilo: "${style.name}". ${style.notes}
 Ajustes atuais: ritmo=${settings.pace}, efeitos=${settings.effects}, legenda=${settings.caption}.
 
 Batidas atuais (JSON):
@@ -284,14 +292,14 @@ export async function catalogImage(
   data: Buffer,
   mimeType: string,
 ): Promise<Pick<LibraryImage, 'name' | 'kind' | 'characters' | 'tags' | 'description' | 'regions'>> {
-  const prompt = `Você cataloga imagens para uma biblioteca de edição de Shorts (anime, mangá, memes, prints).
+  const prompt = `Você cataloga imagens para uma biblioteca de edição de Shorts (anime, jogos, filmes, séries, pessoas, memes, prints).
 Descreva a imagem em português do Brasil. Responda só com JSON:
 {
   "name": "nome curto em minúsculas, 1 a 3 palavras (ex.: 'sukuna sorrindo')",
   "kind": "imagem" | "meme" | "print" | "logo" | "figurinha" (recorte com fundo transparente, reação, adesivo),
   "characters": ["personagens reconhecidos, com o nome mais conhecido; vazio se não souber"],
   "tags": ["4 a 8 etiquetas curtas em minúsculas: estilo (mangá, anime, fanart), emoção, ação, enquadramento, cores"],
-  "description": "uma frase sobre o que acontece",
+  "description": "uma frase sobre o que acontece, dizendo de que obra, pessoa ou marca é, se souber",
   "regions": [{ "label": "rosto" | "mão" | "olhos" | "corpo" | outro, "x": 0-1, "y": 0-1, "w": 0-1, "h": 0-1 }]
 }
 Se for figurinha ou reação, coloque nas etiquetas a emoção e 2 ou 3 sinônimos (ex.: chocado, surpreso, espantado).
@@ -327,7 +335,7 @@ export type SceneInfo = Pick<LibraryImage, 'name' | 'characters' | 'tags' | 'des
  * hint: de qual anime/episódio é, para a IA reconhecer os personagens.
  */
 export async function catalogScenes(frames: Buffer[], hint: string): Promise<SceneInfo[]> {
-  const prompt = `Você cataloga cenas de um vídeo para uma biblioteca de edição de Shorts de anime.
+  const prompt = `Você cataloga cenas de um vídeo para uma biblioteca de edição de Shorts.
 ${hint ? `O vídeo é: ${hint}.\n` : ''}As ${frames.length} imagens, na ordem, são o quadro do meio de ${frames.length} cenas seguidas do vídeo.
 Descreva cada cena em português do Brasil. Responda só com JSON, uma entrada por imagem, na mesma ordem:
 { "scenes": [ {
@@ -391,13 +399,15 @@ export interface ImageChoice {
  */
 export async function pickImagesWithAI(input: {
   title: string
+  /** A obra do vídeo (ADR 0024), ou o tema nos projetos antigos. */
+  subject?: string
   narration: string
   beats: Beat[]
   images: LibraryImage[]
   /** Quantas vezes cada imagem já foi usada em outros vídeos. */
   usedElsewhere: Map<string, number>
 }): Promise<{ choices: ImageChoice[]; ai: AiCredit }> {
-  const { title, narration, beats, images, usedElsewhere } = input
+  const { title, subject, narration, beats, images, usedElsewhere } = input
   const catalog = images
     .map(i =>
       [
@@ -418,7 +428,7 @@ export async function pickImagesWithAI(input: {
     .map((b, n) => `${b.id} | cena ${n + 1} | fala: "${b.say}" | legenda: ${b.text} | precisa mostrar: ${b.query}${b.characters.length ? ` | personagens: ${b.characters.join(', ')}` : ''}${b.scene === 'evidence' ? ' | é uma prova/print' : ''}${b.twist ? ` | prefere ${b.twist.kind === 'meme' ? 'um meme' : 'uma variação'}: ${b.twist.query}` : ''}`)
     .join('\n')
 
-  const prompt = `Você é o editor de um Short vertical chamado "${title}". Escolha a melhor imagem da biblioteca para cada cena.
+  const prompt = `Você é o editor de um Short vertical chamado "${title}"${subject ? `, sobre ${subject}` : ''}. Escolha a melhor imagem da biblioteca para cada cena.
 
 Narração completa: """${narration}"""
 
@@ -430,9 +440,10 @@ ${catalog}
 
 Regras:
 - Pense no vídeo inteiro: a imagem tem que combinar com o que está sendo dito naquele momento e com quem é o assunto.
+- A biblioteca tem imagens de muitos vídeos.${subject ? ` Use só imagens de ${subject}: uma imagem de outra obra ou pessoa não serve, mesmo que a descrição combine com a cena (uma "lista de episódios" de outra série não é a lista deste vídeo).` : ' Use só imagens do assunto deste vídeo.'} A exceção é um meme de reação, quando a cena pede um.
 - O personagem certo importa mais que o resto. Não use imagem de outro personagem.
 - Evite repetir a mesma imagem em cenas seguidas; repita só se não houver alternativa.
-- "cena de vídeo" é um trecho do anime em movimento: prefira nas falas de ação (luta, golpe, transformação, revelação, correria); imagem parada e quadro de mangá funcionam melhor nas explicações. Misture os dois ao longo do vídeo.
+- "cena de vídeo" é um trecho em movimento: prefira nas falas de ação (luta, golpe, transformação, revelação, correria); imagem parada e quadro de mangá funcionam melhor nas explicações. Misture os dois ao longo do vídeo.
 - Prefira imagens menos usadas em outros vídeos quando duas servem igual.
 - "fit": "match" quando a imagem serve bem; "similar" quando é a melhor disponível mas não é o ideal.
 - "imageId": null quando nada da biblioteca serve (melhor faltar do que pôr uma imagem errada).
@@ -469,7 +480,7 @@ function shorten(text: string, max: number) {
  */
 export async function suggestTone(input: { description: string; example?: string }): Promise<{ name: string; summary: string; guide: string; ai: AiCredit }> {
   const example = input.example?.trim()
-  const prompt = `Você ajuda um criador de Shorts (anime, mangá, cultura pop) em português do Brasil a definir o TOM dos roteiros: como a narração fala e argumenta.
+  const prompt = `Você ajuda um criador de Shorts (cultura pop, anime, jogos e outros temas) em português do Brasil a definir o TOM dos roteiros: como a narração fala e argumenta.
 
 O que o criador quer: "${input.description.trim()}"
 ${example ? `Exemplo de fala ou roteiro de que ele gosta (imite o jeito de falar, não o assunto):
@@ -508,6 +519,8 @@ export interface WebPickScene {
  */
 export async function pickWebImagesWithAI(
   scenes: WebPickScene[],
+  /** O título e a obra do vídeo (ADR 0024); sem obra, não há a regra do assunto. */
+  video: { title: string; subject?: string },
 ): Promise<{ picks: { index: number | null; reason: string; characters: string[] }[]; ai: AiCredit }> {
   const images = scenes.flatMap(s => s.thumbs.map(t => ({ data: t.data.toString('base64'), mimeType: t.mimeType })))
   const offsets: number[] = []
@@ -518,21 +531,22 @@ export async function pickWebImagesWithAI(
       const numbers = s.thumbs.map(() => ++count)
       const b = s.beat
       const wants = b.twist ? ` Esta cena prefere ${b.twist.kind === 'meme' ? `um meme (“${b.twist.query}”)` : `uma variação do personagem (“${b.twist.query}”)`}; se nenhuma imagem for isso, a cena literal serve.` : ''
-      return `Cena ${i + 1}: precisa mostrar ${b.query}${b.characters.length ? ` (personagens: ${b.characters.join(', ')})` : ''}.${wants} Imagens ${numbers.join(', ')}.`
+      return `Cena ${i + 1}: fala “${b.say}”; precisa mostrar ${b.query}${b.characters.length ? ` (personagens: ${b.characters.join(', ')})` : ''}.${wants} Imagens ${numbers.join(', ')}.`
     })
     .join('\n')
 
-  const prompt = `Você escolhe imagens para as cenas de um Short vertical sobre anime e mangá. As imagens vêm numeradas na ordem em que foram enviadas (1, 2, 3…).
+  const prompt = `Você escolhe imagens para as cenas de um Short vertical chamado “${video.title}”${video.subject ? `, sobre ${video.subject}` : ''}. As imagens vêm numeradas na ordem em que foram enviadas (1, 2, 3…).
 
 ${list}
 
-Para cada cena, escolha entre as imagens dela a que melhor mostra o que a cena precisa. Regras:
+Para cada cena, escolha entre as imagens dela a que melhor mostra o que a cena precisa. Regras:${video.subject ? `
+- A imagem tem que ser de ${video.subject}: um personagem, lugar, cena, pôster ou logo de lá. Imagem de outra obra ou de outra pessoa é pior que nenhuma, mesmo que mostre a coisa pedida (uma cidade de outro anime não é a cidade deste). A exceção é um meme de reação, quando a cena prefere um.` : ''}
 - O personagem certo é obrigatório. Nunca escolha outro personagem, mesmo parecido ou da mesma série.
 - A ação ou emoção pedida é preferência: se nenhuma imagem mostra a ação, mas alguma mostra bem o personagem, escolha essa.
 - Entre as que mostram o personagem, prefira a que mostra a ação ou emoção pedida, e o personagem em destaque (não perdido no meio de muita gente).
 - Evite capa de volume, colagem de várias imagens, texto ou marca d'água grandes, a não ser que a cena peça isso.
-- Meme: só se for mesmo um meme daquele personagem ou momento. Variação: fanart do personagem daquele jeito.
-- Use null só quando nenhuma imagem mostra o personagem pedido: melhor faltar do que pôr o personagem errado.
+- Meme: só se for mesmo um meme, do assunto ou de reação que combina com a fala. Variação: fanart do personagem daquele jeito.
+- Use null quando nenhuma imagem é do assunto ou mostra o personagem pedido: melhor faltar do que pôr a imagem errada.
 
 Responda só com JSON:
 { "picks": [ { "cena": 1, "imagem": 3, "personagens": ["só os personagens pedidos que aparecem na imagem escolhida"], "motivo": "até 8 palavras" } ] }`

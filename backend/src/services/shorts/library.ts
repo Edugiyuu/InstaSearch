@@ -367,6 +367,8 @@ export interface MatchOptions {
   /** A IA escolhe lendo o roteiro inteiro; sem isso, escolha por palavras. */
   ai?: boolean
   title?: string
+  /** A obra do vídeo (ADR 0024): a IA não escolhe imagem de outra. */
+  subject?: string
   narration?: string
   /** Mantém as imagens que as cenas já têm (usado depois de um ajuste, para só preencher as novas). */
   keepExisting?: boolean
@@ -400,6 +402,7 @@ export async function matchBeats(beats: Beat[], projectId: string, opts: MatchOp
       const usedElsewhere = new Map(candidates.map(i => [i.id, i.usedIn.filter(p => p !== projectId).length]))
       const picked = await pickImagesWithAI({
         title: opts.title ?? '',
+        subject: opts.subject,
         narration: opts.narration ?? beats.map(b => b.say).join(' '),
         beats: open,
         images: candidates,

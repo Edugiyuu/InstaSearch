@@ -56,7 +56,8 @@ function ReplaceImage() {
 
   const beat = useMemo(() => project?.beats.find(b => b.id === queue?.[step]), [project, queue, step])
 
-  const searchWeb = async (q: string, characters: string[], tags: string[] = [], p = 1) => {
+  /** characters undefined: o servidor tira os nomes do texto (busca digitada à mão). */
+  const searchWeb = async (q: string, characters: string[] | undefined, tags: string[] = [], p = 1) => {
     if (!q.trim()) return
     const run = ++webRun.current
     setWebLoading(true)
@@ -191,7 +192,7 @@ function ReplaceImage() {
   // texto editado à mão: personagens e etiquetas da cena podem não valer mais, o servidor tira do texto
   const runSearch = (p = 1) => {
     const same = query.trim() === beat.query.trim()
-    searchWeb(query, same ? beat.characters : [], same ? beat.searchTags : [], p)
+    searchWeb(query, same ? beat.characters : undefined, same ? beat.searchTags : [], p)
   }
 
   const autoFill = async () => {

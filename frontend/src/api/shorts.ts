@@ -417,7 +417,8 @@ export const shortsApi = {
       api.get('/library/web-search', {
         params: {
           q,
-          characters: (opts.characters ?? []).join(','),
+          // sem a lista, o servidor tira os nomes do texto; lista vazia = a cena não tem ninguém (ADR 0024)
+          characters: opts.characters?.join(','),
           tags: (opts.tags ?? []).join(','),
           context: opts.context ?? '',
           page: opts.page ?? 1,

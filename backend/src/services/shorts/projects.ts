@@ -100,6 +100,7 @@ export async function createProject(input: {
     id: generateId('short'),
     title: script.title,
     theme: theme || script.title,
+    subject: script.subject,
     styleId: style.id,
     duration,
     tone: tone.name,
@@ -144,11 +145,18 @@ export async function recordOutput(id: string, changes: Pick<Partial<ShortProjec
 }
 
 /** 04b: escolhe as imagens e passa o projeto para revisão. */
+/**
+ * De que é o vídeo, para as IAs que escolhem imagens e para o chat (ADR 0024). Projeto antigo, sem o campo:
+ * o tema, que costuma citar a obra. Vazio quando o roteiro disse que o vídeo não é sobre nada específico.
+ */
+export const subjectOf = (p: ShortProject) => p.subject ?? p.theme
+
 export async function assemble(id: string) {
   const project = await getProject(id)
   const { beats, log, ai } = await matchBeats(project.beats, id, {
     ai: (project.settings.imagePicker ?? 'ia') === 'ia',
     title: project.title,
+    subject: subjectOf(project),
     narration: project.narration,
   })
   project.beats = beats
@@ -177,6 +185,7 @@ export async function adjust(id: string, request: string, openScene?: number) {
     style,
     sounds: sfx.map(s => ({ id: s.id, name: s.name })),
     openScene,
+    subject: subjectOf(project),
   })
 
   const changed = out.beats !== project.beats
@@ -184,6 +193,7 @@ export async function adjust(id: string, request: string, openScene?: number) {
     ? await matchBeats(out.beats, id, {
         ai: (project.settings.imagePicker ?? 'ia') === 'ia',
         title: project.title,
+        subject: subjectOf(project),
         narration: out.narration,
         keepExisting: true,
       })
@@ -278,10 +288,10 @@ async function inParallel<T>(items: T[], work: (item: T) => Promise<void>) {
 export async function autoFillImages(id: string) {
   const project = await getProject(id)
   const pending = project.beats.filter(needsImage)
-  const { imageType } = await getStyle(project.styleId)
   const results: { beatId: string; ok: boolean; message: string }[] = []
+  const context = `${project.theme} ${project.title}`
   const search = (query: string, beat: Beat, tags: string[]) =>
-    searchWebImages({ query, characters: beat.characters, tags, context: project.title, imageType })
+    searchWebImages({ query, characters: beat.characters, tags, subject: project.subject, context })
 
   // 1. busca
   const options = new Map<string, WebImage[]>()
@@ -330,7 +340,10 @@ export async function autoFillImages(id: string) {
       .forEach(s => results.push({ beatId: s.beat.id, ok: false, message: `“${s.beat.text}”: não deu para conferir as sugestões; escolha na tela de troca` }))
     if (!viewable.length) continue
     try {
-      const out = await pickWebImagesWithAI(viewable.map(s => ({ beat: s.beat, thumbs: s.thumbs })))
+      const out = await pickWebImagesWithAI(
+        viewable.map(s => ({ beat: s.beat, thumbs: s.thumbs })),
+        { title: project.title, subject: subjectOf(project) },
+      )
       ai = out.ai
       viewable.forEach((s, k) => {
         const pick = out.picks[k]

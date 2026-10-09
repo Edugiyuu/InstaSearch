@@ -143,6 +143,12 @@ export interface ShortProject {
   id: string
   title: string
   theme: string
+  /**
+   * De que obra, pessoa ou marca é o vídeo, com o nome que se busca na internet ("Cyberpunk: Edgerunners").
+   * Toda busca de imagem leva esse nome, e a IA que escolhe recusa imagem de outro assunto (ADR 0024).
+   * Vazio quando o vídeo não é sobre nada específico; projetos antigos não têm.
+   */
+  subject?: string
   styleId: string
   /** Duração alvo em segundos (15 a 40). */
   duration: number

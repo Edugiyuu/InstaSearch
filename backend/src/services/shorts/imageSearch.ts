@@ -133,16 +133,20 @@ export function webSearchEnabled() {
 export interface WebSearchInput {
   /** O que a cena precisa mostrar ("Gojo calmo com a mão no bolso, anime"). */
   query: string
-  /** Personagens da cena, se a IA informou. */
+  /**
+   * Personagens da cena. Sem a lista (texto digitado à mão), sai do texto pelas palavras com cara de nome;
+   * lista vazia é a IA dizendo que a cena não tem ninguém (um lugar, um logo), e aí nada é adivinhado:
+   * "Night City" virava os personagens "Night" e "City" (ADR 0024).
+   */
   characters?: string[]
-  /** Título do vídeo, para desempatar nomes ("Sakura" de Naruto, não de Fate). */
+  /** A obra do vídeo ("Cyberpunk: Edgerunners"): entra na busca quando o texto não a cita (ADR 0024). */
+  subject?: string
+  /** Tema e título do vídeo, para desempatar nomes ("Sakura" de Naruto, não de Fate). */
   context?: string
   /** Etiquetas do Danbooru que a IA escreveu para a cena (hands_in_pockets, smile…). */
   tags?: string[]
   /** 1 = as melhores; 2, 3… = outras opções (pede outra página e embaralha o resto). */
   page?: number
-  /** Tipo de imagem do estilo: com "manga", os painéis reais do mangá vêm primeiro. */
-  imageType?: string
 }
 
 /** Etiquetas da cena: as da IA primeiro, depois as que saem das palavras do texto. */
@@ -156,19 +160,25 @@ export function sceneTags(query: string, tags: string[] = []) {
 
 export async function searchWebImages(input: WebSearchInput): Promise<WebSearchResult> {
   const q = input.query.trim()
-  const context = input.context ?? ''
+  const subject = input.subject?.trim() ?? ''
+  const context = `${subject} ${input.context ?? ''}`.trim()
   const page = Math.max(1, Math.min(20, Math.floor(input.page ?? 1)))
-  const names = (input.characters?.length ? input.characters : guessNames(q)).map(c => c.trim()).filter(Boolean).slice(0, 2)
+  const names = (input.characters ?? guessNames(q)).map(c => c.trim()).filter(Boolean).slice(0, 2)
   const tags = sceneTags(q, input.tags)
   // meme, fanart e variações (ADR 0020): vale o que a web acha, não o painel do mangá nem o retrato oficial
   const creative = /\b(memes?|fanart|genderswap|genderbend|chibi|cosplay)\b/.test(normalize(q))
-  const mangaFirst = !creative && (input.imageType === 'manga' || /mang|painel|quadrinho/.test(normalize(q)))
-  const key = `${normalize(q)}|${names.map(normalize).join(',')}|${normalize(context)}|${tags.join(',')}|${page}|${mangaFirst}`
+  // o roteiro só escreve "mangá" quando a obra tem mangá (ADR 0024); o estilo sozinho não decide mais
+  const mangaFirst = !creative && /mang|painel|quadrinho/.test(normalize(q))
+  const key = `${normalize(q)}|${names.map(normalize).join(',')}|${normalize(context)}|${tags.join(',')}|${page}`
   const hit = cache.get(key)
   if (hit && Date.now() - hit.at < CACHE_MS) return withoutLibrary(hit.value)
 
   const google = webSearchEnabled().google
-  const googleQuery = [q, ...names.filter(c => !normalize(q).includes(normalize(c)))].join(' ')
+  // a obra vai junto, senão "cena violenta com sangue" traz sangue de qualquer série; no meme não,
+  // porque o meme de reação ("this is fine meme") não é da obra, e o meme da obra já a cita
+  const googleQuery = [q, ...names.filter(c => !normalize(q).includes(normalize(c))), creative || mentions(q, subject) ? '' : subject]
+    .filter(Boolean)
+    .join(' ')
   const [g, w, people] = await Promise.all([
     google ? safe('Google', () => searchGoogle(googleQuery, page)) : null,
     safe('Bing', () => searchBing(googleQuery, page, 'web')),
@@ -235,6 +245,13 @@ async function safe<T>(label: string, fn: () => Promise<T>): Promise<T | null> {
     logger.warn(`⚠️ Busca de imagens (${label}) falhou: ${error.response?.status ?? ''} ${error.message}`)
     return null
   }
+}
+
+/** O texto já cita a obra? Cada palavra do nome tem que aparecer: "edgerunners lucy" não cita "Cyberpunk: Edgerunners". */
+export function mentions(query: string, subject: string) {
+  const words = normalize(subject).split(/[^a-z0-9]+/).filter(w => w.length > 2)
+  const have = normalize(query)
+  return words.every(w => have.includes(w))
 }
 
 /** Sem personagens informados: palavras com cara de nome ("GOKU", "Zoro"). */
@@ -452,15 +469,14 @@ interface DanbooruResult {
 
 async function searchDanbooru(people: { name: string; series: string[] }[], scene: string[], page: number): Promise<DanbooruResult | null> {
   const chars = [...new Set((await Promise.all(people.map(p => characterTag(p.name, p.series)))).filter((t): t is string => Boolean(t)))]
-  if (chars.length === 0 && scene.length === 0) return null
+  // sem personagem, as etiquetas da cena ("cityscape", "night") trazem uma cidade de qualquer anime (ADR 0024)
+  if (chars.length === 0) return null
 
   // visitantes podem usar no máximo 2 etiquetas; "rating" não conta, mas "order" conta
   const specificQueries: string[][] = []
   if (chars.length >= 2) specificQueries.push(chars.slice(0, 2))
-  if (chars.length) for (const t of scene.slice(0, 3)) specificQueries.push([chars[0], t])
-  else if (scene.length >= 2) specificQueries.push(scene.slice(0, 2))
-  else if (scene.length) specificQueries.push([scene[0], 'order:score'])
-  const generalQuery = chars.length ? [chars[0], page === 1 ? 'order:score' : 'order:random'] : null
+  for (const t of scene.slice(0, 3)) specificQueries.push([chars[0], t])
+  const generalQuery = [chars[0], page === 1 ? 'order:score' : 'order:random']
 
   const series = { root: '' }
   const usedTags: string[] = []
@@ -482,7 +498,7 @@ async function searchDanbooru(people: { name: string; series: string[] }[], scen
 
   const [specificLists, generalList] = await Promise.all([
     Promise.all(specificQueries.map(t => run(t, 24, page))),
-    generalQuery ? run(generalQuery, 60, page === 1 ? 1 : 1) : Promise.resolve([]),
+    run(generalQuery, 60, 1),
   ])
   // série principal do personagem ("dragon_ball" cobre dragon_ball_z e dragon_ball_super)
   series.root = seriesRoot([...specificLists.flat(), ...generalList].flatMap(p => String(p.tag_string_copyright ?? '').split(' ').filter(Boolean)))

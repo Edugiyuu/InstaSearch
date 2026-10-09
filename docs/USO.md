@@ -72,12 +72,12 @@ Vale na prévia e no MP4. Se o chat trocar a imagem ou o tipo da cena, o fundo v
 
 ### 5. Trocar imagem
 
-Uma cena por vez ("Cena 1 de 3"). A tela já abre com **sugestões da internet** buscadas a partir do que a cena precisa mostrar:
+Uma cena por vez ("Cena 1 de 3"). A tela já abre com **sugestões da internet** buscadas a partir do que a cena precisa mostrar, junto com a **obra do vídeo** ("Night City visto de cima" vira "… Cyberpunk: Edgerunners"), que o roteiro anota ao escrever ([ADR 0024](decisions/0024-imagens-do-assunto-do-video.md)):
 
 | Fonte | O que traz | Precisa de chave? |
 |---|---|---|
-| Bing Imagens | Resultados gerais e **painéis de mangá** (primeiro, em estilos de mangá) | Não |
-| Danbooru | Ilustrações classificadas como "geral", filtradas pelas etiquetas da cena (`smirk`, `hands_in_pockets`…) | Não |
+| Bing Imagens | Resultados gerais e **painéis de mangá** (primeiro quando a cena pede mangá) | Não |
+| Danbooru | Ilustrações classificadas como "geral" do personagem da cena, filtradas pelas etiquetas (`smirk`, `hands_in_pockets`…); cena sem personagem não usa | Não |
 | AniList | A arte oficial do personagem (desempata "Sakura" pela série do vídeo) | Não |
 | Google Imagens | Via [serper.dev](https://serper.dev), 2.500 buscas grátis | `SERPER_API_KEY` |
 

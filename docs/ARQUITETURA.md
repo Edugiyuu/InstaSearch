@@ -63,7 +63,7 @@ Gasto típico por vídeo: 1 chamada no roteiro, umas 4 para escolher imagens, 1 
 
 ![Como a montagem escolhe as imagens](diagramas/09-montagem-e-imagens.svg)
 
-A regra é a do [ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md): **o personagem é obrigatório, a ação é preferência**. Melhor uma cena vazia, que você vê, do que uma imagem errada, que passa.
+A regra é a do [ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md): **o personagem é obrigatório, a ação é preferência**. Melhor uma cena vazia, que você vê, do que uma imagem errada, que passa. E a imagem tem que ser **do assunto do vídeo** ([ADR 0024](decisions/0024-imagens-do-assunto-do-video.md)): o roteiro anota a obra (`subject`), toda busca a leva, e as duas IAs que escolhem recusam imagem de outra obra, menos o meme de reação.
 
 > **Mudando agora:** o [ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md) tira a biblioteca de imagens da montagem (o losango "Biblioteca tem imagem…"): cada vídeo vai buscar as suas na web. Está em "A fazer" no [BOARD](../BOARD.md).
 
