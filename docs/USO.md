@@ -81,7 +81,7 @@ Uma cena por vez ("Cena 1 de 3"). A tela já abre com **sugestões da internet**
 | AniList | A arte oficial do personagem (desempata "Sakura" pela série do vídeo) | Não |
 | Google Imagens | Via [serper.dev](https://serper.dev), 2.500 buscas grátis | `SERPER_API_KEY` |
 
-**Clique numa** e pronto: ela entra na cena e a tela passa para a próxima. Também dá para colar (Ctrl+V), arrastar um arquivo, colar um link ou buscar outro texto. Cenas marcadas com **meme** ou **variação** (chibi, versão mulher) ganham o botão **😂 Buscar o meme** ([ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md)).
+**Clique numa** e pronto: ela entra na cena e a tela passa para a próxima. Também dá para colar (Ctrl+V), arrastar um arquivo, colar um link ou buscar outro texto. Cerca de 1 cena a cada 3 vem marcada com **meme** ou **variação** (chibi, versão mulher; as variações são as mais comuns), e essas cenas ganham o botão **😂 Buscar o meme** ([ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md)).
 
 ### 6. Publicar
 

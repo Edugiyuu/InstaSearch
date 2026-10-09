@@ -128,9 +128,9 @@ const SUBJECT_HINT =
   "de que obra, pessoa, jogo, time ou marca é o vídeo, com o nome completo que se busca na internet (ex.: 'Cyberpunk: Edgerunners', 'Miraculous Ladybug', 'Neymar'); vazio se o vídeo não é sobre nada específico"
 
 /** Memes e variações (ADR 0020): a imagem que engaja, não só a cena literal. */
-const TWIST_RULE = `Memes e imagens diferentes: em cerca de 1 a cada 4 ou 5 batidas, nos momentos de piada, virada ou reação, preencha "twist" com algo que o público reconhece e comenta:
-- "meme": um meme sobre o assunto do vídeo, mesmo que o assunto seja pesado. Pode ser o meme conhecido do personagem, da obra ou daquele momento (ex.: o Polnareff na cadeira de rodas → "polnareff wheelchair meme"), ou um meme famoso de reação que combina com a fala (ex.: algo deu errado → "this is fine meme"). Escreva a busca em inglês, terminando em "meme"; com o nome do personagem ou da obra quando o meme é deles.
-- "variacao": o personagem da batida de um jeito inesperado, em fanart (versão mulher, chibi, outro traço; ex.: "polnareff genderswap fanart", tags ["genderswap"]). Só em batidas que mostram esse personagem.
+const TWIST_RULE = `Memes e imagens diferentes: em cerca de 1 a cada 3 batidas, preencha "twist" com algo que o público reconhece e comenta:
+- "meme": nos momentos de piada, virada ou reação, um meme sobre o assunto do vídeo, mesmo que o assunto seja pesado. Pode ser o meme conhecido do personagem, da obra ou daquele momento (ex.: o Polnareff na cadeira de rodas → "polnareff wheelchair meme"), ou um meme famoso de reação que combina com a fala (ex.: algo deu errado → "this is fine meme"). Escreva a busca em inglês, terminando em "meme"; com o nome do personagem ou da obra quando o meme é deles.
+- "variacao": o personagem da batida de um jeito inesperado, em fanart (chibi, versão mulher, outro traço; ex.: "tatsumaki chibi fanart", tags ["chibi"]; "polnareff genderswap fanart", tags ["genderswap"]). Só em batidas que mostram esse personagem, e não precisa ser momento de piada: é o tipo mais comum de "twist", use mais variações que memes.
 Só memes e variações que existem de verdade; nada sexual. Nas outras batidas, omita "twist".`
 
 export async function generateScript(input: {

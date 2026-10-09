@@ -71,6 +71,15 @@ Pedido do usuário depois de ver o resultado: poder deixar uma imagem em **tela 
 - Trocar a imagem da cena pelo chat volta para o Automático, porque a escolha foi feita para a imagem anterior. Na tela de troca, a escolha continua.
 - Por que por cena, e não um ajuste para o vídeo todo: a decisão depende de cada imagem (um painel largo com o personagem no centro aguenta o corte; um com dois personagens nas pontas, não). Um padrão do vídeo inteiro pode vir depois, se a escolha cena a cena der trabalho demais.
 
+## Adendo (2026-10-09): mais variações
+
+O usuário gostou da sugestão "✨ Buscar a variação: “tatsumaki chibi fanart”" e pediu que ela aparecesse mais. A decisão 3A continua; muda só a dose:
+
+- de cerca de 1 cena a cada 4 ou 5 para **cerca de 1 a cada 3**;
+- a **variação** passa a ser o tipo mais comum, e não precisa de momento de piada (basta a cena mostrar o personagem); o **meme** continua nos momentos de piada, virada ou reação.
+
+Fica no `TWIST_RULE` (`shortsAI.ts`), que vale para o roteiro e para o chat. Por que no prompt e não num ajuste rápido ("Memes: poucos / médio / muitos", a 3B): o pedido foi "mais", sem pedir controle; o chat continua aceitando "menos variações" para um vídeo só.
+
 ## Alternativas consideradas
 
 As alternativas de cada escolha estão na seção acima, com o motivo de não serem a recomendação.
