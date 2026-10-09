@@ -9,6 +9,7 @@ import {
   EFFECTS_LABEL,
   EffectsLevel,
   errorMessage,
+  FramingChoice,
   imageUrl,
   Pace,
   PACE_LABEL,
@@ -23,8 +24,8 @@ import PublishModal from '../components/PublishModal'
 import { useCatchphrases, useLibrary, useProject, useSounds, useStyles } from '../hooks/useShorts'
 import { ShortPlayer, ShortPlayerHandle } from '../video/ShortPlayer'
 import { voiceTiming } from '../video/timeline'
-import { framing } from '../video/framing'
 import { ScenePick, ScenePickOption } from '../components/ScenePick'
+import { BackdropPick } from '../components/BackdropPick'
 import './Review.css'
 
 /** "se ligaa · clipe pronto · 3,2s" na lista de bordões (sem repetir o tipo quando o nome já é ele) */
@@ -64,16 +65,6 @@ function VoiceSync({ project, onSync }: { project: ShortProject; onSync: () => v
   }
   return <li>Legenda com tempo estimado · {retry('sincronizar com a voz')}</li>
 }
-
-/** O que o automático faz com esta imagem: inteira se for larga, tela cheia se for em pé (ADR 0020). */
-const framingLabel = (img: { width?: number; height?: number }) =>
-  framing(img.width, img.height).mode === 'fit' ? 'inteira' : 'tela cheia'
-
-type FramingChoice = 'auto' | 'cover' | 'fit'
-const FRAMING_LABEL: Record<FramingChoice, string> = { auto: 'Automático', cover: 'Tela cheia', fit: 'Inteira' }
-/** O que o botão do enquadramento mostra: a escolha, ou o que o automático faz com esta imagem. */
-const framingName = (choice: FramingChoice | undefined, img: { width?: number; height?: number }) =>
-  !choice || choice === 'auto' ? `Auto · ${framingLabel(img)}` : FRAMING_LABEL[choice]
 
 const SUGGESTIONS = ['Gancho mais curto', 'Final mais polêmico', 'Mais setas e X', 'Tira uma cena do meio', 'Legenda menor']
 
@@ -211,8 +202,8 @@ function Review() {
     }
   }
 
-  /** Tela cheia, imagem inteira ou automático nesta cena (ADR 0020). */
-  const setFraming = async (value: FramingChoice) => {
+  /** O fundo da cena: tela cheia, inteira, as molduras ou automático (ADR 0020 e 0022). */
+  const setFraming = async (value: 'auto' | FramingChoice) => {
     if (!beat) return
     try {
       setProject(await shortsApi.setBeatFraming(project.id, beat.id, value === 'auto' ? null : value))
@@ -267,20 +258,12 @@ function Review() {
               <button className="sp-chip" onClick={() => navigate(`/projeto/${project.id}/imagens?cena=${beat.id}`)} title="Trocar a imagem desta cena">
                 🖼 Trocar
               </button>
-              {beatImage && beat.scene !== 'evidence' && (
-                <ScenePick label={`⛶ ${framingName(beat.framing, beatImage)}`} title="Enquadramento desta cena">
-                  {close => (Object.keys(FRAMING_LABEL) as FramingChoice[]).map(k => (
-                    <ScenePickOption key={k} on={(beat.framing ?? 'auto') === k} onClick={() => { setFraming(k); close() }}>
-                      {k === 'auto' ? `Automático (${framingLabel(beatImage)})` : FRAMING_LABEL[k]}
-                    </ScenePickOption>
-                  ))}
-                </ScenePick>
-              )}
+              {beatImage && <BackdropPick scene={beat.scene} choice={beat.framing} image={beatImage} onChange={setFraming} />}
               {sfxList.length === 0 ? (
                 <Link to="/biblioteca?aba=sfx" className="sp-chip">🔊 + Efeitos sonoros</Link>
               ) : (
                 <>
-                  <ScenePick className="rv-scene-sfx" label={`🔊 ${beatSound?.name ?? 'sem som'}`} title="Efeito sonoro desta cena">
+                  <ScenePick label={`🔊 ${beatSound?.name ?? 'sem som'}`} title="Efeito sonoro desta cena">
                     {close => (
                       <>
                         <ScenePickOption on={!beat.sfxLocked} onClick={() => { setSfx('auto'); close() }}>

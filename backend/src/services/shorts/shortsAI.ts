@@ -70,6 +70,7 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
       const previous = b.id ? keep.find(k => k.id === b.id) : undefined
       const changedImage = previous && (previous.query !== b.query || String(previous.characters) !== String(b.characters))
       const sound = chosenSound(b.sound, previous, sounds)
+      const scene = SCENES.includes(b.scene as SceneKind) ? (b.scene as SceneKind) : 'full'
       return {
         id: previous?.id ?? `b${Date.now().toString(36)}${i}`,
         say: unquote(b.say ?? b.text),
@@ -79,7 +80,7 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
           ? b.tags.map(t => String(t).trim().toLowerCase().replace(/\s+/g, '_')).filter(Boolean).slice(0, 4)
           : previous?.query === b.query ? previous?.searchTags : undefined,
         characters: Array.isArray(b.characters) ? b.characters.map(String).filter(Boolean) : [],
-        scene: SCENES.includes(b.scene as SceneKind) ? (b.scene as SceneKind) : 'full',
+        scene,
         effect: EFFECTS.includes(b.effect as Effect) ? (b.effect as Effect) : 'none',
         emoji: b.effect === 'emoji' ? String(b.emoji || '😱') : undefined,
         motion: MOTIONS.includes(b.motion as Motion) ? (b.motion as Motion) : 'zoom-in',
@@ -96,8 +97,8 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
         sfxLocked: sound ? true : previous?.sfxLocked,
         // sem "twist" na resposta: mantém o de antes; null tira
         twist: b.twist === undefined && previous ? previous.twist : cleanTwist(b.twist),
-        // escolha do usuário na revisão; com outra imagem, volta para o automático
-        framing: changedImage ? undefined : previous?.framing,
+        // escolha do usuário na revisão; com outra imagem ou outro tipo de cena ("transforma em prova"), volta para o automático
+        framing: changedImage || previous?.scene !== scene ? undefined : previous?.framing,
       }
     })
 }

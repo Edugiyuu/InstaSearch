@@ -25,6 +25,8 @@ export type SceneKind = 'full' | 'evidence'
 export type Effect = 'none' | 'arrow' | 'cross' | 'circle' | 'emoji'
 export type Motion = 'zoom-in' | 'zoom-out' | 'shake' | 'pan'
 export type ImageStatus = 'match' | 'similar' | 'missing'
+/** Fundo escolhido na revisão: tela cheia, inteira, moldura no quadriculado ou moldura sobre a imagem (ADR 0022). */
+export type FramingChoice = 'cover' | 'fit' | 'frame' | 'frame-blur'
 
 export interface Beat {
   id: string
@@ -50,8 +52,8 @@ export interface Beat {
   locked?: boolean
   /** Meme ou variação do personagem que a montagem procura primeiro (ADR 0020). */
   twist?: { kind: 'meme' | 'variacao'; query: string; tags?: string[] }
-  /** Tela cheia ou imagem inteira, escolhido na revisão; sem valor, o automático decide. */
-  framing?: 'cover' | 'fit'
+  /** Fundo escolhido na revisão; sem valor, o automático decide (ADR 0020 e 0022). */
+  framing?: FramingChoice
 }
 
 export type ImagePicker = 'ia' | 'palavras'
@@ -324,7 +326,7 @@ export const shortsApi = {
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/image`, { imageId })),
   /** Efeito sonoro de uma cena: id de um som, null = sem som, 'auto' = a montagem escolhe. */
   /** framing null = automático (ADR 0020). */
-  setBeatFraming: (id: string, beatId: string, framing: 'cover' | 'fit' | null) =>
+  setBeatFraming: (id: string, beatId: string, framing: FramingChoice | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/framing`, { framing })),
   setBeatSfx: (id: string, beatId: string, sfxId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sfx`, { sfxId })),

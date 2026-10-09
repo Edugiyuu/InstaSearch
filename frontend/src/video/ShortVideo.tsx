@@ -4,7 +4,7 @@ import { CSSProperties } from 'react'
 import { AbsoluteFill, Audio, Freeze, Img, interpolate, OffthreadVideo, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import type { ProjectSettings, Region } from '../api/shorts'
 import { CatchphraseProps, focusRegion, MediaProps, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
-import { framing, regionOnScreen } from './framing'
+import { framing, looseFraming, regionOnScreen, sceneLook } from './framing'
 
 const RED = '#E52222'
 const YELLOW = '#FFD60A'
@@ -55,18 +55,19 @@ function BeatScene({ timed, settings }: { timed: TimedBeat; settings: ProjectSet
   const { beat, image } = timed
   const region = focusRegion(beat, image?.regions)
   const flash = timed.index > 0 && (settings.pace === 'frenetico' || (settings.pace === 'rapido' && timed.index % 4 === 0))
+  const look = sceneLook(beat.scene, beat.framing, !!image?.clip)
 
   return (
     <AbsoluteFill>
       {!image ? (
         <MissingImage query={beat.query} />
-      ) : beat.scene === 'evidence' && !image.clip ? (
-        <Evidence src={image.src} />
+      ) : look !== 'full' ? (
+        <Evidence src={image.src} width={image.width} height={image.height} blurred={look === 'frame-blur'} />
       ) : (
         <FullImage src={image.src} timed={timed} region={region} punch={settings.pace !== 'calmo'} />
       )}
 
-      {image && <BeatEffect timed={timed} region={beat.scene === 'evidence' ? undefined : regionOnScreen(region, image.width, image.height, beat.framing)} />}
+      {image && <BeatEffect timed={timed} region={look !== 'full' ? undefined : regionOnScreen(region, image.width, image.height, looseFraming(beat.framing))} />}
 
       {settings.caption === 'completa' ? (
         <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} />
@@ -93,7 +94,7 @@ function FullImage({ src, timed, region, punch }: { src: string; timed: TimedBea
   const cy = center ? center.y + center.h / 2 : 0.4
 
   // o zoom conta o recorte que o cover já faz; imagem larga fica inteira (ADR 0020)
-  const fr = framing(timed.image?.width, timed.image?.height, region, timed.beat.framing)
+  const fr = framing(timed.image?.width, timed.image?.height, region, looseFraming(timed.beat.framing))
   const cap = (s: number) => Math.min(s, fr.maxScale)
 
   let scale = 1
@@ -168,7 +169,17 @@ function ClipVideo({ src, clip, frames, style }: { src: string; clip: { start: n
   )
 }
 
-function Evidence({ src }: { src: string }) {
+/** Área máxima da imagem emoldurada, no vídeo de 1080×1920. */
+const EVIDENCE_BOX = { w: 960, h: 1250 }
+
+/** O maior tamanho com a proporção da imagem que cabe na área da moldura. */
+function boxSize(width: number, height: number) {
+  const scale = Math.min(EVIDENCE_BOX.w / width, EVIDENCE_BOX.h / height)
+  return { width: Math.round(width * scale), height: Math.round(height * scale) }
+}
+
+/** A imagem numa moldura inclinada; o fundo é o quadriculado das provas ou a própria imagem desfocada (ADR 0022). */
+function Evidence({ src, width, height, blurred }: { src: string; width?: number; height?: number; blurred?: boolean }) {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
   const enter = spring({ frame, fps, config: { damping: 14, stiffness: 160 } })
@@ -178,16 +189,23 @@ function Evidence({ src }: { src: string }) {
     <AbsoluteFill
       style={{
         backgroundColor: '#16171b',
-        backgroundImage: `repeating-linear-gradient(0deg, ${grid} 0 2px, transparent 2px 72px), repeating-linear-gradient(90deg, ${grid} 0 2px, transparent 2px 72px)`,
+        backgroundImage: blurred ? undefined : `repeating-linear-gradient(0deg, ${grid} 0 2px, transparent 2px 72px), repeating-linear-gradient(90deg, ${grid} 0 2px, transparent 2px 72px)`,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
+      {blurred && (
+        // o mesmo desfoque do modo inteira, para as duas cenas combinarem
+        <Img src={src} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(36px) brightness(0.5)', transform: 'scale(1.2)' }} />
+      )}
       <Img
         src={src}
         style={{
-          maxWidth: 960,
-          maxHeight: 1250,
+          // com o tamanho conhecido, a moldura ocupa a área toda (uma imagem pequena também cresce);
+          // sem ele, uma largura mínima faz a pequena crescer, e a altura acompanha a proporção
+          ...(width && height
+            ? boxSize(width, height)
+            : { minWidth: EVIDENCE_BOX.w * 0.65, maxWidth: EVIDENCE_BOX.w, maxHeight: EVIDENCE_BOX.h, objectFit: 'contain' as const }),
           border: '14px solid #fff',
           borderRadius: 6,
           boxShadow: '0 30px 80px rgba(0,0,0,0.6)',

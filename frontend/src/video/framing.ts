@@ -5,7 +5,7 @@
  * dois terços da largura, o que já é um zoom. O movimento da cena tem que contar esse recorte;
  * antes, o zoom-in ia até 1,9× por cima dele, e num close sobrava só um pedaço do rosto.
  */
-import type { Region } from '../api/shorts'
+import type { FramingChoice, Region, SceneKind } from '../api/shorts'
 
 const FRAME_ASPECT = 1080 / 1920
 
@@ -69,3 +69,20 @@ export function regionOnScreen(region: Region | undefined, width?: number, heigh
   const left = (1 - band) / 2
   return { ...region, x: left + region.x * band, w: region.w * band }
 }
+
+/** Como a cena aparece: a imagem solta (tela cheia ou inteira) ou numa moldura, com o fundo quadriculado ou desfocado. */
+export type SceneLook = 'full' | 'frame' | 'frame-blur'
+
+/**
+ * A escolha do usuário na revisão vale mais que o roteiro; no automático, a cena de prova vai na moldura
+ * (ADR 0022). Um trecho de vídeo nunca vai na moldura: a moldura só sabe mostrar imagem parada.
+ */
+export function sceneLook(scene: SceneKind, choice?: FramingChoice, isClip?: boolean): SceneLook {
+  if (isClip) return 'full'
+  if (choice === 'frame' || choice === 'frame-blur') return choice
+  if (choice) return 'full'
+  return scene === 'evidence' ? 'frame' : 'full'
+}
+
+/** A parte da escolha que vale para a imagem solta (tela cheia ou inteira); moldura e automático não forçam nada. */
+export const looseFraming = (choice?: FramingChoice) => (choice === 'cover' || choice === 'fit' ? choice : undefined)

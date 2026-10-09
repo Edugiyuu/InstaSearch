@@ -99,13 +99,14 @@
   font-weight: 500;
 }
 
-/* uma linha só: o som (nome mais comprido) encolhe com reticências */
+/* uma linha só: os menus (fundo e som) encolhem com reticências, mas nunca somem */
 .rv-scene > * {
   flex-shrink: 0;
 }
 
-.rv-scene > .rv-scene-sfx {
+.rv-scene > .sp {
   flex-shrink: 1;
+  min-width: 72px;
 }
 
 .rv-scene {

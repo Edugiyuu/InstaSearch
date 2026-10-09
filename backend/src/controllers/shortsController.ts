@@ -21,6 +21,7 @@ import { fetchThumb, searchWebImages } from '../services/shorts/imageSearch.js'
 import { ensureWhisper, whisperStatus } from '../services/shorts/transcription.js'
 import * as tones from '../services/shorts/tones.js'
 import { suggestTone } from '../services/shorts/shortsAI.js'
+import { FRAMING_CHOICES, type FramingChoice } from '../services/shorts/types.js'
 
 const MAX_IMAGE = 15 * 1024 * 1024
 
@@ -100,10 +101,10 @@ export const setBeatImage = asyncHandler(async (req: Request, res: Response) => 
   res.json({ success: true, data: await projects.setBeatImage(id, beatId, req.body.imageId ?? null) })
 })
 
-/** Body: { framing: 'cover' | 'fit' | null } → tela cheia, imagem inteira ou automático. */
+/** Body: { framing: 'cover' | 'fit' | 'frame' | 'frame-blur' | null } → o fundo da cena, ou automático (null). */
 export const setBeatFraming = asyncHandler(async (req: Request, res: Response) => {
   const { id, beatId } = req.params
-  const framing = req.body.framing === 'cover' || req.body.framing === 'fit' ? req.body.framing : null
+  const framing = FRAMING_CHOICES.includes(req.body.framing) ? (req.body.framing as FramingChoice) : null
   res.json({ success: true, data: await projects.setBeatFraming(id, beatId, framing) })
 })
 

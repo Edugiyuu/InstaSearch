@@ -44,6 +44,9 @@ export type SceneKind = 'full' | 'evidence'
 export type Effect = 'none' | 'arrow' | 'cross' | 'circle' | 'emoji'
 export type Motion = 'zoom-in' | 'zoom-out' | 'shake' | 'pan'
 export type ImageStatus = 'match' | 'similar' | 'missing'
+/** Fundo escolhido na revisão: tela cheia, inteira, moldura no quadriculado ou moldura sobre a imagem (ADR 0022). */
+export type FramingChoice = 'cover' | 'fit' | 'frame' | 'frame-blur'
+export const FRAMING_CHOICES: FramingChoice[] = ['cover', 'fit', 'frame', 'frame-blur']
 
 export interface Beat {
   id: string
@@ -83,7 +86,7 @@ export interface Beat {
    * Enquadramento escolhido pelo usuário na revisão: tela cheia (cover) ou a imagem inteira sobre o
    * fundo desfocado (fit). Sem valor, o automático do ADR 0020 decide pelo formato da imagem.
    */
-  framing?: 'cover' | 'fit'
+  framing?: FramingChoice
 }
 
 export interface BeatTwist {

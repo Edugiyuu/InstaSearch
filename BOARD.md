@@ -10,7 +10,6 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## A fazer
 
-- [ ] Fundo da cena: pop-up com 5 opções (Automático, Tela cheia, Inteira, Moldura no quadriculado, Moldura sobre a imagem), com miniaturas ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 4A)
 - [ ] Figurinhas: ajuste "Nenhuma / Poucas / Muitas" e escolha na cena ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 2C)
 - [ ] Imagens só da web: tirar da montagem as imagens da biblioteca, o ajuste "Quem escolhe as imagens" e a aba Imagens ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 1B)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
@@ -19,6 +18,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Backlog
 
+- [ ] 5 imagens da biblioteca sem largura e altura (o `imageSize` com ffprobe falhou nelas; uma é um JPEG salvo como `.webp`): sem a medida, o enquadramento e a moldura usam o plano B
 - [ ] Configurar o ESLint no frontend: não há arquivo de configuração, então o `npm run lint` falha antes de analisar qualquer arquivo
 - [ ] Configurar o Jest no frontend (timeline do vídeo e `video/align.ts`)
 - [ ] IA: desistir do Gemini mais cedo quando a rede falha (hoje espera ~60 s antes de passar para o Claude; alternativa 1B do [ADR 0017](docs/decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md))
@@ -38,6 +38,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-09 · Fundo da cena: pop-up com 5 opções (Automático, Tela cheia, Inteira, Moldura no quadriculado, Moldura sobre a imagem), com miniaturas feitas com a imagem da cena ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 4A)
 - [x] 2026-10-09 · Documentação enxuta: README de visão geral, guias em `docs/` (uso, instalação, arquitetura), CONTRIBUTING e 15 diagramas em SVG; saem 14 docs antigos e os scripts de teste manual ([ADR 0023](docs/decisions/0023-documentacao-enxuta-com-diagramas.md))
 - [x] 2026-10-08 · Revisão: controles da cena (trocar imagem, enquadramento, som) numa linha sob a faixa de cenas, com menus, sem rolar ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md))
 - [x] 2026-10-08 · Token do Instagram fora do código: `add-token.js` lê do argumento ou do `.env`, e o token antigo foi invalidado na Meta

@@ -14,7 +14,7 @@ import { listSounds, syncSoundUsage } from './sounds.js'
 import { normalize } from './library.js'
 import { transcribeAudio, WHISPER_MODEL } from './transcription.js'
 import { BUILT_IN_TONES, getTone, toneByName } from './tones.js'
-import type { AiCredit, Beat, ProjectSettings, ShortProject, Transcript } from './types.js'
+import type { AiCredit, Beat, FramingChoice, ProjectSettings, ShortProject, Transcript } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const AUDIO_DIR = path.join(__dirname, '../../../data/short_projects/audio')
@@ -393,8 +393,8 @@ export async function autoFillImages(id: string) {
   return { project: saved, added, total: pending.length, results }
 }
 
-/** Editor: tela cheia, imagem inteira ou automático (null) numa cena. */
-export async function setBeatFraming(id: string, beatId: string, framing: 'cover' | 'fit' | null) {
+/** Editor: o fundo da cena (tela cheia, inteira, as molduras) ou automático (null). */
+export async function setBeatFraming(id: string, beatId: string, framing: FramingChoice | null) {
   const project = await getProject(id)
   const beat = project.beats.find(b => b.id === beatId)
   if (!beat) throw new AppError('Cena não encontrada', 404, 'NOT_FOUND')
