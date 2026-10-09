@@ -1,6 +1,6 @@
 /**
  * Fluxo tema → Short: projetos, biblioteca de imagens e estilos.
- * Especificação em docs/AUTO_EDIT.md.
+ * Como o fluxo funciona: docs/USO.md e docs/ARQUITETURA.md.
  */
 
 import { Request, Response } from 'express'

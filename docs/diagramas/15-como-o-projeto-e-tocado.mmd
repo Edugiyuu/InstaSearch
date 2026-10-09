@@ -1,0 +1,7 @@
+flowchart LR
+    BL["Backlog<br/>ideias soltas"] --> AF["A fazer<br/>em ordem de prioridade"]
+    AF --> FZ["Fazendo<br/><b>no máximo 1</b>"]
+    FZ --> EX["Explicação<br/>o quê · por quê ·<br/>alternativas · conceitos"]
+    EX -- "dúvida ou<br/>outro caminho" --> FZ
+    EX --> CM["1 commit no master<br/>+ tarefa em Feito"]
+    FZ -. "surgiu algo fora<br/>do escopo" .-> BL

@@ -1,4 +1,4 @@
-// Modelo do fluxo tema → Short (docs/AUTO_EDIT.md).
+// Modelo do fluxo tema → Short (docs/ARQUITETURA.md, "O projeto e as cenas").
 // O frontend tem uma cópia destes tipos em frontend/src/api/shorts.ts.
 
 export type Pace = 'calmo' | 'normal' | 'rapido' | 'frenetico'

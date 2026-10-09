@@ -178,7 +178,7 @@ function Settings() {
                 <button className="act" onClick={handleDisconnect} disabled={busy}>
                   ⏻ Desconectar
                 </button>
-                <a className="act" href="https://github.com/Edugiyuu/InstaSearch/blob/master/docs/INSTAGRAM.md" target="_blank" rel="noreferrer">
+                <a className="act" href="https://github.com/Edugiyuu/InstaSearch/blob/master/docs/INSTALACAO.md#conectar-o-instagram" target="_blank" rel="noreferrer">
                   ? Como gerar o token
                 </a>
               </>
@@ -187,7 +187,7 @@ function Settings() {
                 <button className="act" onClick={() => setTokenOpen(true)}>
                   + Conectar com token
                 </button>
-                <a className="act" href="https://github.com/Edugiyuu/InstaSearch/blob/master/docs/INSTAGRAM.md" target="_blank" rel="noreferrer">
+                <a className="act" href="https://github.com/Edugiyuu/InstaSearch/blob/master/docs/INSTALACAO.md#conectar-o-instagram" target="_blank" rel="noreferrer">
                   ? Como gerar o token
                 </a>
               </>
@@ -256,7 +256,7 @@ function Settings() {
                   + Conectar canal
                 </button>
               )}
-              <a className="act" href="https://github.com/Edugiyuu/InstaSearch/blob/master/docs/YOUTUBE.md" target="_blank" rel="noreferrer">
+              <a className="act" href="https://github.com/Edugiyuu/InstaSearch/blob/master/docs/INSTALACAO.md#conectar-o-youtube" target="_blank" rel="noreferrer">
                 ? Como configurar
               </a>
             </>
@@ -461,7 +461,7 @@ function Settings() {
             </button>
             <h2>Conectar Instagram</h2>
             <p className="meta">
-              Cole o token de acesso de longa duração gerado no Graph API Explorer (veja docs/INSTAGRAM.md).
+              Cole o token de acesso de longa duração gerado no Graph API Explorer (veja docs/INSTALACAO.md, "Conectar o Instagram").
             </p>
             <textarea
               className="field"

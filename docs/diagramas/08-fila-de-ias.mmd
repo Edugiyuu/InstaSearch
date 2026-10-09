@@ -1,0 +1,8 @@
+flowchart TD
+    Q["Pedido de IA"] --> G{"Gemini<br/>grátis, com limite diário"}
+    G -- "respondeu" --> OK["✅ Resposta<br/>+ selo de quem fez"]
+    G -- "cota 429, erro 5xx<br/>ou rede" --> CA{"Claude API<br/>Sonnet 5.5, pago por uso"}
+    CA -- "respondeu" --> OK
+    CA -- "falhou ou<br/>sem chave" --> CC{"Claude Code<br/>do seu plano Pro/Max"}
+    CC -- "respondeu" --> OK
+    CC -- "falhou" --> ERR["❌ Mensagem na tela"]

@@ -52,3 +52,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0020](0020-imagens-especificas-memes-e-zoom.md) | Imagens específicas, memes e zoom na medida | Aceita |
 | [0021](0021-ideias-a-partir-do-desempenho.md) | Ideias de vídeo a partir do que funcionou no Instagram e no YouTube | Aceita |
 | [0022](0022-imagens-da-web-e-controles-da-cena.md) | Imagens só da web, sem biblioteca de imagens, e controles à mão na cena | Aceita |
+| [0023](0023-documentacao-enxuta-com-diagramas.md) | Documentação enxuta em poucos arquivos, com diagramas | Aceita |

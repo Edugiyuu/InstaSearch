@@ -1,0 +1,18 @@
+flowchart TD
+    A["💡 Tema<br/>estilo, tom, duração"] --> B["📝 Roteiro<br/>a IA pesquisa e escreve"]
+    B --> C["🎙️ Sua voz<br/>você grava e sobe"]
+    C --> D["🧩 Montagem<br/>automática"]
+    D --> E["👀 Revisão<br/>prévia ao vivo"]
+    E -- "pedido" --> AJ["✨ Peça um ajuste<br/>a IA refaz as cenas"]
+    AJ --> E
+    E --> F["🎬 MP4<br/>1080×1920"]
+    F --> G["📲 Instagram<br/>▶️ YouTube"]
+    G -. "métricas" .-> H["📊 Ideias"]
+    H -. "próximo tema" .-> A
+
+    classDef voce fill:#FFD60A,stroke:#8a7300,color:#000
+    classDef ia fill:#9cc3ff,stroke:#2b5ea8,color:#000
+    classDef app fill:#8fe0b0,stroke:#23764a,color:#000
+    class A,C,E voce
+    class B,H,AJ ia
+    class D,F,G app

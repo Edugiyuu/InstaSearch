@@ -1,0 +1,12 @@
+flowchart TD
+    B["Cena do roteiro<br/>o que mostrar, personagens,<br/>etiquetas, meme?"] --> L{"Biblioteca tem imagem<br/>com o personagem conferido?"}
+    L -- "sim" --> OK["✅ entra na cena"]
+    L -- "não" --> MISS["🟥 falta imagem<br/>(nunca entra imagem errada)"]
+    MISS --> AUTO["✨ Preencher automático"]
+    MISS --> HAND["🖼 Trocar imagem<br/>(você escolhe)"]
+    AUTO --> SRCH["Busca na web<br/>meme primeiro, depois a cena"]
+    SRCH --> TOP["4 melhores por cena"]
+    TOP --> VIS{"A IA olha as miniaturas<br/>(~5 cenas por chamada):<br/>mostra o personagem?"}
+    VIS -- "sim" --> OK
+    VIS -- "nenhuma mostra" --> HAND
+    HAND --> OK

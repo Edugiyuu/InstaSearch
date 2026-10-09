@@ -1,0 +1,14 @@
+sequenceDiagram
+    actor U as Você
+    participant FE as Navegador
+    participant BE as Backend
+    participant W as Whisper
+
+    U->>FE: sobe o áudio
+    FE->>BE: envia o áudio
+    Note over FE: usa tempo estimado<br/>enquanto espera
+    BE->>W: transcreve (fila)
+    W-->>BE: palavras + tempo
+    BE->>BE: guarda no projeto
+    FE->>FE: align.ts casa<br/>roteiro × fala
+    FE-->>U: cortes no tempo da voz

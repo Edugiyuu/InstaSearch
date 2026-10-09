@@ -1,0 +1,50 @@
+classDiagram
+    direction LR
+    class ShortProject {
+        title, theme
+        styleId, toneGuide
+        duration
+        narration
+        status
+        audioFile
+        musicId
+        render
+        published
+    }
+    class Beat {
+        say
+        text
+        query
+        characters
+        scene
+        effect
+        imageId
+        imageStatus
+        framing
+        sfxId, sfxLocked
+        stickerId
+        twist
+    }
+    class ProjectSettings {
+        pace
+        effects
+        caption
+        intro, outro
+    }
+    class Transcript {
+        words com tempo
+    }
+    class AiCredit {
+        provider, model
+        fallback
+        queries
+    }
+    class AdjustEntry {
+        request
+        reply
+    }
+    ShortProject "1" *-- "muitas" Beat : beats
+    ShortProject *-- ProjectSettings : settings
+    ShortProject *-- Transcript : transcript
+    ShortProject *-- AiCredit : ai
+    ShortProject *-- AdjustEntry : history

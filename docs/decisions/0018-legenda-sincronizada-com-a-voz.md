@@ -25,7 +25,7 @@ O usuário escolheu a recomendação do Claude nas cinco escolhas: **1A, 2A, 3A,
 
 - **1A (escolhida): whisper.cpp no computador**, pelo `@remotion/install-whisper-cpp`. Gratuito e offline. Com `tokenLevelTimestamps`, devolve cada palavra com início e fim, usando DTW (um método que casa o áudio com o texto quadro a quadro) para tempos mais precisos. No Windows, o pacote baixa um programa pronto (sem compilar nada). Leva alguns segundos a algumas dezenas de segundos por vídeo curto.
 - 1B: Gemini ouvindo o áudio. Já está integrado e não instala nada, mas modelo de linguagem não é relógio: os tempos vêm aproximados, às vezes na casa do segundo, e podem ser inventados. Além disso, depende do Gemini estar no ar (e ele caiu várias vezes nesta semana).
-- 1C: API paga de transcrição (Deepgram, AssemblyAI, ElevenLabs Scribe). Tempos bons e rápidos, mas custa por minuto, exige chave e manda sua voz para fora, contra o "gratuito por padrão" do [PURPOSE](../PURPOSE.md).
+- 1C: API paga de transcrição (Deepgram, AssemblyAI, ElevenLabs Scribe). Tempos bons e rápidos, mas custa por minuto, exige chave e manda sua voz para fora, contra o "gratuito por padrão" do [PURPOSE](https://github.com/Edugiyuu/InstaSearch/blob/3eef5d4/docs/PURPOSE.md).
 - 1D: alinhador forçado de verdade (WhisperX, Montreal Forced Aligner). É o mais preciso, mas traz Python, PyTorch e gigabytes de dependências para um projeto Node.
 - 1E: só detectar as pausas com o ffmpeg (`silencedetect`) e encaixar as cenas nelas. Não instala nada e melhora os cortes, mas não resolve a legenda palavra por palavra.
 

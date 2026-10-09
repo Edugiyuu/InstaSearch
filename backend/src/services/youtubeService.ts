@@ -2,7 +2,7 @@
  * YouTube: conexão por OAuth do Google e envio de Shorts pela YouTube Data API v3.
  *
  * Precisa de um cliente OAuth ("App da Web") no Google Cloud com a YouTube Data API v3 ativada:
- * YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET e YOUTUBE_REDIRECT_URI no backend/.env (ver docs/YOUTUBE.md).
+ * YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET e YOUTUBE_REDIRECT_URI no backend/.env (ver docs/INSTALACAO.md, "Conectar o YouTube").
  * O token fica em data/youtube/account.json; o refresh_token renova o acesso sozinho.
  *
  * As métricas (ADR 0021) usam a Data API (visualizações, curtidas, comentários) e a YouTube
@@ -50,7 +50,7 @@ function config() {
 function requireConfig() {
   const c = config()
   if (!c.configured) {
-    throw new AppError('Configure YOUTUBE_CLIENT_ID e YOUTUBE_CLIENT_SECRET no backend/.env (ver docs/YOUTUBE.md).', 503, 'YOUTUBE_NOT_CONFIGURED')
+    throw new AppError('Configure YOUTUBE_CLIENT_ID e YOUTUBE_CLIENT_SECRET no backend/.env (ver docs/INSTALACAO.md, "Conectar o YouTube").', 503, 'YOUTUBE_NOT_CONFIGURED')
   }
   return c as { clientId: string; clientSecret: string; redirectUri: string }
 }
@@ -246,7 +246,7 @@ function youtubeError(error: any): never {
   if (error instanceof AppError) throw error
   if (reason === 'quotaExceeded') throw new AppError('A cota diária da API do YouTube acabou. Tente amanhã.', 429, 'YOUTUBE_QUOTA')
   if (reason === 'accessNotConfigured' || /has not been used|is disabled/i.test(message)) {
-    throw new AppError('Ative a "YouTube Analytics API" no seu projeto do Google Cloud (ver docs/YOUTUBE.md).', 503, 'YOUTUBE_ANALYTICS_OFF')
+    throw new AppError('Ative a "YouTube Analytics API" no seu projeto do Google Cloud (ver docs/INSTALACAO.md, "Conectar o YouTube").', 503, 'YOUTUBE_ANALYTICS_OFF')
   }
   if (error.response?.status === 403) throw new AppError('Conecte o YouTube de novo em Configurações para liberar as métricas.', 403, 'YOUTUBE_SCOPE')
   throw new AppError(`YouTube: ${message}`, 502, 'YOUTUBE_ERROR')

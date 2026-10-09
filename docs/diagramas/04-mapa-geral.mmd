@@ -1,0 +1,22 @@
+flowchart TB
+    FE["🖥️ <b>Frontend</b><br/>React + Vite · :5173"]
+    VID["🎞️ <b>video/</b><br/>composição Remotion"]
+    BE["⚙️ <b>Backend</b><br/>Express + TypeScript · :3000/api"]
+    FE --> VID
+    FE -- "HTTP · JSON" --> BE
+    SCH["⏰ Agendador<br/>a cada 1 min"] --> BE
+    BE --> LOCAL
+    BE --> EXT
+    subgraph LOCAL["💻 No seu computador"]
+        direction LR
+        WH["🎙️ Whisper"]
+        RD["🎬 render.mjs<br/>MP4"]
+        DATA[("📁 backend/data/")]
+    end
+    subgraph EXT["🌐 Na internet"]
+        direction LR
+        AI["🤖 Gemini → Claude"]
+        WEB["🔎 Imagens da web"]
+        PUBL["📲 Instagram · ▶️ YouTube"]
+    end
+    RD -. "mesmo código" .-> VID

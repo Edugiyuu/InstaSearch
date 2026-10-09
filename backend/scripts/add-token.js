@@ -7,7 +7,7 @@ import path from 'path'
 import { nanoid } from 'nanoid'
 
 // Token gerado no Meta for Developers: argumento da linha de comando ou INSTAGRAM_ACCESS_TOKEN no .env.
-// Nunca escreva o token aqui: este arquivo é versionado (ver docs/INSTAGRAM.md).
+// Nunca escreva o token aqui: este arquivo é versionado (ver docs/INSTALACAO.md, "Conectar o Instagram").
 const ACCESS_TOKEN = process.argv[2] || process.env.INSTAGRAM_ACCESS_TOKEN
 
 if (!ACCESS_TOKEN) {

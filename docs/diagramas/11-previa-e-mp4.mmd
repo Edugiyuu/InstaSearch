@@ -1,0 +1,9 @@
+flowchart TB
+    subgraph V["frontend/src/video/ · um código só"]
+        SV["ShortVideo.tsx<br/>cenas, molduras, legendas,<br/>setas, figurinhas, sons"]
+        TL["timeline.ts · align.ts · framing.ts<br/>quando cada coisa aparece"]
+    end
+    V --> PL["@remotion/player<br/>👀 prévia no navegador,<br/>sem renderizar"]
+    BE["backend<br/>shorts/render.ts"] -- "abre um processo" --> RM["frontend/scripts/render.mjs<br/>@remotion/renderer + Chrome headless"]
+    V --> RM
+    RM --> MP4["🎬 MP4 1080×1920 · 30 fps<br/>data/short_projects/renders/"]

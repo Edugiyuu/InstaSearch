@@ -1,0 +1,10 @@
+flowchart TD
+    PUB["📲 Vídeo publicado"] --> COL["Coleta diária<br/>Instagram + YouTube"]
+    COL --> FOT["Fotos dos números<br/>aos 1, 7 e 28 dias"]
+    FOT --> CMP["Compara com a mediana<br/>dos seus vídeos na mesma idade"]
+    CMP --> BR["🤖 Brainstorm<br/>+ comentários do público<br/>+ pesquisa na web"]
+    BR --> ID["6 ideias, cada uma<br/>com as provas"]
+    ID -- "Guardar" --> BANK["Banco de ideias"]
+    ID -- "Descartar + motivo<br/>(a IA lê no próximo lote)" --> BR
+    BANK -- "Criar vídeo" --> NEW["Novo vídeo<br/>já preenchido"]
+    NEW --> PUB

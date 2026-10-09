@@ -1,0 +1,8 @@
+flowchart TB
+    subgraph F["Frontend"]
+        F1["<b>página</b><br/>o que aparece na tela<br/><i>pages/Review.tsx</i>"] --> F2["<b>hook</b><br/>guarda loading e error<br/><i>hooks/useShorts.ts</i>"] --> F3["<b>api</b><br/>chama o backend<br/><i>api/shorts.ts</i>"]
+    end
+    subgraph B["Backend"]
+        B1["<b>route</b><br/>URL → função<br/><i>routes/api.ts</i>"] --> B2["<b>controller</b><br/>lê o pedido, responde<br/><i>shortsController.ts</i>"] --> B3["<b>service</b><br/>a lógica de verdade<br/><i>services/shorts/projects.ts</i>"] --> B4["<b>storage</b><br/>lê e grava o JSON<br/><i>FileStorage.ts</i>"]
+    end
+    F3 -- "HTTP" --> B1

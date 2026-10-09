@@ -1,0 +1,12 @@
+flowchart TD
+    N["<b>1. Novo vídeo</b><br/>/novo"] -- "Gerar roteiro" --> R["<b>2. Roteiro e voz</b><br/>/projeto/:id/roteiro"]
+    R -- "Montar automaticamente" --> M["<b>3. Montagem</b><br/>/projeto/:id/montagem<br/><i>você só assiste</i>"]
+    M -- "abre sozinha" --> V["<b>4. Revisão</b><br/>/projeto/:id"]
+    V -- "falta imagem" --> T["<b>5. Trocar imagem</b><br/>/projeto/:id/imagens"]
+    T --> V
+    V -- "Peça um ajuste" --> V
+    V --> P["<b>6. Publicar</b><br/>modal"]
+    V --> S["Salvar para depois<br/>Projetos → Salvos"]
+    P --> IG["Instagram Reels"]
+    P --> YT["YouTube Shorts"]
+    P --> DL["⬇ Baixar MP4"]

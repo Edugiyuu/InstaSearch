@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant M as Publicar
+    participant BE as Backend
+    participant CL as Cloudinary
+    participant IG as Instagram
+    participant YT as YouTube
+
+    M->>BE: gerar MP4
+    M->>BE: Instagram
+    BE->>CL: sobe o MP4
+    CL-->>BE: URL pública
+    BE->>IG: cria o Reel
+    IG-->>BE: link
+    BE->>CL: apaga o MP4
+    M->>BE: YouTube
+    BE->>YT: envia o Short
+    YT-->>BE: link
+    BE-->>M: Publicado ✅

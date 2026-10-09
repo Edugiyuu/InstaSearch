@@ -1,0 +1,15 @@
+sequenceDiagram
+    actor U as Você
+    participant PG as Review.tsx
+    participant CT as Controller
+    participant SV as projects.ts
+    participant IA as llm.ts
+
+    U->>PG: "cena 6: põe um X"
+    PG->>CT: POST .../adjust
+    CT->>SV: adjust()
+    SV->>IA: cenas + pedido
+    IA-->>SV: cenas novas
+    Note over SV: desfaz o que mudou<br/>fora da cena 6<br/>e grava o JSON
+    SV-->>PG: projeto novo
+    PG-->>U: prévia muda

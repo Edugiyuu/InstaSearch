@@ -1,39 +1,85 @@
-# Contribuindo com o InstaSearch
+# Como contribuir
 
-Obrigado pelo interesse! Antes de começar, leia o [propósito](docs/PURPOSE.md) e o [roadmap](docs/ROADMAP.md). Contribuições alinhadas aos princípios do projeto têm muito mais chance de serem aceitas.
+Os princípios, o estado do projeto e o jeito de trabalhar. O código em si está explicado em [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
 
-## Princípios que guiam as revisões
+## Princípios do projeto
 
-- **Custo zero por padrão:** recursos pagos são opcionais e ficam atrás de um provider.
-- **Só APIs oficiais:** PRs com scraping ou automação contra os termos do Instagram não são aceitos.
-- **Humano no controle:** nada é publicado sem revisão do usuário.
-- **PT-BR primeiro:** textos de interface e mensagens ao usuário em português.
+1. **Você decide, a IA executa.** A IA sugere, você aprova.
+2. **Sem dados de mentira.** Nenhuma tela mostra exemplo inventado ou prévia falsa: o que você vê é o que sai.
+3. **Gratuito por padrão.** O motor (Remotion, Whisper, FFmpeg) roda local e de graça. Só custa o que você escolher.
+4. **Sem prender a um fornecedor.** A IA tem reserva: se o Gemini cair, entra o Claude.
+5. **Seus dados ficam com você.** Projetos, biblioteca, tokens e métricas ficam em `backend/data/`.
+6. **PT-BR primeiro.**
 
-## Ambiente
+## Estado atual e próximos passos
 
-Siga o [SETUP.md](docs/SETUP.md). Para desenvolver, você precisa de uma conta Instagram Business/Creator de teste.
+| Parte | Estado |
+|---|---|
+| Tema → roteiro com pesquisa → voz → montagem → revisão → MP4 | ✅ Funciona |
+| Peça um ajuste, desfazer, ajustes rápidos, controles da cena | ✅ Funciona |
+| Legenda e cortes no tempo da voz (Whisper) | ✅ Funciona |
+| Publicar no Instagram e no YouTube, agendar | ✅ Funciona |
+| Ideias a partir das métricas | ✅ Funciona |
+| Fundo da cena em 5 opções | 🔨 Fazendo agora |
+| Imagens só da web, figurinhas por cena | 📋 A fazer ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
+| Ferramentas antigas (perfis, análises, gerador de prompts) | ⚠️ Legado, quase tudo *stub* |
 
-## Fluxo
+O dia a dia está no [BOARD.md](BOARD.md). Para onde o projeto vai depois:
 
-1. Abra uma issue descrevendo o problema ou a proposta. Para algo grande, espere um retorno antes de codar.
-2. Crie uma branch a partir de `master`: `feat/legendas-ass`, `fix/token-expiracao`, `docs/...`.
-3. Faça commits pequenos no padrão [Conventional Commits](https://www.conventionalcommits.org/pt-br/) (o histórico já usa): `feat:`, `fix:`, `docs:`, `refactor:`, `test:`.
-4. Garanta que compila: `npm run build` no backend e no frontend.
-5. Abra o PR explicando **o quê**, **por quê** e **como testar**.
+![Próximos passos](docs/diagramas/14-proximos-passos.svg)
 
-## Padrões de código
+**Fora do escopo, de propósito:** depender de IA geradora de vídeo, scraping, bots de seguir/curtir e virar SaaS.
 
-- TypeScript nos dois lados. Evite `any` em código novo.
-- **Backend:** `routes → controllers → services → storage`. Controllers ficam finos; a lógica vai em services. Use `asyncHandler` e `AppError`.
-- **Frontend:** `página → hook → services/api.ts`. CSS puro com as variáveis existentes (sem Tailwind).
-- **Vídeo (`video/`):** cada tipo de cena ou camada é um componente Remotion que recebe só os seus dados do `EditPlan`. Ele precisa ser determinístico (nada de `Math.random()` sem semente; use `random()` do Remotion) e funcionar igual no player e no render. Mudou o formato do plano? Atualize `video/src/schema.ts` primeiro.
-- Serviços externos novos (IA, TTS, transcrição, hospedagem) entram como **provider** com interface, nunca chamados direto do controller. Veja [ARCHITECTURE.md](docs/ARCHITECTURE.md#arquitetura-alvo-próximas-fases).
-- **Nunca** coloque tokens, chaves ou IDs de conta reais no código, em scripts ou na documentação.
+## Fluxo de trabalho
 
-## Documentação
+O projeto é feito por uma pessoa com a ajuda do Claude. O fluxo existe para o dono **entender cada mudança**, não só aceitar código gerado ([ADR 0014](docs/decisions/0014-board-em-arquivo-e-commit-por-tarefa.md)).
 
-Mudou o comportamento? Atualize o documento correspondente em `docs/` e o status no [ROADMAP](docs/ROADMAP.md) no mesmo PR.
+![Como uma tarefa anda](docs/diagramas/15-como-o-projeto-e-tocado.svg)
 
-## Por onde começar
+- **Board:** [BOARD.md](BOARD.md). Quem decide a prioridade é o dono.
+- **Decisões:** quando há alternativas reais, é caro desfazer ou vira regra, escreve-se um **ADR** em [docs/decisions/](docs/decisions/README.md). Decisão grande ainda em aberto vira ADR *Proposta* e espera a escolha. Um ADR nunca é apagado: se a ideia muda, um novo substitui o antigo.
+- **Commits:** [Conventional Commits](https://www.conventionalcommits.org/pt-br/) em PT-BR (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`). A primeira linha diz *o quê*; o corpo diz *por quê*.
+- **Diagramas:** cada um é um arquivo de texto [Mermaid](https://mermaid.js.org/) em [`docs/diagramas/`](docs/diagramas/) (`.mmd`), transformado numa imagem `.svg` que os documentos mostram. Para mudar um, edite o `.mmd` e gere a imagem de novo (veja [Comandos](#comandos)).
+- **Pronto quando:** compila (`npx tsc --noEmit -p backend` e `-p frontend`), a tela foi testada no navegador (se mudou), a documentação (README e `docs/`) e o BOARD estão atualizados e a mudança foi explicada.
 
-Itens bons para uma primeira contribuição estão na Fase 0 do [ROADMAP](docs/ROADMAP.md), por exemplo: apagar o vídeo do Cloudinary depois de publicar, remover a dependência `openai` não usada e configurar o Vitest.
+## Regras de código
+
+- **TypeScript nos dois lados.** Evite `any` em código novo.
+- **Backend:** `routes → controllers → services → storage`. Lógica no service; erro com `AppError`.
+- **Frontend:** `página → hook → api`. CSS puro com as variáveis de `styles/index.css` (tema escuro, fonte Inter, amarelo `--accent`).
+- **Vídeo** (`frontend/src/video/`): tem que dar o mesmo resultado na prévia e no MP4. Nada de `Math.random()` sem semente.
+- **Produto** ([ADR 0011](docs/decisions/0011-editor-automatico.md)): a IA sugere e você aprova; sem linha do tempo nem trilhas; controle por cena só se começar no Automático; **sem dados de mentira nem prévias falsas**.
+- **Nunca** coloque tokens ou chaves no código. Use o `.env`.
+
+## Comandos
+
+```bash
+npm --prefix backend test
+```
+
+```bash
+npx tsc --noEmit -p backend
+```
+
+```bash
+npx tsc --noEmit -p frontend
+```
+
+Para gerar de novo as imagens dos diagramas, depois de editar um `.mmd` (na primeira vez, baixa o gerador e um navegador):
+
+```powershell
+Get-ChildItem docs/diagramas/*.mmd | ForEach-Object { npx -y @mermaid-js/mermaid-cli@11.4.2 -c docs/diagramas/mermaid.json -b white -i $_.FullName -o ($_.FullName -replace '\.mmd$', '.svg') }
+```
+
+Os testes usam Jest, só no backend por enquanto ([ADR 0015](docs/decisions/0015-framework-de-testes.md)); ficam ao lado do código (`*.test.ts`). O `tsc` do backend ainda acusa 18 erros antigos, que estão no BOARD.
+
+## As decisões em um quadro
+
+| Área | ADRs |
+|---|---|
+| Como decidir e trabalhar | [0001](docs/decisions/0001-registrar-decisoes-com-adrs.md) ADRs · [0014](docs/decisions/0014-board-em-arquivo-e-commit-por-tarefa.md) board e commit por tarefa · [0015](docs/decisions/0015-framework-de-testes.md) Jest · [0023](docs/decisions/0023-documentacao-enxuta-com-diagramas.md) documentação com diagramas |
+| Dados e infraestrutura | [0002](docs/decisions/0002-armazenamento-em-json.md) JSON sem banco · [0003](docs/decisions/0003-cloudinary-para-url-publica.md) Cloudinary · [0012](docs/decisions/0012-render-em-processo-separado.md) render em processo separado |
+| IA | [0004](docs/decisions/0004-gemini-com-reserva-automatica.md) Gemini com reserva · [0005](docs/decisions/0005-claude-code-do-plano-como-provedor.md) Claude Code do plano · [0006](docs/decisions/0006-remover-openai.md) sem OpenAI · [0008](docs/decisions/0008-claude-sonnet-como-reserva.md) Sonnet 5.5 como reserva |
+| Produto e edição | [0009](docs/decisions/0009-remotion-para-composicao.md) Remotion · [0011](docs/decisions/0011-editor-automatico.md) editor automático · [0016](docs/decisions/0016-bordoes-de-abertura-e-final.md) bordões · [0017](docs/decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md) chat na cena certa · [0018](docs/decisions/0018-legenda-sincronizada-com-a-voz.md) legenda no tempo da voz · [0019](docs/decisions/0019-roteiro-com-argumento-e-tons-proprios.md) roteiro com argumento · [0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md) imagens específicas e memes · [0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md) ideias · [0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md) imagens da web e controles da cena |
+
+Substituídas (ficam pelo histórico): [0007](docs/decisions/0007-claude-haiku-como-reserva.md), [0010](docs/decisions/0010-biblioteca-de-imagens-em-vez-de-geracao.md) (em parte), [0013](docs/decisions/0013-workflow-kanban-github-projects.md).

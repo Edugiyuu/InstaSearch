@@ -1,6 +1,6 @@
 # Board
 
-O que está sendo feito, o que vem depois e o que já foi entregue. Como funciona no [ADR 0014](docs/decisions/0014-board-em-arquivo-e-commit-por-tarefa.md); a visão de longo prazo fica no [ROADMAP](docs/ROADMAP.md).
+O que está sendo feito, o que vem depois e o que já foi entregue. Como funciona no [ADR 0014](docs/decisions/0014-board-em-arquivo-e-commit-por-tarefa.md); a visão de longo prazo fica no [CONTRIBUTING.md](CONTRIBUTING.md#estado-atual-e-próximos-passos).
 
 **Regras:** no máximo **1 tarefa em "Fazendo"**. Ideia nova no meio do trabalho vai para o Backlog. Cada tarefa termina num commit próprio, que também atualiza este arquivo. A ordem das listas é a prioridade: a primeira de "A fazer" é a próxima.
 
@@ -27,11 +27,18 @@ _(nada; escolha a próxima em "A fazer")_
 - [ ] Criptografar os tokens em `data/instagram_accounts/`
 - [ ] Apagar o vídeo do Cloudinary depois de publicar
 - [ ] Validar os ids que vêm da URL antes de virarem nome de arquivo em todas as rotas (hoje `/shorts/projects/..%2F…` chega ao `FileStorage`; as ideias já validam)
-- [ ] ADR 0023: criação autônoma de vídeos, sem publicar (escrever depois de implementar o [ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md); a maior decisão é a voz)
-- [ ] Demais itens da Fase 0 do [ROADMAP](docs/ROADMAP.md#fase-0-fundação-e-segurança-prioridade-imediata)
+- [ ] ADR 0024: criação autônoma de vídeos, sem publicar (escrever depois de implementar o [ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md); a maior decisão é a voz)
+- [ ] Instagram: ler a expiração real do token (`/debug_token`) em vez de estimar 60 dias
+- [ ] Instagram: trocar sozinho para um token de Página, que não expira
+- [ ] Instagram: unificar o OAuth (Instagram Login × Facebook Login) ou remover o fluxo quebrado
+- [ ] Unificar a publicação das telas antigas (`videoController`) com a do `instagramGraphService.publishReel`
+- [ ] Agendar o `cleanupOldFiles()` sem apagar vídeos de posts pendentes
+- [ ] Decidir o destino de `backend/data/virtual_characters/` (sobra de uma funcionalidade abandonada)
+- [ ] Remover as "Ferramentas antigas" (telas, controllers e hooks da primeira versão) ou decidir quais ficam
 
 ## Feito
 
+- [x] 2026-10-09 · Documentação enxuta: README de visão geral, guias em `docs/` (uso, instalação, arquitetura), CONTRIBUTING e 15 diagramas em SVG; saem 14 docs antigos e os scripts de teste manual ([ADR 0023](docs/decisions/0023-documentacao-enxuta-com-diagramas.md))
 - [x] 2026-10-08 · Revisão: controles da cena (trocar imagem, enquadramento, som) numa linha sob a faixa de cenas, com menus, sem rolar ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md))
 - [x] 2026-10-08 · Token do Instagram fora do código: `add-token.js` lê do argumento ou do `.env`, e o token antigo foi invalidado na Meta
 - [x] 2026-10-08 · Editor de tom: campos não encolhem mais quando o modal passa da altura da tela

@@ -1,13 +1,13 @@
 # InstaSearch — instruções para o Claude
 
-App pessoal e *self-hosted* que transforma um tema num Short narrado: roteiro (IA) → voz → montagem automática com a biblioteca de imagens → prévia no Remotion → render MP4 → publicar no Instagram e no YouTube. Propósito em [docs/PURPOSE.md](docs/PURPOSE.md), arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+App pessoal e *self-hosted* que transforma um tema num Short narrado: roteiro (IA) → voz → montagem automática com a biblioteca de imagens → prévia no Remotion → render MP4 → publicar no Instagram e no YouTube. Documentação ([ADR 0023](docs/decisions/0023-documentacao-enxuta-com-diagramas.md)): visão geral no [README.md](README.md), uso em [docs/USO.md](docs/USO.md), código em [docs/ARQUITETURA.md](docs/ARQUITETURA.md), instalação em [docs/INSTALACAO.md](docs/INSTALACAO.md), princípios e regras no [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **Idioma:** conversa, documentação, textos da interface e mensagens de commit em **PT-BR**. Nomes de código em inglês, como já está.
 
 ## Antes de mudar algo
 
 1. Leia o ADR da área em [docs/decisions/](docs/decisions/README.md). Se a mudança contraria um ADR **Aceito**, pare e avise o usuário antes: diga o que a decisão original perde.
-2. Siga os padrões de código do [CONTRIBUTING.md](CONTRIBUTING.md) (backend `routes → controllers → services → storage`, frontend `página → hook → api`, providers para serviços externos, nada de segredos no código).
+2. Siga as regras de código do [CONTRIBUTING.md](CONTRIBUTING.md#regras-de-código) (backend `routes → controllers → services → storage`, frontend `página → hook → api`, providers para serviços externos, nada de segredos no código).
 3. Regras de produto do [ADR 0011](docs/decisions/0011-editor-automatico.md): editor automático, a IA sugere e o usuário aprova, sem linha do tempo/trilhas, **sem dados de mentira nem prévias falsas**.
 
 ## Workflow (ver [ADR 0014](docs/decisions/0014-board-em-arquivo-e-commit-por-tarefa.md))
@@ -36,7 +36,7 @@ Branch só para experimento arriscado, que talvez seja descartado. Sem PRs.
 
 - [ ] Compila: `npx tsc --noEmit -p backend` e `-p frontend` sem erros novos
 - [ ] Se mudou a interface: testado no navegador (preview `frontend` em `.claude/launch.json`)
-- [ ] Documentação em `docs/` e status no [ROADMAP](docs/ROADMAP.md) atualizados, se o comportamento mudou
+- [ ] Documentação atualizada, se o comportamento mudou: o guia certo em `docs/` (e o diagrama em `docs/diagramas/`) e o "Estado atual" do [CONTRIBUTING.md](CONTRIBUTING.md)
 - [ ] ADR escrito, se a tarefa tomou uma decisão importante (critérios abaixo)
 - [ ] Mudança explicada ao usuário (o quê, por quê, alternativas) e dúvidas respondidas
 - [ ] `BOARD.md` atualizado no mesmo commit
