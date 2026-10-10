@@ -116,6 +116,10 @@
   margin: 10px auto 0;
 }
 
+.rv-scene-2 {
+  margin-top: 6px;
+}
+
 /* Chat */
 .rv-chat {
   display: flex;

@@ -7,14 +7,14 @@ import { generateId } from '../../utils/idGenerator.js'
 import { logger } from '../../utils/logger.js'
 import { getStyle } from './styles.js'
 import { CHANNEL_CATCHPHRASE_ID, defaultCatchphrases } from './catchphrases.js'
-import { forgetProject, importImageFromUrl, matchBeats, pickSfx, syncUsage } from './library.js'
+import { forgetProject, importImageFromUrl, listStickers, matchBeats, pickSfx, refreshStickers, syncUsage } from './library.js'
 import { fetchThumb, searchWebImages, type WebImage } from './imageSearch.js'
 import { adjustBeats, generateScript, pickWebImagesWithAI } from './shortsAI.js'
 import { listSounds, syncSoundUsage } from './sounds.js'
 import { normalize } from './library.js'
 import { transcribeAudio, WHISPER_MODEL } from './transcription.js'
 import { BUILT_IN_TONES, getTone, toneByName } from './tones.js'
-import type { AiCredit, Beat, FramingChoice, ProjectSettings, ShortProject, Transcript } from './types.js'
+import { STICKER_LEVELS, type AiCredit, type Beat, type FramingChoice, type ProjectSettings, type ShortProject, type Transcript } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const AUDIO_DIR = path.join(__dirname, '../../../data/short_projects/audio')
@@ -132,6 +132,9 @@ export async function updateProject(id: string, changes: Partial<ShortProject>) 
     next.settings = { ...project.settings, ...changes.settings }
     const volume = next.settings.sfxVolume
     if (volume !== undefined) next.settings.sfxVolume = typeof volume === 'number' && Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : undefined
+    if (next.settings.stickers && !STICKER_LEVELS.includes(next.settings.stickers)) next.settings.stickers = project.settings.stickers
+    // "Figurinhas: Nenhuma" tira as automáticas na hora; voltar põe de novo (as da cena ficam)
+    if (next.settings.stickers !== project.settings.stickers) next.beats = await refreshStickers(id, next.beats, next.settings.stickers)
   }
   if (Array.isArray(changes.beats)) {
     next.undo = [project.beats, ...project.undo].slice(0, MAX_UNDO)
@@ -162,6 +165,7 @@ export async function assemble(id: string) {
     title: project.title,
     subject: subjectOf(project),
     narration: project.narration,
+    stickers: project.settings.stickers,
   })
   project.beats = beats
   if (ai) project.ai = { ...project.ai, images: ai }
@@ -193,6 +197,7 @@ export async function adjust(id: string, request: string, openScene?: number) {
   })
 
   const changed = out.beats !== project.beats
+  const stickers = out.settings.stickers
   const { beats, ai } = changed
     ? await matchBeats(out.beats, id, {
         ai: (project.settings.imagePicker ?? 'ia') === 'ia',
@@ -200,8 +205,11 @@ export async function adjust(id: string, request: string, openScene?: number) {
         subject: subjectOf(project),
         narration: out.narration,
         keepExisting: true,
+        stickers,
       })
-    : { beats: project.beats, ai: undefined }
+    : stickers !== project.settings.stickers
+      ? { beats: await refreshStickers(id, project.beats, stickers), ai: undefined }
+      : { beats: project.beats, ai: undefined }
 
   project.undo = [project.beats, ...project.undo].slice(0, MAX_UNDO)
   project.beats = beats
@@ -440,6 +448,26 @@ export async function setBeatSfx(id: string, beatId: string, sfxId: string | nul
   }
   // o volume da cena foi acertado para o som de antes
   if (project.beats[index].sfxId !== beat.sfxId) delete project.beats[index].sfxVolume
+  return save(project)
+}
+
+/**
+ * Editor: a figurinha da cena (ADR 0022, 2C). stickerId = uma figurinha da biblioteca (aparece mesmo
+ * numa cena sem reação), null = nenhuma, 'auto' = a montagem escolhe de novo. A escolha fica travada.
+ */
+export async function setBeatSticker(id: string, beatId: string, stickerId: string | null) {
+  const project = await getProject(id)
+  const index = project.beats.findIndex(b => b.id === beatId)
+  if (index < 0) throw new AppError('Cena não encontrada', 404, 'NOT_FOUND')
+  const beat = project.beats[index]
+  if (stickerId === 'auto') {
+    project.beats[index] = { ...beat, stickerLocked: false, stickerId: undefined }
+  } else {
+    if (stickerId && !(await listStickers()).some(s => s.id === stickerId)) throw new AppError('Essa figurinha não está na biblioteca', 400, 'VALIDATION')
+    project.beats[index] = { ...beat, stickerId: stickerId ?? undefined, stickerLocked: true }
+  }
+  // escolhe de novo o automático e o som que depende da figurinha (o "pop")
+  project.beats = await refreshStickers(id, project.beats, project.settings.stickers)
   return save(project)
 }
 

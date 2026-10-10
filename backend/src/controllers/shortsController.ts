@@ -225,6 +225,13 @@ export const setBeatSfx = asyncHandler(async (req: Request, res: Response) => {
   res.json({ success: true, data: await projects.setBeatSfx(req.params.id, req.params.beatId, sfxId) })
 })
 
+/** PUT /shorts/projects/:id/beats/:beatId/sticker { stickerId: id | null | 'auto' } → figurinha da cena */
+export const setBeatSticker = asyncHandler(async (req: Request, res: Response) => {
+  const raw = req.body?.stickerId
+  const stickerId = raw === null || raw === undefined || raw === '' ? null : String(raw)
+  res.json({ success: true, data: await projects.setBeatSticker(req.params.id, req.params.beatId, stickerId) })
+})
+
 /** PUT /shorts/projects/:id/beats/:beatId/sfx-volume { volume: número | null } → volume do efeito na cena */
 export const setBeatSfxVolume = asyncHandler(async (req: Request, res: Response) => {
   const raw = req.body?.volume

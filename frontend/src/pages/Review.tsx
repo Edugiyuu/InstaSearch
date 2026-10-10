@@ -18,6 +18,8 @@ import {
   ShortProject,
   shortsApi,
   soundUrl,
+  StickerLevel,
+  STICKERS_LABEL,
 } from '../api/shorts'
 import { AiBadge, SearchList, Segmented, Spinner, useToast } from '../components/flow'
 import PublishModal from '../components/PublishModal'
@@ -26,6 +28,7 @@ import { ShortPlayer, ShortPlayerHandle } from '../video/ShortPlayer'
 import { DEFAULT_SFX_VOLUME, sfxVolume, voiceTiming } from '../video/timeline'
 import { ScenePick, ScenePickOption } from '../components/ScenePick'
 import { BackdropPick } from '../components/BackdropPick'
+import { StickerChoice, StickerPick } from '../components/StickerPick'
 import './Review.css'
 
 /** "se ligaa · clipe pronto · 3,2s" na lista de bordões (sem repetir o tipo quando o nome já é ele) */
@@ -66,6 +69,14 @@ function VoiceSync({ project, onSync }: { project: ShortProject; onSync: () => v
   return <li>Legenda com tempo estimado · {retry('sincronizar com a voz')}</li>
 }
 
+/** O pedido ao chat quando o ajuste "Figurinhas" muda a quantidade de reações (Nenhuma não precisa da IA). */
+const STICKERS_REQUEST: Record<Exclude<StickerLevel, 'nenhuma'>, string> = {
+  muitas:
+    'Figurinhas "Muitas": ponha uma reação (effect emoji, com "sticker") em cerca de 1 a cada 3 cenas, nos momentos de emoção, nas cenas sem efeito. Não tire setas nem X e não mude a narração.',
+  poucas:
+    'Figurinhas "Poucas": deixe a reação (effect emoji) só nos 2 ou 3 momentos mais fortes; nas outras, use effect "none". Não mexa nas setas e X nem na narração.',
+}
+
 const SUGGESTIONS = ['Gancho mais curto', 'Final mais polêmico', 'Mais setas e X', 'Tira uma cena do meio', 'Legenda menor']
 
 /** Um controle de volume do pop-up do som, em %. Ao soltar, toca o efeito para ouvir como ficou. */
@@ -103,7 +114,7 @@ function Review() {
   const [params] = useSearchParams()
   const initialBeat = Math.max(0, Number(params.get('cena') ?? 1) - 1)
   const { project, setProject, error, loading } = useProject(id)
-  const { byId, reload: reloadLibrary } = useLibrary()
+  const { images, byId, reload: reloadLibrary } = useLibrary()
   const { sounds, byId: soundsById } = useSounds()
   const { catchphrases, byId: catchphraseById } = useCatchphrases()
   const { styles } = useStyles()
@@ -172,6 +183,20 @@ function Review() {
       return shortsApi.adjust(project.id, `Efeitos "${EFFECTS_LABEL[effects]}": ajuste a quantidade de setas, X, círculos e emojis, sem mudar a narração.`)
     })
 
+  /**
+   * Nenhuma: tira as figurinhas automáticas na hora, sem IA. Muitas: a IA põe reações em mais cenas.
+   * Poucas: volta às reações que a IA já tinha posto; vindo de Muitas, a IA tira as que sobram.
+   * Nos três, as figurinhas escolhidas na cena ficam.
+   */
+  const setStickers = (stickers: StickerLevel) => {
+    const from = project.settings.stickers ?? 'poucas'
+    run(`Figurinhas: ${STICKERS_LABEL[stickers].toLowerCase()}`, async () => {
+      const saved = await shortsApi.updateProject(project.id, { settings: { stickers } })
+      const askAI = stickers === 'muitas' || (stickers === 'poucas' && from === 'muitas')
+      return askAI ? shortsApi.adjust(project.id, STICKERS_REQUEST[stickers as Exclude<StickerLevel, 'nenhuma'>]) : saved
+    })
+  }
+
   const repickImages = (label: string) => run(label, async () => (await shortsApi.assemble(project.id)).project)
 
   const setPicker = (imagePicker: ImagePicker) =>
@@ -218,6 +243,8 @@ function Review() {
   const beat = project.beats[current]
   const beatImage = beat?.imageId ? byId.get(beat.imageId) : undefined
   const sfxList = sounds.filter(s => s.kind === 'sfx')
+  const stickerList = images.filter(i => i.kind === 'figurinha')
+  const beatSticker = beat?.stickerId ? byId.get(beat.stickerId) : undefined
   const beatSound = beat?.sfxId ? soundsById.get(beat.sfxId) : undefined
 
   // editor: o usuário escolhe o efeito sonoro da cena (fica travado; "auto" devolve para a montagem)
@@ -229,6 +256,16 @@ function Review() {
       setProject(await shortsApi.setBeatSfx(project.id, beat.id, sfxId))
       // som novo: o ajuste da cena volta a 100%, então toca no volume do vídeo
       if (sound) playSound(sound.id, videoSfxVolume)
+    } catch (e) {
+      toast.show(errorMessage(e))
+    }
+  }
+
+  /** A figurinha da cena (ADR 0022, 2C): uma da biblioteca, nenhuma ou automático. */
+  const setSticker = async (choice: StickerChoice) => {
+    if (!beat) return
+    try {
+      setProject(await shortsApi.setBeatSticker(project.id, beat.id, choice))
     } catch (e) {
       toast.show(errorMessage(e))
     }
@@ -365,6 +402,22 @@ function Review() {
                   </ScenePick>
                   <button className="sp-chip" onClick={() => playSound(beat.sfxId, sfxVolume(project.settings, beat))} disabled={!beatSound} title="Ouvir o efeito desta cena">▶</button>
                 </>
+              )}
+            </div>
+          )}
+          {beat && (
+            // segunda linha, para a primeira não ficar apertada
+            <div className="rv-scene rv-scene-2" key={`${beat.id}-figurinha`}>
+              {stickerList.length === 0 ? (
+                <Link to="/biblioteca?aba=figurinhas" className="sp-chip">😮 + Figurinhas</Link>
+              ) : (
+                <StickerPick
+                  stickers={stickerList}
+                  current={beatSticker}
+                  locked={!!beat.stickerLocked}
+                  context={`${project.subject ?? project.theme} ${beat.characters.join(' ')}`}
+                  onChange={setSticker}
+                />
               )}
             </div>
           )}
@@ -521,6 +574,14 @@ function Review() {
             <div className="rv-knob">
               <span>Efeitos</span>
               <Segmented value={project.settings.effects} options={EFFECTS_LABEL} onChange={setEffects} disabled={!!working} />
+            </div>
+            <div className="rv-knob">
+              <span>Figurinhas</span>
+              {stickerList.length ? (
+                <Segmented value={project.settings.stickers ?? 'poucas'} options={STICKERS_LABEL} onChange={setStickers} disabled={!!working} />
+              ) : (
+                <Link to="/biblioteca?aba=figurinhas" className="act">+ Adicionar figurinhas à biblioteca</Link>
+              )}
             </div>
             <div className="rv-knob">
               <span>Legenda</span>

@@ -64,6 +64,14 @@ O usuário escolheu **1B, 2C, 3B e 4A**.
 - 4B: só um botão "Tirar a moldura" nas cenas de prova. É o mínimo, mas não deixa pôr moldura numa cena comum nem trocar o quadriculado.
 - 4C: um ajuste do vídeo inteiro ("Molduras: nunca / quando a IA quiser"). Resolve "nunca quero moldura", mas não "nesta cena, não".
 
+**Como ficou a figurinha (2C), em 2026-10-10:**
+
+- **Na cena:** pop-up "😮 Figurinha" com miniaturas (`StickerPick.tsx`), com as figurinhas do assunto do vídeo primeiro. A escolha grava `stickerLocked` (rota `PUT …/beats/:beatId/sticker`), e o `pickSticker` (`library.ts`) a devolve sem mudar.
+- **A figurinha não substitui o efeito.** Em vez de trocar a seta por `effect: emoji`, ela é desenhada fora do efeito (`<Sticker>` em `ShortVideo.tsx`): numa cena com seta, as duas aparecem. Assim, voltar ao Automático devolve a cena exatamente como a IA fez, sem perder a seta. O "pop" do som também vale para a figurinha escolhida.
+- **O chat não mexe numa figurinha travada**, nem quando põe uma reação na cena (no teste, o ajuste "Muitas" pôs uma reação na cena travada e apagava a escolha). Para trocar ou tirar, o caminho é o pop-up. A figurinha automática continua mudando quando o chat muda a reação.
+- **No vídeo:** `settings.stickers` (sem valor = Poucas). **Nenhuma** não chama a IA: as automáticas saem na hora (`refreshStickers`), e voltar a Poucas as põe de novo. **Muitas** pede ao chat reações em cerca de 1 cena a cada 3, e **Poucas**, vindo de Muitas, pede para tirar as que sobram. O chat também conhece o ajuste ("tira as figurinhas" vira Nenhuma).
+- **Limite:** a figurinha automática é escolhida pelas etiquetas da reação. Com uma biblioteca de figurinhas de outras obras, "Muitas" põe a reação, mas a cena fica sem figurinha (no teste, 6 de 8).
+
 ## Alternativas consideradas
 
 As alternativas de cada escolha estão na seção acima, com o motivo de não serem a recomendação (ou de o usuário não ter escolhido).

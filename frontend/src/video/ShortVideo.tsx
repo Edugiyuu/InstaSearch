@@ -68,6 +68,8 @@ function BeatScene({ timed, settings }: { timed: TimedBeat; settings: ProjectSet
       )}
 
       {image && <BeatEffect timed={timed} region={look !== 'full' ? undefined : regionOnScreen(region, image.width, image.height, looseFraming(beat.framing))} />}
+      {/* fora do efeito: a figurinha escolhida na cena aparece também junto de uma seta ou de um X */}
+      {image && timed.stickerSrc && <Sticker timed={timed} />}
 
       {settings.caption === 'completa' ? (
         <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} />
@@ -326,29 +328,34 @@ function BeatEffect({ timed, region }: { timed: TimedBeat; region?: Region }) {
         </svg>
       )
     }
-    case 'emoji':
-      // a reação só aparece com figurinha da biblioteca; emoji desenhado no vídeo não fica bom
-      if (timed.stickerSrc) {
-        return (
-          <Img
-            src={timed.stickerSrc}
-            style={{
-              position: 'absolute',
-              right: 50,
-              top: 230,
-              width: 420,
-              height: 420,
-              objectFit: 'contain',
-              transform: `scale(${pop}) rotate(${Math.sin(f / 4) * 6 - 4}deg)`,
-              filter: 'drop-shadow(0 12px 20px rgba(0,0,0,0.55))',
-            }}
-          />
-        )
-      }
-      return null
     default:
+      // 'emoji': a reação é a figurinha (<Sticker>); emoji desenhado no vídeo não fica bom
       return null
   }
+}
+
+/** Figurinha de reação: entra no mesmo tempo dos efeitos, com um pulo, e balança. */
+function Sticker({ timed }: { timed: TimedBeat }) {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+  const f = frame - Math.min(4, Math.floor(timed.frames * 0.15))
+  if (f < 0 || !timed.stickerSrc) return null
+  const pop = spring({ frame: f, fps, config: { damping: 9, stiffness: 220 } })
+  return (
+    <Img
+      src={timed.stickerSrc}
+      style={{
+        position: 'absolute',
+        right: 50,
+        top: 230,
+        width: 420,
+        height: 420,
+        objectFit: 'contain',
+        transform: `scale(${pop}) rotate(${Math.sin(f / 4) * 6 - 4}deg)`,
+        filter: 'drop-shadow(0 12px 20px rgba(0,0,0,0.55))',
+      }}
+    />
+  )
 }
 
 // ── Bordões (abertura e final) ───────────────────────────

@@ -63,3 +63,20 @@ describe('cleanBeats: o volume do efeito na cena', () => {
     expect(beat.sfxVolume).toBeUndefined()
   })
 })
+
+describe('cleanBeats: a figurinha escolhida na cena (ADR 0022, 2C)', () => {
+  /** Cena sem reação em que o usuário pôs uma figurinha pelo pop-up. */
+  const chosen: Beat = { ...previous, effect: 'none', stickerId: 'stk_1', stickerLocked: true }
+
+  it('fica quando o chat põe uma reação na cena (ex.: o ajuste "Muitas")', () => {
+    const [beat] = cleanBeats([{ ...chosen, stickerId: undefined, stickerLocked: undefined, effect: 'emoji', sticker: 'brava' }], [chosen])
+    expect(beat.stickerId).toBe('stk_1')
+    expect(beat.stickerLocked).toBe(true)
+  })
+
+  it('a automática sai quando o chat muda a reação, para a montagem escolher outra', () => {
+    const auto: Beat = { ...previous, effect: 'emoji', sticker: 'chocado', stickerId: 'stk_2' }
+    const [beat] = cleanBeats([{ ...auto, stickerId: undefined, sticker: 'rindo' }], [auto])
+    expect(beat.stickerId).toBeUndefined()
+  })
+})

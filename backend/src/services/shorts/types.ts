@@ -3,6 +3,9 @@
 
 export type Pace = 'calmo' | 'normal' | 'rapido' | 'frenetico'
 export type EffectsLevel = 'poucos' | 'medida' | 'muitos'
+/** Quantas figurinhas o vídeo leva (ADR 0022, 2C); a escolha feita na cena vale mais. */
+export type StickerLevel = 'nenhuma' | 'poucas' | 'muitas'
+export const STICKER_LEVELS: StickerLevel[] = ['nenhuma', 'poucas', 'muitas']
 /** quadrinho = 1 a 3 palavras-chave; completa = todas as palavras, uma acendendo por vez */
 export type CaptionMode = 'quadrinho' | 'completa' | 'limpa' | 'sem'
 export type MusicMood = 'tensa' | 'animada' | 'calma' | 'sem'
@@ -70,6 +73,11 @@ export interface Beat {
   /** Reação para a figurinha quando effect = emoji (ex.: "chocado"). */
   sticker?: string
   stickerId?: string
+  /**
+   * true quando o usuário escolheu a figurinha na cena (uma da biblioteca, ou nenhuma); a montagem
+   * e o ajuste "Figurinhas" do vídeo não trocam mais. Figurinha escolhida aparece mesmo sem reação.
+   */
+  stickerLocked?: boolean
   /** Efeito sonoro pedido pela IA (ex.: "whoosh", "boom"). */
   sfx?: string
   sfxId?: string
@@ -117,6 +125,8 @@ export interface ProjectSettings {
   outro?: string | null
   /** Volume de todos os efeitos sonoros do vídeo (0 a 1; sem valor = 0,75). */
   sfxVolume?: number
+  /** Quantas figurinhas (sem valor = poucas: onde a IA pôs uma reação). */
+  stickers?: StickerLevel
 }
 
 export type AiProvider = 'gemini' | 'claude' | 'claude-code'

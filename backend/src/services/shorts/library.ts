@@ -12,7 +12,7 @@ import { normalize } from './text.js'
 import { imageSize } from './videoScenes.js'
 
 export { normalize }
-import type { AiCredit, AssemblyLogEntry, Beat, ImageStatus, LibraryImage, MediaKind, SoundItem } from './types.js'
+import type { AiCredit, AssemblyLogEntry, Beat, ImageStatus, LibraryImage, MediaKind, SoundItem, StickerLevel } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const LIBRARY_FILES_DIR = path.join(__dirname, '../../../data/library/files')
@@ -372,6 +372,8 @@ export interface MatchOptions {
   narration?: string
   /** Mantém as imagens que as cenas já têm (usado depois de um ajuste, para só preencher as novas). */
   keepExisting?: boolean
+  /** O ajuste "Figurinhas" do vídeo. */
+  stickers?: StickerLevel
 }
 
 /**
@@ -384,8 +386,6 @@ export async function matchBeats(beats: Beat[], projectId: string, opts: MatchOp
   const images = all.filter(i => i.kind !== 'figurinha' && i.kind !== 'video' && (i.catalogued || i.tags.length || i.characters.length))
   const stickers = all.filter(i => i.kind === 'figurinha')
   const sfx = await listSounds('sfx')
-  const stickerUses = new Map<string, number>()
-  const sfxUses = new Map<string, number>()
   const usedHere = new Map<string, number>()
   const keep = (b: Beat) => !!b.imageId && (b.locked || opts.keepExisting)
   for (const b of beats) if (keep(b)) usedHere.set(b.imageId!, (usedHere.get(b.imageId!) ?? 0) + 1)
@@ -487,16 +487,35 @@ export async function matchBeats(beats: Beat[], projectId: string, opts: MatchOp
     })
     return { ...beat, imageId, imageStatus: status }
   })
-    // figurinhas e efeitos sonoros (não dependem de a imagem estar travada)
-    .map((beat, index) => {
-      const withSticker = { ...beat, stickerId: pickSticker(beat, stickers, stickerUses) }
-      const sfxId = pickSfx(withSticker, index, sfx, sfxUses)
-      // o volume da cena foi acertado para aquele som; com outro, volta ao normal
-      return { ...withSticker, sfxId, sfxVolume: sfxId === beat.sfxId ? beat.sfxVolume : undefined }
-    })
 
-  await syncUsage(projectId, result)
-  return { beats: result, log, ai }
+  // figurinhas e efeitos sonoros (não dependem de a imagem estar travada)
+  const withExtras = stickersAndSfx(result, stickers, sfx, opts.stickers)
+  await syncUsage(projectId, withExtras)
+  return { beats: withExtras, log, ai }
+}
+
+/** Figurinha e efeito sonoro de cada batida; o que o usuário escolheu na cena fica. */
+function stickersAndSfx(beats: Beat[], stickers: LibraryImage[], sfx: SoundItem[], level?: StickerLevel) {
+  const stickerUses = new Map<string, number>()
+  const sfxUses = new Map<string, number>()
+  return beats.map((beat, index) => {
+    const withSticker = { ...beat, stickerId: pickSticker(beat, stickers, stickerUses, level) }
+    const sfxId = pickSfx(withSticker, index, sfx, sfxUses)
+    // o volume da cena foi acertado para aquele som; com outro, volta ao normal
+    return { ...withSticker, sfxId, sfxVolume: sfxId === beat.sfxId ? beat.sfxVolume : undefined }
+  })
+}
+
+export const listStickers = async () => (await storage.findAll()).filter(i => i.kind === 'figurinha')
+
+/**
+ * Escolhe de novo as figurinhas (e os sons que dependem delas) sem mexer nas imagens:
+ * depois do ajuste "Figurinhas" do vídeo ou de uma escolha na cena.
+ */
+export async function refreshStickers(projectId: string, beats: Beat[], level?: StickerLevel) {
+  const next = stickersAndSfx(beats, await listStickers(), await listSounds('sfx'), level)
+  await syncUsage(projectId, next)
+  return next
 }
 
 /** Reações parecidas: "chocado" acha uma figurinha etiquetada "surpreso". */
@@ -517,9 +536,14 @@ function expandReaction(words: string[]) {
   return [...out]
 }
 
-/** Figurinha para batidas com reação (effect = emoji); sem uma que combine, a cena fica sem reação. */
-function pickSticker(beat: Beat, stickers: LibraryImage[], uses: Map<string, number>) {
-  if (beat.effect !== 'emoji' || stickers.length === 0) return undefined
+/**
+ * Figurinha da batida. A escolhida na cena fica (ou nenhuma, se o usuário tirou). No automático, só
+ * batidas com reação (effect = emoji) ganham uma, e nenhuma com o ajuste "Nenhuma"; sem uma que
+ * combine, a cena fica sem reação.
+ */
+function pickSticker(beat: Beat, stickers: LibraryImage[], uses: Map<string, number>, level?: StickerLevel) {
+  if (beat.stickerLocked) return beat.stickerId && stickers.some(s => s.id === beat.stickerId) ? beat.stickerId : undefined
+  if (level === 'nenhuma' || beat.effect !== 'emoji' || stickers.length === 0) return undefined
   if (beat.stickerId && stickers.some(s => s.id === beat.stickerId)) return beat.stickerId
   const words = expandReaction(tokens(`${beat.sticker ?? ''} ${beat.text}`))
   let best: { id: string; score: number } | null = null
@@ -541,7 +565,8 @@ function defaultSfx(beat: Beat, index: number) {
   if (beat.effect === 'arrow') return 'whoosh'
   if (beat.effect === 'cross') return 'erro'
   if (beat.effect === 'circle') return 'ding'
-  if (beat.effect === 'emoji') return 'pop'
+  // a figurinha escolhida na cena aparece mesmo sem reação, e entra com o mesmo som
+  if (beat.effect === 'emoji' || beat.stickerId) return 'pop'
   if (beat.scene === 'evidence') return 'click'
   return undefined
 }

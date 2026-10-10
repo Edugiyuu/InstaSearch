@@ -3,6 +3,8 @@ import api from '../services/api'
 
 export type Pace = 'calmo' | 'normal' | 'rapido' | 'frenetico'
 export type EffectsLevel = 'poucos' | 'medida' | 'muitos'
+/** Quantas figurinhas o vídeo leva (ADR 0022, 2C); a escolha feita na cena vale mais. */
+export type StickerLevel = 'nenhuma' | 'poucas' | 'muitas'
 export type CaptionMode = 'quadrinho' | 'completa' | 'limpa' | 'sem'
 export type MusicMood = 'tensa' | 'animada' | 'calma' | 'sem'
 export type ImageType = 'manga' | 'anime' | 'fanart' | 'tanto-faz'
@@ -45,6 +47,8 @@ export interface Beat {
   imageStatus: ImageStatus
   sticker?: string
   stickerId?: string
+  /** o usuário escolheu a figurinha na cena (ou nenhuma); aparece mesmo sem reação, e a montagem não troca */
+  stickerLocked?: boolean
   sfx?: string
   sfxId?: string
   /** o usuário escolheu o som (editor ou chat); a montagem não troca */
@@ -72,6 +76,8 @@ export interface ProjectSettings {
   outro?: string | null
   /** Volume de todos os efeitos sonoros do vídeo (0 a 1; sem valor = 0,75). */
   sfxVolume?: number
+  /** Sem valor = poucas (onde a IA pôs uma reação). */
+  stickers?: StickerLevel
 }
 
 /** Quem respondeu um pedido de IA (salvo no projeto pelo backend). */
@@ -137,6 +143,8 @@ export interface ShortProject {
   id: string
   title: string
   theme: string
+  /** A obra do vídeo (ADR 0024); projetos antigos não têm, e aí vale o tema. */
+  subject?: string
   styleId: string
   duration: number
   tone: string
@@ -336,6 +344,9 @@ export const shortsApi = {
   /** Efeito sonoro de uma cena: id de um som, null = sem som, 'auto' = a montagem escolhe. */
   setBeatSfx: (id: string, beatId: string, sfxId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sfx`, { sfxId })),
+  /** Figurinha da cena: id de uma figurinha, null = nenhuma, 'auto' = a montagem escolhe (ADR 0022). */
+  setBeatSticker: (id: string, beatId: string, stickerId: string | null) =>
+    data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sticker`, { stickerId })),
   /** Volume do efeito na cena (multiplica o do vídeo); null = normal. */
   setBeatSfxVolume: (id: string, beatId: string, volume: number | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sfx-volume`, { volume })),
@@ -517,6 +528,7 @@ export const PICKER_LABEL: Record<ImagePicker, string> = { ia: 'IA lê o roteiro
 
 export const PACE_LABEL: Record<Pace, string> = { calmo: 'Calmo', normal: 'Normal', rapido: 'Rápido', frenetico: 'Frenético' }
 export const EFFECTS_LABEL: Record<EffectsLevel, string> = { poucos: 'Poucos', medida: 'Na medida', muitos: 'Muitos' }
+export const STICKERS_LABEL: Record<StickerLevel, string> = { nenhuma: 'Nenhuma', poucas: 'Poucas', muitas: 'Muitas' }
 export const CAPTION_LABEL: Record<CaptionMode, string> = { quadrinho: 'Quadrinho', completa: 'Completa', limpa: 'Limpa', sem: 'Sem legenda' }
 export const MUSIC_LABEL: Record<MusicMood, string> = { tensa: 'Tensa', animada: 'Animada', calma: 'Calma', sem: 'Sem música' }
 export const IMAGE_TYPE_LABEL: Record<ImageType, string> = { manga: 'Mangá', anime: 'Anime', fanart: 'Fanart', 'tanto-faz': 'Tanto faz' }

@@ -46,6 +46,7 @@ O centro do app. A **prévia ao vivo** é a composição final: o que você vê 
   - **🖼 Trocar**: abre a tela Trocar imagem dessa cena.
   - **▣ Fundo**: como a imagem aparece (tabela abaixo).
   - **🔊 Efeito sonoro**: automático, sem som ou qualquer som da sua biblioteca, com **▶** para ouvir. No alto do pop-up ficam dois volumes: **Todos os efeitos** (o vídeo inteiro, 75% de início) e **Esta cena** (mais alto ou mais baixo que os outros; 100% = igual). Ao soltar o controle, o som toca no volume novo. Trocar o som da cena volta o volume dela para 100%.
+  - **😮 Figurinha**: um pop-up com miniaturas: **Automático** (o que a montagem escolheu), **Nenhuma** ou uma figurinha da sua biblioteca, com as do assunto do vídeo primeiro. A escolhida aparece mesmo numa cena sem reação (e junto de uma seta ou um X), e nem a montagem, nem o chat, nem o ajuste "Figurinhas" a trocam.
 - **✨ Peça um ajuste**: um chat. Cite cenas pelo número da tela ("na cena 6 põe um X", "cenas 3 e 4", "esta cena"). Se o pedido cita cenas, **só elas mudam**: se a IA mexer em outra, o app desfaz. A resposta diz o que *de fato* mudou, conferido pelo app ([ADR 0017](decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md)). **Desfazer** volta a versão anterior.
 - **Precisa de você**: cenas sem imagem ou com imagem parecida → **Resolver agora** ou **✨ Preencher automático**.
 - **Ajustes rápidos** (valem para o vídeo inteiro):
@@ -54,6 +55,7 @@ O centro do app. A **prévia ao vivo** é a composição final: o que você vê 
 |---|---|
 | Ritmo | Calmo · Normal · Rápido · Frenético (a IA junta ou divide cenas, sem mudar a fala) |
 | Efeitos | Poucos · Na medida · Muitos (setas, X, círculos, reações) |
+| Figurinhas | **Nenhuma** (tira as automáticas na hora, sem IA) · **Poucas** (onde a IA pôs uma reação; é o padrão) · **Muitas** (a IA põe reações em cerca de 1 cena a cada 3). As escolhidas na cena ficam. Só aparece figurinha quando alguma da biblioteca combina com a reação |
 | Legenda | Quadrinho (1 a 3 palavras-chave) · **Completa** (toda a fala, a palavra dita acende) · Limpa · Sem |
 | Música | uma da biblioteca · Sem música (ela abaixa sozinha quando tem voz) |
 | Bordão de abertura / do final | Nenhum · um dos seus bordões ([ADR 0016](decisions/0016-bordoes-de-abertura-e-final.md)) |

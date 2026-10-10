@@ -16,11 +16,11 @@ Os princípios, o estado do projeto e o jeito de trabalhar. O código em si est�
 | Parte | Estado |
 |---|---|
 | Tema → roteiro com pesquisa → voz → montagem → revisão → MP4 | ✅ Funciona |
-| Peça um ajuste, desfazer, ajustes rápidos, controles da cena (fundo em 5 opções, volume dos efeitos) | ✅ Funciona |
+| Peça um ajuste, desfazer, ajustes rápidos, controles da cena (fundo em 5 opções, volume dos efeitos, figurinha) | ✅ Funciona |
 | Legenda e cortes no tempo da voz (Whisper) | ✅ Funciona |
 | Publicar no Instagram e no YouTube, agendar | ✅ Funciona |
 | Ideias a partir das métricas | ✅ Funciona |
-| Imagens só da web, figurinhas por cena | 📋 A fazer ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
+| Imagens só da web | 📋 A fazer ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
 | Ferramentas antigas (perfis, análises, gerador de prompts) | ⚠️ Legado, quase tudo *stub* |
 
 O dia a dia está no [BOARD.md](BOARD.md). Para onde o projeto vai depois:

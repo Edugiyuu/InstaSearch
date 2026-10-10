@@ -6,7 +6,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-- [ ] Figurinhas: ajuste "Nenhuma / Poucas / Muitas" e escolha na cena, num pop-up com miniaturas como o do fundo ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 2C)
+_(nada; escolha a próxima em "A fazer")_
 
 ## A fazer
 
@@ -17,6 +17,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Backlog
 
+- [ ] Figurinha automática combina pouco: escolhe só pelas etiquetas da reação, sem olhar a obra do vídeo (num vídeo da Tatsumaki, "chocado" pegou "guria sorrindo", e 6 de 8 reações ficaram sem figurinha); talvez preferir as do assunto, como o pop-up já faz
 - [ ] 5 imagens da biblioteca sem largura e altura (o `imageSize` com ffprobe falhou nelas; uma é um JPEG salvo como `.webp`): sem a medida, o enquadramento e a moldura usam o plano B
 - [ ] Configurar o ESLint no frontend: não há arquivo de configuração, então o `npm run lint` falha antes de analisar qualquer arquivo
 - [ ] Configurar o Jest no frontend (timeline do vídeo e `video/align.ts`)
@@ -37,6 +38,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-10 · Figurinhas: pop-up "😮 Figurinha" na cena (Automático, Nenhuma ou uma da biblioteca, com miniaturas; aparece mesmo sem reação e o chat respeita) e ajuste "Figurinhas: Nenhuma / Poucas / Muitas" do vídeo ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 2C)
 - [x] 2026-10-10 · Volume dos efeitos sonoros no pop-up do som: "Todos os efeitos" (o vídeo, 75% de início) e "Esta cena" (0 a 200%, multiplica o do vídeo; volta a 100% quando o som da cena muda)
 - [x] 2026-10-09 · Variações (chibi, versão mulher, outro traço) mais frequentes no roteiro: cerca de 1 cena a cada 3, e a variação é o tipo mais comum (adendo ao [ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))
 - [x] 2026-10-09 · Imagens do assunto certo: a obra do vídeo (`subject`) vai na busca e nas duas IAs que escolhem (web e biblioteca), lugar não vira mais personagem, "mangá" só quando a obra tem mangá, memes sobre o tema e prompts para qualquer tema, não só anime ([ADR 0024](docs/decisions/0024-imagens-do-assunto-do-video.md))

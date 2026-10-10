@@ -1,7 +1,7 @@
 import { AppError } from '../../middleware/errorHandler.js'
 import { askJson, askJsonMeta } from './llm.js'
 import { citedScenes, describeChanges, diffBeats, hasChanges, keepOnlyCited, scenesText } from './sceneEdits.js'
-import type { AiCredit, Beat, Effect, LibraryImage, Motion, ProjectSettings, SceneKind, ShortStyle } from './types.js'
+import { STICKER_LEVELS, type AiCredit, type Beat, type Effect, type LibraryImage, type Motion, type ProjectSettings, type SceneKind, type ShortStyle } from './types.js'
 
 const PACE_SECONDS: Record<ShortStyle['pace'], number> = {
   calmo: 1.8,
@@ -73,6 +73,7 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
       const scene = SCENES.includes(b.scene as SceneKind) ? (b.scene as SceneKind) : 'full'
       // som escolhido pelo usuário (editor ou chat) fica até ele trocar
       const sfxId = sound ? sound.sfxId : previous?.sfxLocked || previous?.sfx === b.sfx ? previous?.sfxId : undefined
+      const sticker = b.effect === 'emoji' && b.sticker ? String(b.sticker) : undefined
       return {
         id: previous?.id ?? `b${Date.now().toString(36)}${i}`,
         say: unquote(b.say ?? b.text),
@@ -91,8 +92,10 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
         imageId: changedImage ? undefined : previous?.imageId,
         imageStatus: changedImage ? 'missing' : previous?.imageStatus ?? 'missing',
         locked: changedImage ? false : previous?.locked,
-        sticker: b.effect === 'emoji' && b.sticker ? String(b.sticker) : undefined,
-        stickerId: previous?.sticker === b.sticker ? previous?.stickerId : undefined,
+        sticker,
+        // a figurinha escolhida na cena fica sempre (para mudar, o pop-up da cena); a automática, até o chat mudar a reação
+        stickerId: previous?.stickerLocked || previous?.sticker === sticker ? previous?.stickerId : undefined,
+        stickerLocked: previous?.stickerLocked,
         sfx: b.sfx && SFX.includes(String(b.sfx)) ? String(b.sfx) : undefined,
         sfxId,
         sfxLocked: sound ? true : previous?.sfxLocked,
@@ -216,7 +219,7 @@ export async function adjustBeats(input: {
 
 ${subject ? `Assunto do vídeo: ${subject}. As imagens das batidas são desse assunto.
 ` : ''}Estilo: "${style.name}". ${style.notes}
-Ajustes atuais: ritmo=${settings.pace}, efeitos=${settings.effects}, legenda=${settings.caption}.
+Ajustes atuais: ritmo=${settings.pace}, efeitos=${settings.effects}, legenda=${settings.caption}, figurinhas=${settings.stickers ?? 'poucas'}.
 
 Batidas atuais (JSON):
 ${JSON.stringify(compact)}
@@ -229,7 +232,7 @@ Aplique o pedido. Regras:
 - Mantenha o "id" das batidas que continuam; batidas novas vêm sem id.
 - Só mude o que o pedido pede. Se o pedido cita cenas, não mexa nas outras.
 - "twist" (meme ou variação da imagem): mantenha como está, a menos que o pedido fale de memes ou de imagens diferentes; para tirar, use null. Quando pedir mais ou menos memes, siga esta regra: ${TWIST_RULE}
-- Se o pedido for sobre ritmo, efeitos ou legenda do vídeo inteiro, mude "settings" (pace: calmo|normal|rapido|frenetico, effects: poucos|medida|muitos, caption: quadrinho|completa|limpa|sem).
+- Se o pedido for sobre ritmo, efeitos, legenda ou figurinhas do vídeo inteiro, mude "settings" (pace: calmo|normal|rapido|frenetico, effects: poucos|medida|muitos, caption: quadrinho|completa|limpa|sem, stickers: nenhuma|poucas|muitas). Para tirar todas as figurinhas, use stickers=nenhuma e não mexa nas batidas.
 - "narration" é a junção dos "say".
 - "sound" é o efeito sonoro que toca na batida. Para trocar, use o nome exato de um destes: ${sounds.length ? sounds.map(s => `"${s.name}"`).join(', ') : '(a biblioteca não tem efeitos sonoros)'}; para tirar, "nenhum". Não mude o "sound" das batidas que o pedido não cita.
 
@@ -262,7 +265,8 @@ Responda só com JSON:
   }
 }
 
-const settingsDiffer = (a: ProjectSettings, b: ProjectSettings) => a.pace !== b.pace || a.effects !== b.effects || a.caption !== b.caption
+const settingsDiffer = (a: ProjectSettings, b: ProjectSettings) =>
+  a.pace !== b.pace || a.effects !== b.effects || a.caption !== b.caption || (a.stickers ?? 'poucas') !== (b.stickers ?? 'poucas')
 
 /**
  * A resposta do chat diz o que de fato mudou (ADR 0017). O texto da IA só aparece quando
@@ -287,6 +291,7 @@ function pickSettings(s?: Partial<ProjectSettings>): Partial<ProjectSettings> {
   if (s.pace && ['calmo', 'normal', 'rapido', 'frenetico'].includes(s.pace)) out.pace = s.pace
   if (s.effects && ['poucos', 'medida', 'muitos'].includes(s.effects)) out.effects = s.effects
   if (s.caption && ['quadrinho', 'completa', 'limpa', 'sem'].includes(s.caption)) out.caption = s.caption
+  if (s.stickers && STICKER_LEVELS.includes(s.stickers)) out.stickers = s.stickers
   return out
 }
 
