@@ -6,7 +6,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-_(nada; escolha a próxima em "A fazer")_
+- [ ] Criação autônoma: botões "🤖 Criar sozinho" (na ideia e no alto da tela Ideias, com brainstorm se não houver ideia), fila de um por vez, roteiro → montagem → imagens, parando em "falta gravar a voz", com "Continuar" se falhar ([ADR 0026](docs/decisions/0026-criacao-autonoma-de-videos.md))
 
 ## A fazer
 
@@ -27,7 +27,6 @@ _(nada; escolha a próxima em "A fazer")_
 - [ ] Criptografar os tokens em `data/instagram_accounts/`
 - [ ] Apagar o vídeo do Cloudinary depois de publicar
 - [ ] Validar os ids que vêm da URL antes de virarem nome de arquivo em todas as rotas (hoje `/shorts/projects/..%2F…` chega ao `FileStorage`; as ideias já validam)
-- [ ] ADR da criação autônoma de vídeos, sem publicar (escrever depois de implementar o [ADR 0021](docs/decisions/0021-ideias-a-partir-do-desempenho.md); a maior decisão é a voz)
 - [ ] Instagram: ler a expiração real do token (`/debug_token`) em vez de estimar 60 dias
 - [ ] Instagram: trocar sozinho para um token de Página, que não expira
 - [ ] Instagram: unificar o OAuth (Instagram Login × Facebook Login) ou remover o fluxo quebrado
@@ -38,6 +37,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-10 · ADR da criação autônoma: sem voz sintética (a voz é a única parte à mão), só por botão, ideias guardadas ou do brainstorm, imagens preenchidas e parada na Revisão ([ADR 0026](docs/decisions/0026-criacao-autonoma-de-videos.md))
 - [x] 2026-10-10 · Figurinhas: pop-up "😮 Figurinha" na cena (Automático, Nenhuma ou uma da biblioteca, com miniaturas; aparece mesmo sem reação e o chat respeita) e ajuste "Figurinhas: Nenhuma / Poucas / Muitas" do vídeo ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 2C)
 - [x] 2026-10-10 · Volume dos efeitos sonoros no pop-up do som: "Todos os efeitos" (o vídeo, 75% de início) e "Esta cena" (0 a 200%, multiplica o do vídeo; volta a 100% quando o som da cena muda)
 - [x] 2026-10-09 · Variações (chibi, versão mulher, outro traço) mais frequentes no roteiro: cerca de 1 cena a cada 3, e a variação é o tipo mais comum (adendo ao [ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))

@@ -55,3 +55,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0023](0023-documentacao-enxuta-com-diagramas.md) | Documentação enxuta em poucos arquivos, com diagramas | Aceita |
 | [0024](0024-imagens-do-assunto-do-video.md) | Imagens do assunto do vídeo: a obra guia a busca e a escolha | Aceita |
 | [0025](0025-variacoes-volume-e-figurinhas.md) | Mais variações, volume dos efeitos e figurinha na cena | Aceita |
+| [0026](0026-criacao-autonoma-de-videos.md) | Criação autônoma de vídeos, sem publicar | Aceita |
