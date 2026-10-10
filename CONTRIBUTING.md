@@ -16,7 +16,7 @@ Os princípios, o estado do projeto e o jeito de trabalhar. O código em si est�
 | Parte | Estado |
 |---|---|
 | Tema → roteiro com pesquisa → voz → montagem → revisão → MP4 | ✅ Funciona |
-| Peça um ajuste, desfazer, ajustes rápidos, controles da cena (fundo em 5 opções) | ✅ Funciona |
+| Peça um ajuste, desfazer, ajustes rápidos, controles da cena (fundo em 5 opções, volume dos efeitos) | ✅ Funciona |
 | Legenda e cortes no tempo da voz (Whisper) | ✅ Funciona |
 | Publicar no Instagram e no YouTube, agendar | ✅ Funciona |
 | Ideias a partir das métricas | ✅ Funciona |

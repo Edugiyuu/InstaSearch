@@ -6,6 +6,12 @@ export const FPS = 30
 export const WIDTH = 1080
 export const HEIGHT = 1920
 
+/** Volume dos efeitos sonoros quando o usuário não mexeu (o fixo de antes). */
+export const DEFAULT_SFX_VOLUME = 0.75
+
+/** Volume do efeito de uma cena: o do vídeo vezes o ajuste da cena (acima de 1, o Remotion amplifica). */
+export const sfxVolume = (settings: ProjectSettings, beat: Beat) => (settings.sfxVolume ?? DEFAULT_SFX_VOLUME) * (beat.sfxVolume ?? 1)
+
 /** Imagem (ou trecho de vídeo) da biblioteca, como a composição usa. */
 export interface MediaProps {
   src: string

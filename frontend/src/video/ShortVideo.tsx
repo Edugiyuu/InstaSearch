@@ -3,7 +3,7 @@
 import { CSSProperties } from 'react'
 import { AbsoluteFill, Audio, Freeze, Img, interpolate, OffthreadVideo, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import type { ProjectSettings, Region } from '../api/shorts'
-import { CatchphraseProps, focusRegion, MediaProps, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
+import { CatchphraseProps, focusRegion, MediaProps, sfxVolume, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
 import { framing, looseFraming, regionOnScreen, sceneLook } from './framing'
 
 const RED = '#E52222'
@@ -26,7 +26,7 @@ export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro }
       {beats.map(t => (
         <Sequence key={t.beat.id} from={t.from} durationInFrames={t.frames} name={t.beat.text}>
           <BeatScene timed={t} settings={settings} />
-          {t.sfxSrc && <Audio src={t.sfxSrc} volume={0.75} />}
+          {t.sfxSrc && <Audio src={t.sfxSrc} volume={sfxVolume(settings, t.beat)} />}
         </Sequence>
       ))}
       {outro && (

@@ -75,6 +75,11 @@ export interface Beat {
   sfxId?: string
   /** true quando o usuário (no editor ou pelo chat) escolheu o som; a montagem não troca mais. */
   sfxLocked?: boolean
+  /**
+   * Ajuste do volume do efeito nesta cena, multiplicado pelo volume dos efeitos do vídeo
+   * (0 a 2; sem valor = 1). Vale para o som atual: com outro som, volta para 1.
+   */
+  sfxVolume?: number
   /** true quando o usuário escolheu a imagem; a montagem não troca mais. */
   locked?: boolean
   /**
@@ -110,6 +115,8 @@ export interface ProjectSettings {
    * "Seu canal"); a leitura do projeto converte (ver projects.ts).
    */
   outro?: string | null
+  /** Volume de todos os efeitos sonoros do vídeo (0 a 1; sem valor = 0,75). */
+  sfxVolume?: number
 }
 
 export type AiProvider = 'gemini' | 'claude' | 'claude-code'

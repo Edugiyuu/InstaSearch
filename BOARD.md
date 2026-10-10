@@ -6,11 +6,10 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-- [ ] Volume dos efeitos sonoros: um volume do vídeo inteiro (hoje fixo em 75%) e um ajuste por cena, no pop-up do som
+- [ ] Figurinhas: ajuste "Nenhuma / Poucas / Muitas" e escolha na cena, num pop-up com miniaturas como o do fundo ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 2C)
 
 ## A fazer
 
-- [ ] Figurinhas: ajuste "Nenhuma / Poucas / Muitas" e escolha na cena, num pop-up com miniaturas como o do fundo ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 2C)
 - [ ] Imagens só da web: tirar da montagem as imagens da biblioteca, o ajuste "Quem escolhe as imagens" e a aba Imagens ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 1B)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
@@ -38,6 +37,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-10 · Volume dos efeitos sonoros no pop-up do som: "Todos os efeitos" (o vídeo, 75% de início) e "Esta cena" (0 a 200%, multiplica o do vídeo; volta a 100% quando o som da cena muda)
 - [x] 2026-10-09 · Variações (chibi, versão mulher, outro traço) mais frequentes no roteiro: cerca de 1 cena a cada 3, e a variação é o tipo mais comum (adendo ao [ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))
 - [x] 2026-10-09 · Imagens do assunto certo: a obra do vídeo (`subject`) vai na busca e nas duas IAs que escolhem (web e biblioteca), lugar não vira mais personagem, "mangá" só quando a obra tem mangá, memes sobre o tema e prompts para qualquer tema, não só anime ([ADR 0024](docs/decisions/0024-imagens-do-assunto-do-video.md))
 - [x] 2026-10-09 · Fundo da cena: pop-up com 5 opções (Automático, Tela cheia, Inteira, Moldura no quadriculado, Moldura sobre a imagem), com miniaturas feitas com a imagem da cena ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 4A)

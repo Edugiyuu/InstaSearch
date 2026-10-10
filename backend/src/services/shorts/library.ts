@@ -490,7 +490,9 @@ export async function matchBeats(beats: Beat[], projectId: string, opts: MatchOp
     // figurinhas e efeitos sonoros (não dependem de a imagem estar travada)
     .map((beat, index) => {
       const withSticker = { ...beat, stickerId: pickSticker(beat, stickers, stickerUses) }
-      return { ...withSticker, sfxId: pickSfx(withSticker, index, sfx, sfxUses) }
+      const sfxId = pickSfx(withSticker, index, sfx, sfxUses)
+      // o volume da cena foi acertado para aquele som; com outro, volta ao normal
+      return { ...withSticker, sfxId, sfxVolume: sfxId === beat.sfxId ? beat.sfxVolume : undefined }
     })
 
   await syncUsage(projectId, result)

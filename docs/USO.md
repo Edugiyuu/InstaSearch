@@ -45,7 +45,7 @@ O centro do app. A **prévia ao vivo** é a composição final: o que você vê 
 - **Controles da cena**, numa linha sob a barra ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)). Tudo começa no **Automático** (o que a IA fez); o que você escolhe fica travado e a montagem não troca mais.
   - **🖼 Trocar**: abre a tela Trocar imagem dessa cena.
   - **▣ Fundo**: como a imagem aparece (tabela abaixo).
-  - **🔊 Efeito sonoro**: automático, sem som ou qualquer som da sua biblioteca, com **▶** para ouvir.
+  - **🔊 Efeito sonoro**: automático, sem som ou qualquer som da sua biblioteca, com **▶** para ouvir. No alto do pop-up ficam dois volumes: **Todos os efeitos** (o vídeo inteiro, 75% de início) e **Esta cena** (mais alto ou mais baixo que os outros; 100% = igual). Ao soltar o controle, o som toca no volume novo. Trocar o som da cena volta o volume dela para 100%.
 - **✨ Peça um ajuste**: um chat. Cite cenas pelo número da tela ("na cena 6 põe um X", "cenas 3 e 4", "esta cena"). Se o pedido cita cenas, **só elas mudam**: se a IA mexer em outra, o app desfaz. A resposta diz o que *de fato* mudou, conferido pelo app ([ADR 0017](decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md)). **Desfazer** volta a versão anterior.
 - **Precisa de você**: cenas sem imagem ou com imagem parecida → **Resolver agora** ou **✨ Preencher automático**.
 - **Ajustes rápidos** (valem para o vídeo inteiro):

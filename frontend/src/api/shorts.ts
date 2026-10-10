@@ -49,6 +49,8 @@ export interface Beat {
   sfxId?: string
   /** o usuário escolheu o som (editor ou chat); a montagem não troca */
   sfxLocked?: boolean
+  /** Ajuste do volume do efeito nesta cena: multiplica o do vídeo (0 a 2; sem valor = 1). */
+  sfxVolume?: number
   locked?: boolean
   /** Meme ou variação do personagem que a montagem procura primeiro (ADR 0020). */
   twist?: { kind: 'meme' | 'variacao'; query: string; tags?: string[] }
@@ -68,6 +70,8 @@ export interface ProjectSettings {
   intro?: string | null
   /** Bordão do final; null = sem final. */
   outro?: string | null
+  /** Volume de todos os efeitos sonoros do vídeo (0 a 1; sem valor = 0,75). */
+  sfxVolume?: number
 }
 
 /** Quem respondeu um pedido de IA (salvo no projeto pelo backend). */
@@ -312,7 +316,9 @@ export const shortsApi = {
   getProject: (id: string) => data<ShortProject>(api.get(`/shorts/projects/${id}`)),
   createProject: (input: { theme: string; styleId: string; duration: number; toneId: string; narration?: string }) =>
     data<ShortProject>(api.post('/shorts/projects', input, { timeout: 180000 })),
-  updateProject: (id: string, changes: Partial<ShortProject>) => data<ShortProject>(api.put(`/shorts/projects/${id}`, changes)),
+  /** `settings` pode vir pela metade: o servidor junta com o que já está salvo. */
+  updateProject: (id: string, changes: Partial<Omit<ShortProject, 'settings'>> & { settings?: Partial<ProjectSettings> }) =>
+    data<ShortProject>(api.put(`/shorts/projects/${id}`, changes)),
   deleteProject: (id: string) => api.delete(`/shorts/projects/${id}`),
   assemble: (id: string) => data<{ project: ShortProject; log: AssemblyLogEntry[] }>(api.post(`/shorts/projects/${id}/assemble`)),
   /** scene: a cena aberta na prévia (a primeira é 1), para o chat entender "esta cena". */
@@ -324,12 +330,15 @@ export const shortsApi = {
   installWhisper: () => data<WhisperStatus>(api.post('/shorts/whisper/install')),
   setBeatImage: (id: string, beatId: string, imageId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/image`, { imageId })),
-  /** Efeito sonoro de uma cena: id de um som, null = sem som, 'auto' = a montagem escolhe. */
   /** framing null = automático (ADR 0020). */
   setBeatFraming: (id: string, beatId: string, framing: FramingChoice | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/framing`, { framing })),
+  /** Efeito sonoro de uma cena: id de um som, null = sem som, 'auto' = a montagem escolhe. */
   setBeatSfx: (id: string, beatId: string, sfxId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sfx`, { sfxId })),
+  /** Volume do efeito na cena (multiplica o do vídeo); null = normal. */
+  setBeatSfxVolume: (id: string, beatId: string, volume: number | null) =>
+    data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sfx-volume`, { volume })),
   /** Busca na internet e coloca imagem em todas as cenas que precisam (sem gastar IA). */
   autoImages: (id: string) =>
     data<{ project: ShortProject; added: number; total: number; results: { beatId: string; ok: boolean; message: string }[] }>(

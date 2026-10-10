@@ -71,6 +71,8 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
       const changedImage = previous && (previous.query !== b.query || String(previous.characters) !== String(b.characters))
       const sound = chosenSound(b.sound, previous, sounds)
       const scene = SCENES.includes(b.scene as SceneKind) ? (b.scene as SceneKind) : 'full'
+      // som escolhido pelo usuário (editor ou chat) fica até ele trocar
+      const sfxId = sound ? sound.sfxId : previous?.sfxLocked || previous?.sfx === b.sfx ? previous?.sfxId : undefined
       return {
         id: previous?.id ?? `b${Date.now().toString(36)}${i}`,
         say: unquote(b.say ?? b.text),
@@ -92,9 +94,10 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
         sticker: b.effect === 'emoji' && b.sticker ? String(b.sticker) : undefined,
         stickerId: previous?.sticker === b.sticker ? previous?.stickerId : undefined,
         sfx: b.sfx && SFX.includes(String(b.sfx)) ? String(b.sfx) : undefined,
-        // som escolhido pelo usuário (editor ou chat) fica até ele trocar
-        sfxId: sound ? sound.sfxId : previous?.sfxLocked || previous?.sfx === b.sfx ? previous?.sfxId : undefined,
+        sfxId,
         sfxLocked: sound ? true : previous?.sfxLocked,
+        // o volume da cena foi acertado para aquele som; com outro, volta ao normal
+        sfxVolume: previous && sfxId === previous.sfxId ? previous.sfxVolume : undefined,
         // sem "twist" na resposta: mantém o de antes; null tira
         twist: b.twist === undefined && previous ? previous.twist : cleanTwist(b.twist),
         // escolha do usuário na revisão; com outra imagem ou outro tipo de cena ("transforma em prova"), volta para o automático

@@ -23,7 +23,7 @@ import { AiBadge, SearchList, Segmented, Spinner, useToast } from '../components
 import PublishModal from '../components/PublishModal'
 import { useCatchphrases, useLibrary, useProject, useSounds, useStyles } from '../hooks/useShorts'
 import { ShortPlayer, ShortPlayerHandle } from '../video/ShortPlayer'
-import { voiceTiming } from '../video/timeline'
+import { DEFAULT_SFX_VOLUME, sfxVolume, voiceTiming } from '../video/timeline'
 import { ScenePick, ScenePickOption } from '../components/ScenePick'
 import { BackdropPick } from '../components/BackdropPick'
 import './Review.css'
@@ -68,6 +68,35 @@ function VoiceSync({ project, onSync }: { project: ShortProject; onSync: () => v
 
 const SUGGESTIONS = ['Gancho mais curto', 'Final mais polêmico', 'Mais setas e X', 'Tira uma cena do meio', 'Legenda menor']
 
+/** Um controle de volume do pop-up do som, em %. Ao soltar, toca o efeito para ouvir como ficou. */
+function VolumeRow({ label, title, value, max, onChange, onRelease }: {
+  label: string
+  title: string
+  value: number
+  /** em %, ex.: 200 */
+  max: number
+  onChange: (value: number) => void
+  onRelease: (value: number) => void
+}) {
+  const release = (e: { currentTarget: HTMLInputElement }) => onRelease(e.currentTarget.valueAsNumber / 100)
+  return (
+    <label className="rv-vol" title={title}>
+      <span>{label}</span>
+      <input
+        type="range"
+        min={0}
+        max={max}
+        step={5}
+        value={Math.round(value * 100)}
+        onChange={e => onChange(e.target.valueAsNumber / 100)}
+        onPointerUp={release}
+        onKeyUp={release}
+      />
+      <output>{Math.round(value * 100)}%</output>
+    </label>
+  )
+}
+
 function Review() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -86,6 +115,8 @@ function Review() {
   const [request, setRequest] = useState('')
   const [working, setWorking] = useState<string | null>(null)
   const [publishing, setPublishing] = useState(false)
+  // saves que esperam o controle parar de mexer (um arraste do volume manda dezenas de valores)
+  const pendingSaves = useRef(new Map<string, ReturnType<typeof setTimeout>>())
 
   useEffect(() => {
     chatEnd.current?.scrollIntoView({ block: 'nearest' })
@@ -196,7 +227,8 @@ function Review() {
     const sound = sfxId && sfxId !== 'auto' ? soundsById.get(sfxId) : undefined
     try {
       setProject(await shortsApi.setBeatSfx(project.id, beat.id, sfxId))
-      if (sound) playSound(sound.id)
+      // som novo: o ajuste da cena volta a 100%, então toca no volume do vídeo
+      if (sound) playSound(sound.id, videoSfxVolume)
     } catch (e) {
       toast.show(errorMessage(e))
     }
@@ -212,12 +244,33 @@ function Review() {
     }
   }
 
-  const playSound = (soundId?: string) => {
+  /** volume: 1 = o arquivo como é; o <audio> do navegador não passa de 1 (o vídeo amplifica, a prévia do ▶ não) */
+  const playSound = (soundId?: string, volume = 1) => {
     const sound = soundId ? soundsById.get(soundId) : undefined
     if (!sound) return
     preview.current?.pause()
     preview.current = new Audio(soundUrl(sound))
+    preview.current.volume = Math.min(1, Math.max(0, volume))
     preview.current.play().catch(() => undefined)
+  }
+
+  /** Guarda só depois que o controle para de mexer; a tela (e o player) já mudam na hora. */
+  const saveSoon = (key: string, save: () => Promise<unknown>) => {
+    clearTimeout(pendingSaves.current.get(key))
+    pendingSaves.current.set(key, setTimeout(() => save().catch(e => toast.show(errorMessage(e))), 400))
+  }
+
+  /** Volume de todos os efeitos do vídeo (0 a 1). */
+  const videoSfxVolume = project.settings.sfxVolume ?? DEFAULT_SFX_VOLUME
+  const setVideoSfxVolume = (volume: number) => {
+    setProject(p => (p ? { ...p, settings: { ...p.settings, sfxVolume: volume } } : p))
+    saveSoon('video', () => shortsApi.updateProject(project.id, { settings: { sfxVolume: volume } }))
+  }
+
+  /** Ajuste da cena (0 a 2), que multiplica o volume do vídeo. */
+  const setSceneSfxVolume = (beatId: string, volume: number) => {
+    setProject(p => (p ? { ...p, beats: p.beats.map(b => (b.id === beatId ? { ...b, sfxVolume: volume } : b)) } : p))
+    saveSoon(`cena ${beatId}`, () => shortsApi.setBeatSfxVolume(project.id, beatId, volume))
   }
 
   return (
@@ -263,9 +316,33 @@ function Review() {
                 <Link to="/biblioteca?aba=sfx" className="sp-chip">🔊 + Efeitos sonoros</Link>
               ) : (
                 <>
-                  <ScenePick label={`🔊 ${beatSound?.name ?? 'sem som'}`} title="Efeito sonoro desta cena">
+                  <ScenePick
+                    label={`🔊 ${beatSound?.name ?? 'sem som'}${beat.sfxId && (beat.sfxVolume ?? 1) !== 1 ? ` · ${Math.round((beat.sfxVolume ?? 1) * 100)}%` : ''}`}
+                    title="Efeito sonoro desta cena e volume"
+                    className="rv-sfx-pick"
+                  >
                     {close => (
                       <>
+                        <p className="sp-sep">Volume</p>
+                        <VolumeRow
+                          label="Todos os efeitos"
+                          title="Volume de todos os efeitos sonoros do vídeo"
+                          value={videoSfxVolume}
+                          max={100}
+                          onChange={setVideoSfxVolume}
+                          onRelease={v => playSound(beat.sfxId, v * (beat.sfxVolume ?? 1))}
+                        />
+                        {beat.sfxId && (
+                          <VolumeRow
+                            label="Esta cena"
+                            title="Mais alto ou mais baixo que os outros efeitos (100% = igual)"
+                            value={beat.sfxVolume ?? 1}
+                            max={200}
+                            onChange={v => setSceneSfxVolume(beat.id, v)}
+                            onRelease={v => playSound(beat.sfxId, videoSfxVolume * v)}
+                          />
+                        )}
+                        <p className="sp-sep">Som desta cena</p>
                         <ScenePickOption on={!beat.sfxLocked} onClick={() => { setSfx('auto'); close() }}>
                           Automático ({beat.sfxLocked ? 'a montagem escolhe' : beatSound?.name ?? 'sem som'})
                         </ScenePickOption>
@@ -278,7 +355,7 @@ function Review() {
                             key={s.id}
                             on={!!beat.sfxLocked && beat.sfxId === s.id}
                             onClick={() => { setSfx(s.id); close() }}
-                            extra={<button className="btn-g rv-sfx-play" onClick={() => playSound(s.id)} title={`Ouvir ${s.name}`}>▶</button>}
+                            extra={<button className="btn-g rv-sfx-play" onClick={() => playSound(s.id, videoSfxVolume)} title={`Ouvir ${s.name}`}>▶</button>}
                           >
                             {s.name}
                           </ScenePickOption>
@@ -286,7 +363,7 @@ function Review() {
                       </>
                     )}
                   </ScenePick>
-                  <button className="sp-chip" onClick={() => playSound(beat.sfxId)} disabled={!beatSound} title="Ouvir o efeito desta cena">▶</button>
+                  <button className="sp-chip" onClick={() => playSound(beat.sfxId, sfxVolume(project.settings, beat))} disabled={!beatSound} title="Ouvir o efeito desta cena">▶</button>
                 </>
               )}
             </div>

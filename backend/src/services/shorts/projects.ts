@@ -128,7 +128,11 @@ export async function updateProject(id: string, changes: Partial<ShortProject>) 
   if (typeof changes.audioDuration === 'number') next.audioDuration = changes.audioDuration
   if (changes.musicId !== undefined) next.musicId = changes.musicId
   if (changes.status) next.status = changes.status
-  if (changes.settings) next.settings = { ...project.settings, ...changes.settings }
+  if (changes.settings) {
+    next.settings = { ...project.settings, ...changes.settings }
+    const volume = next.settings.sfxVolume
+    if (volume !== undefined) next.settings.sfxVolume = typeof volume === 'number' && Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : undefined
+  }
   if (Array.isArray(changes.beats)) {
     next.undo = [project.beats, ...project.undo].slice(0, MAX_UNDO)
     next.beats = changes.beats
@@ -434,6 +438,18 @@ export async function setBeatSfx(id: string, beatId: string, sfxId: string | nul
     if (sfxId && !sounds.some(s => s.id === sfxId)) throw new AppError('Esse efeito não está na biblioteca', 400, 'VALIDATION')
     project.beats[index] = { ...beat, sfxId: sfxId ?? undefined, sfxLocked: true }
   }
+  // o volume da cena foi acertado para o som de antes
+  if (project.beats[index].sfxId !== beat.sfxId) delete project.beats[index].sfxVolume
+  return save(project)
+}
+
+/** Editor: o volume do efeito nesta cena (0 a 2, multiplica o do vídeo); null ou 1 = normal. */
+export async function setBeatSfxVolume(id: string, beatId: string, volume: number | null) {
+  const project = await getProject(id)
+  const beat = project.beats.find(b => b.id === beatId)
+  if (!beat) throw new AppError('Cena não encontrada', 404, 'NOT_FOUND')
+  if (volume === null || volume === 1) delete beat.sfxVolume
+  else beat.sfxVolume = Math.min(2, Math.max(0, volume))
   return save(project)
 }
 

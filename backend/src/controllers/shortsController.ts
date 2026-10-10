@@ -225,6 +225,14 @@ export const setBeatSfx = asyncHandler(async (req: Request, res: Response) => {
   res.json({ success: true, data: await projects.setBeatSfx(req.params.id, req.params.beatId, sfxId) })
 })
 
+/** PUT /shorts/projects/:id/beats/:beatId/sfx-volume { volume: número | null } → volume do efeito na cena */
+export const setBeatSfxVolume = asyncHandler(async (req: Request, res: Response) => {
+  const raw = req.body?.volume
+  const volume = raw === null || raw === undefined ? null : Number(raw)
+  if (volume !== null && !Number.isFinite(volume)) throw new AppError('Volume inválido', 400, 'VALIDATION')
+  res.json({ success: true, data: await projects.setBeatSfxVolume(req.params.id, req.params.beatId, volume) })
+})
+
 /** POST /shorts/projects/:id/auto-images → busca na internet e coloca imagem nas cenas que precisam. */
 export const autoImages = asyncHandler(async (req: Request, res: Response) => {
   const result = await projects.autoFillImages(req.params.id)
