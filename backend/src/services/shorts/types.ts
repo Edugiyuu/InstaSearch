@@ -199,8 +199,25 @@ export interface ShortProject {
   undo: Beat[][]
   /** O que o Whisper ouviu na voz, com o tempo de cada palavra (ADR 0018). */
   transcript?: Transcript
+  /** Criado sozinho (ADR 0026): a etapa e o que deu errado. Sem valor = criado à mão. */
+  autopilot?: Autopilot
   createdAt: string
   updatedAt: string
+}
+
+/**
+ * Etapas da criação autônoma depois que o projeto existe; `stage` é a que está rodando (ou onde parou).
+ * pronto = só falta a voz, que é do usuário.
+ */
+export type AutopilotStage = 'montagem' | 'imagens' | 'pronto'
+
+export interface Autopilot {
+  stage: AutopilotStage
+  /** Por que parou; "Continuar" segue da etapa. */
+  error?: string
+  /** A ideia de onde o vídeo veio. */
+  ideaId?: string
+  startedAt: string
 }
 
 /** Uma palavra ouvida pelo Whisper; tempos em segundos desde o começo do áudio. */

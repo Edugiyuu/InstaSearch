@@ -43,6 +43,9 @@ resumeCataloguing().catch(error => logger.warn(`⚠️ Não consegui retomar a c
 // ...e áudios que ficaram na fila da transcrição
 const { resumeTranscriptions } = await import('./services/shorts/projects.js')
 resumeTranscriptions().catch(error => logger.warn(`⚠️ Não consegui retomar a transcrição: ${error.message}`))
+// ...e o que a criação autônoma deixou pela metade vira "Continuar" (ADR 0026)
+const { markInterrupted } = await import('./services/shorts/autopilot.js')
+markInterrupted().catch(error => logger.warn(`⚠️ Não consegui marcar a criação automática interrompida: ${error.message}`))
 
 // Root route
 app.get('/', (req: Request, res: Response) => {

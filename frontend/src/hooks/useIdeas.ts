@@ -9,13 +9,19 @@ export function useIdeas() {
   const [thinking, setThinking] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const reload = useCallback(
+    () =>
+      ideasApi
+        .list()
+        .then(setIdeas)
+        .catch(e => setError(errorMessage(e)))
+        .finally(() => setLoading(false)),
+    [],
+  )
+
   useEffect(() => {
-    ideasApi
-      .list()
-      .then(setIdeas)
-      .catch(e => setError(errorMessage(e)))
-      .finally(() => setLoading(false))
-  }, [])
+    reload()
+  }, [reload])
 
   const brainstorm = useCallback(async (input: { seed?: string; request?: string }) => {
     setThinking(true)
@@ -49,5 +55,5 @@ export function useIdeas() {
     }
   }, [])
 
-  return { ideas, loading, thinking, error, brainstorm, setStatus, remove }
+  return { ideas, loading, thinking, error, brainstorm, setStatus, remove, reload }
 }

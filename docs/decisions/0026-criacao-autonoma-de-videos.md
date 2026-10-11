@@ -63,6 +63,22 @@ Em uma frase: **um botão faz tudo, menos a voz.** O app escolhe a ideia (ou faz
 - O projeto guarda `autopilot: { stage, error?, ideaId? }`, o que mostra "🤖 criado sozinho" em Projetos e na Revisão. Se uma etapa falha (cota, rede) ou o servidor reinicia no meio, o projeto fica com o que deu certo e mostra o erro com **"Continuar"**, que segue da etapa onde parou.
 - A ideia usada vira "feita" e fica ligada ao projeto, como no "Criar vídeo" manual.
 
+## Adendo (2026-10-10): o botão geral faz o próprio brainstorm
+
+Ao testar, o usuário criou dois vídeos com o botão geral, e os dois eram sobre a Tatsumaki: "Tatsumaki: ousada de verdade" e "O segredo de Tatsumaki". O motivo: a regra da 3B acima pegava a ideia **guardada** mais antiga e, sem ela, a primeira do **último brainstorm do usuário**, que ele tinha feito com o tema "Tatsumaki". O botão só repetia o tema que o usuário escolheu. O que ele queria com a 3B: "é pra ela mesma ter as ideias, usando o brainstorm".
+
+A 3B continua escolhida. Muda como o botão geral escolhe:
+
+- **"🤖 Criar um vídeo sozinho" sempre faz um brainstorm próprio, sem tema** (`brainstormOne` em `ideas.ts`), e pede **uma** ideia só, a melhor: um lote de 6 gastaria mais para usar uma.
+- **Nas obras que o canal já fala, com um assunto ainda não feito.** Para "manter o público alvo", nas palavras do usuário. A primeira correção pedia "outra obra" para variar, e a IA escolheu um anime da temporada que o canal nunca tratou ("Firefly Wedding"), que o usuário nem conhecia. Agora o pedido leva três listas:
+  - **os títulos dos vídeos feitos à mão**, que dizem as obras do canal. Não uso o campo `subject` ([0024](0024-imagens-do-assunto-do-video.md)) porque os projetos antigos não o têm. Os criados sozinhos ficam fora dessa lista, para um tema escolhido pela IA não virar "obra do canal";
+  - **todos os títulos já feitos**, para não repetir o assunto;
+  - **os 3 mais recentes**, para variar a obra dentro das do canal, se der. É o que evita cinco vídeos seguidos sobre a Tatsumaki.
+- **O lote de ideias novas da tela não muda.** O brainstorm comum troca as ideias novas que o usuário não guardou; o próprio, não. A ideia dele já nasce guardada e vira "feita" quando o vídeo nasce, então aparece em "Viraram vídeo" com as provas.
+- **As ideias da tela continuam com o "🤖 Criar sozinho" no cartão.** É assim que o usuário usa uma ideia dele.
+
+O custo: cada clique no botão geral gasta um brainstorm com pesquisa, além do roteiro e da visão. E o canal não cresce para obras novas por este botão: para isso, o caminho é o brainstorm com tema e o "Criar sozinho" do cartão.
+
 ## Relação com o 0011
 
 O 0011 rejeitou "totalmente automático, sem revisão". Esta decisão **complementa** o 0011, e não o substitui. A regra "a IA sugere e o usuário aprova" continua. O que muda é onde fica a aprovação:

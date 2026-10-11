@@ -20,6 +20,7 @@ import * as videoAnalysisController from '../controllers/videoAnalysisController
 import * as youtubeController from '../controllers/youtubeController.js'
 import * as insightsController from '../controllers/insightsController.js'
 import * as ideasController from '../controllers/ideasController.js'
+import * as autopilotController from '../controllers/autopilotController.js'
 
 const router = Router()
 
@@ -124,6 +125,10 @@ router.post('/shorts/projects/:id/adjust', shortsController.adjust)
 router.post('/shorts/projects/:id/undo', shortsController.undo)
 router.put('/shorts/projects/:id/beats/:beatId/image', shortsController.setBeatImage)
 router.put('/shorts/projects/:id/beats/:beatId/sfx', shortsController.setBeatSfx)
+// criação autônoma (ADR 0026)
+router.get('/shorts/autopilot', autopilotController.listJobs)
+router.post('/shorts/autopilot', autopilotController.startJob)
+router.post('/shorts/autopilot/:projectId/continue', autopilotController.continueJob)
 router.put('/shorts/projects/:id/beats/:beatId/sfx-volume', shortsController.setBeatSfxVolume)
 router.put('/shorts/projects/:id/beats/:beatId/sticker', shortsController.setBeatSticker)
 router.put('/shorts/projects/:id/beats/:beatId/framing', shortsController.setBeatFraming)

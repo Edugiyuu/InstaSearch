@@ -165,6 +165,58 @@
   margin-bottom: 0;
 }
 
+/* Criar sozinho (ADR 0026) */
+.id-auto {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.id-auto-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.id-auto-head .label {
+  margin-bottom: 4px;
+}
+
+.id-auto-head .btn-y {
+  flex-shrink: 0;
+}
+
+.id-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.id-job {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  font-size: 13px;
+}
+
+.id-job-title {
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .id-auto-head {
+    flex-direction: column;
+  }
+}
+
 .id-brainstorm-row,
 .id-adjust {
   display: flex;

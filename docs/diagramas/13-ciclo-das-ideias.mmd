@@ -8,3 +8,9 @@ flowchart TD
     ID -- "Descartar + motivo<br/>(a IA lê no próximo lote)" --> BR
     BANK -- "Criar vídeo" --> NEW["Novo vídeo<br/>já preenchido"]
     NEW --> PUB
+    CMP --> OWN["🤖 Criar um vídeo sozinho:<br/>brainstorm próprio, nas obras<br/>do canal, assunto novo"]
+    OWN --> AUTO["Roteiro, montagem<br/>e imagens sozinho"]
+    BANK -- "🤖 Criar sozinho" --> AUTO
+    ID -- "🤖 Criar sozinho" --> AUTO
+    AUTO --> VOZ["🎙 Você grava a voz<br/>e revisa"]
+    VOZ --> PUB

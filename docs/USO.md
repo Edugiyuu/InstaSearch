@@ -32,6 +32,7 @@ O caminho de um vídeo, tela por tela, as outras telas do app e um glossário do
 - Cada cena tem a **legenda** (amarela), a **fala** e o que a imagem precisa mostrar. Tudo é editável; o ✕ tira a cena.
 - **Peça uma mudança** no topo ("gancho mais polêmico", "tira a parte do Kaido").
 - **Sua voz:** copie a narração, grave e suba o áudio. Dá para montar sem áudio e subir depois.
+- Num vídeo já montado (inclusive um **🤖 criado sozinho**), o botão vira **Revisar o vídeo →**: a voz só ajusta o tempo da legenda e dos cortes. "↻ Montar de novo" continua ali, mas escolhe outra vez as imagens que não foram travadas.
 
 ### 3. Montagem
 
@@ -100,7 +101,7 @@ O modal gera a **legenda do post** com hashtags e já começa o **render do MP4*
 |---|---|
 | **Início** (`/`) | Criação rápida (tema + estilo + Começar), seus vídeos e próximas publicações |
 | **Projetos** (`/projetos`) | Todos os vídeos, filtrados por etapa: no roteiro, faltam imagens, prontos, salvos, publicados |
-| **Ideias** (`/ideias`) | **Desempenho**: cada Reel e Short comparado com a mediana dos seus vídeos na mesma idade ("2,4× a sua mediana, aos 7 dias"). **Ideias**: a IA propõe lotes de 6 temas, cada um com as provas (seus números, comentários do público, o que está em alta na web). Guardar, descartar com motivo, **Criar vídeo** ([ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md)) |
+| **Ideias** (`/ideias`) | **Desempenho**: cada Reel e Short comparado com a mediana dos seus vídeos na mesma idade ("2,4× a sua mediana, aos 7 dias"). **Ideias**: a IA propõe lotes de 6 temas, cada um com as provas (seus números, comentários do público, o que está em alta na web). Guardar, descartar com motivo, **Criar vídeo** ([ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md)). **🤖 Criar sozinho** (no cartão, com aquela ideia) e **🤖 Criar um vídeo sozinho** (no alto: a IA faz o próprio brainstorm, sem tema, e escolhe um assunto ainda não feito **nas obras que o canal já fala**, para manter o público; o lote de ideias da tela não muda): escreve o roteiro, monta e procura as imagens, um vídeo por vez, mostrando a etapa de cada um. Para em "falta gravar a voz" e nunca publica; se parar no meio, **Continuar** segue da etapa ([ADR 0026](decisions/0026-criacao-autonoma-de-videos.md)) |
 | **Biblioteca** (`/biblioteca`) | O material que você cuida: figurinhas (PNG transparente), efeitos sonoros (nomeie `whoosh_01.mp3`), músicas (cole o link de um Reel/TikTok/Short), bordões, tons e vídeos. A aba Imagens está de saída ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
 | **Estilos** (`/estilos`) | Cada estilo é uma configuração (ritmo, efeitos, legenda, música, tipo de imagem, instruções para a IA). Mudar um que vem com o app salva uma cópia sua |
 | **Calendário** (`/calendario`) | Posts agendados, publicados e com falha; publicar agora, cancelar |

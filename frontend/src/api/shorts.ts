@@ -173,9 +173,44 @@ export interface ShortProject {
   undo: Beat[][]
   /** O que o Whisper ouviu na voz, com o tempo de cada palavra (ADR 0018). */
   transcript?: Transcript
+  /** Criado sozinho (ADR 0026); sem valor = criado à mão. */
+  autopilot?: Autopilot
   createdAt: string
   updatedAt: string
 }
+
+/** Etapa da criação autônoma depois que o projeto existe; pronto = só falta a voz. */
+export interface Autopilot {
+  stage: 'montagem' | 'imagens' | 'pronto'
+  error?: string
+  ideaId?: string
+  startedAt: string
+}
+
+/** Um vídeo sendo criado sozinho (ADR 0026). */
+export interface AutopilotJob {
+  id: string
+  stage: 'fila' | 'ideia' | 'roteiro' | 'montagem' | 'imagens' | 'pronto' | 'erro'
+  ideaId?: string
+  title?: string
+  projectId?: string
+  error?: string
+  startedAt: string
+  updatedAt: string
+}
+
+/** O que está acontecendo agora em cada etapa, como a tela mostra. */
+export const JOB_STAGE_LABEL: Record<AutopilotJob['stage'], string> = {
+  fila: 'na fila',
+  ideia: 'a IA está escolhendo o assunto (brainstorm com pesquisa)',
+  roteiro: 'escrevendo o roteiro (com pesquisa)',
+  montagem: 'montando as cenas',
+  imagens: 'procurando as imagens que faltam',
+  pronto: 'pronto · falta gravar a voz',
+  erro: 'parou',
+}
+
+export const jobActive = (job: AutopilotJob) => job.stage !== 'pronto' && job.stage !== 'erro'
 
 /** Uma palavra ouvida pelo Whisper; tempos em segundos desde o começo do áudio. */
 export interface TranscriptWord {
@@ -347,6 +382,10 @@ export const shortsApi = {
   /** Figurinha da cena: id de uma figurinha, null = nenhuma, 'auto' = a montagem escolhe (ADR 0022). */
   setBeatSticker: (id: string, beatId: string, stickerId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sticker`, { stickerId })),
+  /** Cria um vídeo sozinho (ADR 0026): da ideia, ou sem ela (o app escolhe ou faz um brainstorm). */
+  startAutopilot: (ideaId?: string) => data<AutopilotJob>(api.post('/shorts/autopilot', { ideaId })),
+  autopilotJobs: () => data<AutopilotJob[]>(api.get('/shorts/autopilot')),
+  continueAutopilot: (projectId: string) => data<AutopilotJob>(api.post(`/shorts/autopilot/${projectId}/continue`)),
   /** Volume do efeito na cena (multiplica o do vídeo); null = normal. */
   setBeatSfxVolume: (id: string, beatId: string, volume: number | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sfx-volume`, { volume })),
@@ -547,6 +586,10 @@ export const beatsNeedingImage = (p: ShortProject) => p.beats.filter(b => !b.loc
 /** Texto e cor do status de um projeto nas listas. */
 export function projectStatus(p: ShortProject) {
   const pending = beatsNeedingImage(p).length
+  // criado sozinho (ADR 0026): enquanto cria, ou parado esperando "Continuar"
+  if (p.autopilot?.error) return { text: '🤖 Parou no meio · continuar', cls: 'c-danger' }
+  if (p.autopilot && p.autopilot.stage !== 'pronto') return { text: '🤖 Criando…', cls: 'c-warning' }
+  if (p.autopilot && !p.audioFile && p.status === 'revisao') return { text: '🤖 Falta gravar a voz', cls: 'c-warning' }
   if (p.status === 'revisao' && pending) return { text: `${pending} ${pending === 1 ? 'cena precisa' : 'cenas precisam'} de imagem`, cls: 'c-danger' }
   if (p.status === 'revisao') return { text: 'Pronto para revisar', cls: 'c-success' }
   if (p.status === 'roteiro') return { text: p.audioFile ? 'Pronto para montar' : 'Roteiro · falta a voz', cls: 'c-warning' }
@@ -555,7 +598,9 @@ export function projectStatus(p: ShortProject) {
 }
 
 /** Para onde levar o usuário ao abrir um projeto. */
-export const projectHome = (p: ShortProject) => (p.status === 'roteiro' ? `/projeto/${p.id}/roteiro` : `/projeto/${p.id}`)
+export const projectHome = (p: ShortProject) =>
+  // o criado sozinho já vem montado, mas a voz se grava na tela do roteiro
+  p.status === 'roteiro' || (p.autopilot?.stage === 'pronto' && !p.audioFile) ? `/projeto/${p.id}/roteiro` : `/projeto/${p.id}`
 
 /** Cor estável a partir de um texto (capas de projeto sem imagem). */
 export function hueOf(text: string) {

@@ -114,6 +114,13 @@
   padding: 22px;
 }
 
+.sc-auto {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  font-size: 13px;
+}
+
 .sc-voice-hint {
   font-size: 13px;
   color: var(--muted);

@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Idea, IdeaEvidence, IdeaStatus, newVideoLink } from '../api/ideas'
 import { formatCount, Platform, PLATFORM_LABEL, PlatformState, sharesPerThousand, VideoMetrics, watchedPercent } from '../api/insights'
+import { JOB_STAGE_LABEL, jobActive } from '../api/shorts'
 import { AiBadge, SearchList, Segmented, Spinner } from '../components/flow'
 import { useIdeas } from '../hooks/useIdeas'
+import { useAutopilot } from '../hooks/useAutopilot'
 import { useMetrics } from '../hooks/useInsights'
 import { useStyles, useTones } from '../hooks/useShorts'
 import './Ideas.css'
@@ -230,6 +232,8 @@ function IdeaCard({
   toneName,
   onStatus,
   onRemove,
+  onAuto,
+  creating,
 }: {
   idea: Idea
   /** Número no lote, para pedir "junta a 2 com a 5". */
@@ -238,6 +242,10 @@ function IdeaCard({
   toneName: string
   onStatus: (status: IdeaStatus, reason?: string) => void
   onRemove: () => void
+  /** Cria o vídeo sozinho a partir desta ideia (ADR 0026). */
+  onAuto: () => void
+  /** Esta ideia já está na fila da criação sozinha. */
+  creating: boolean
 }) {
   const [discarding, setDiscarding] = useState(false)
   const [reason, setReason] = useState('')
@@ -292,6 +300,11 @@ function IdeaCard({
               Criar vídeo →
             </Link>
           )}
+          {open && (
+            <button className="btn-o" onClick={onAuto} disabled={creating} title="Roteiro, montagem e imagens sozinho; para em “falta gravar a voz”">
+              {creating ? '🤖 Criando…' : '🤖 Criar sozinho'}
+            </button>
+          )}
           {idea.status === 'nova' && (
             <button className="btn-o" onClick={() => onStatus('guardada')}>
               Guardar
@@ -319,9 +332,61 @@ function IdeaCard({
   )
 }
 
+/**
+ * Criar sozinho (ADR 0026): o botão que escolhe a ideia e a lista do que está sendo criado, com a etapa
+ * real de cada um. O vídeo para em "falta gravar a voz" e nunca é publicado sozinho.
+ */
+function AutoCreate({ autopilot }: { autopilot: ReturnType<typeof useAutopilot> }) {
+  const { jobs, error, start, resume } = autopilot
+  return (
+    <div className="panel panel-pad id-auto">
+      <div className="id-auto-head">
+        <div>
+          <span className="label">Criar sozinho</span>
+          <p className="meta">
+            A IA faz o próprio brainstorm, sem tema: escolhe um assunto ainda não feito, nas obras que o seu canal já fala (o público veio
+            por elas), escreve o roteiro, monta e procura as imagens. Para em “falta gravar a voz”: a voz é sua. Nunca publica. Para usar uma ideia sua, “🤖 Criar sozinho” no cartão
+            dela.
+          </p>
+        </div>
+        <button className="btn-y" onClick={() => start()}>🤖 Criar um vídeo sozinho</button>
+      </div>
+      {error && <p className="form-error">{error}</p>}
+      {jobs.length > 0 && (
+        <ul className="id-jobs">
+          {jobs.map(job => (
+            <li key={job.id} className={`id-job ${job.stage}`}>
+              <span className="id-job-title">{job.title ?? 'Ideia da IA'}</span>
+              <span className={job.stage === 'erro' ? 'c-danger' : job.stage === 'pronto' ? 'c-success' : 'c-muted'}>
+                {jobActive(job) && <Spinner />} {JOB_STAGE_LABEL[job.stage]}
+                {job.error && `: ${job.error}`}
+              </span>
+              <span className="spacer" />
+              {job.stage === 'erro' &&
+                (job.projectId ? (
+                  <button className="act" onClick={() => resume(job.projectId!)}>Continuar</button>
+                ) : (
+                  <button className="act" onClick={() => start(job.ideaId)}>Tentar de novo</button>
+                ))}
+              {job.projectId && (
+                <Link to={job.stage === 'pronto' ? `/projeto/${job.projectId}/roteiro` : `/projeto/${job.projectId}`} className="act">
+                  {job.stage === 'pronto' ? 'Gravar a voz →' : 'Abrir'}
+                </Link>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 /** Aba Ideias: brainstorm em lote, ajuste por pedido e o banco (ADR 0021, escolhas 4B e 5B). */
 function Brainstorm({ metrics }: { metrics: Metrics }) {
-  const { ideas, loading, thinking, error, brainstorm, setStatus, remove } = useIdeas()
+  const { ideas, loading, thinking, error, brainstorm, setStatus, remove, reload } = useIdeas()
+  // quando um vídeo criado sozinho termina, a ideia dele virou "feita"
+  const autopilot = useAutopilot(reload)
+  const creating = new Set(autopilot.jobs.filter(jobActive).map(j => j.ideaId))
   const { styles } = useStyles()
   const { tones } = useTones()
   const [seed, setSeed] = useState('')
@@ -346,6 +411,8 @@ function Brainstorm({ metrics }: { metrics: Metrics }) {
       toneName={tones.find(t => t.id === idea.toneId)?.name ?? idea.toneId}
       onStatus={(status, reason) => setStatus(idea.id, status, reason)}
       onRemove={() => remove(idea.id)}
+      onAuto={() => autopilot.start(idea.id)}
+      creating={creating.has(idea.id)}
     />
   )
 
@@ -377,6 +444,8 @@ function Brainstorm({ metrics }: { metrics: Metrics }) {
           </p>
         )}
       </div>
+
+      <AutoCreate autopilot={autopilot} />
 
       {error && <p className="form-error">{error}</p>}
       {loading && <Spinner />}

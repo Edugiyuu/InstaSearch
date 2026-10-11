@@ -143,6 +143,10 @@ function Script() {
 
         <aside className="panel sc-voice">
           <h2 className="panel-title">Sua voz</h2>
+          {project.autopilot?.stage === 'pronto' && !project.audioFile && (
+            // ADR 0026: o resto foi feito sozinho; a voz é a parte do usuário
+            <p className="sc-auto">🤖 Criado sozinho: o roteiro, a montagem e as imagens estão prontos. Só falta a sua voz.</p>
+          )}
           <p className="sc-voice-hint">Grave lendo o texto abaixo no celular ou no ElevenLabs e suba o áudio aqui.</p>
 
           <div className="sc-narration">{project.narration}</div>
@@ -190,10 +194,25 @@ function Script() {
           )}
           <input ref={audioInput} type="file" accept="audio/*" hidden onChange={e => uploadAudio(e.target.files?.[0])} />
 
-          <button className="btn-y btn-lg sc-next" onClick={() => navigate(`/projeto/${project.id}/montagem`)}>
-            Montar automaticamente →
-          </button>
-          {!project.audioFile && <p className="meta sc-next-note">Dá para montar sem áudio e subir depois.</p>}
+          {project.status === 'roteiro' ? (
+            <>
+              <button className="btn-y btn-lg sc-next" onClick={() => navigate(`/projeto/${project.id}/montagem`)}>
+                Montar automaticamente →
+              </button>
+              {!project.audioFile && <p className="meta sc-next-note">Dá para montar sem áudio e subir depois.</p>}
+            </>
+          ) : (
+            // já montado (à mão ou sozinho): a voz só ajusta o tempo, então o caminho é revisar;
+            // montar de novo continua possível, mas escolhe outra vez as imagens que não foram travadas
+            <>
+              <button className="btn-y btn-lg sc-next" onClick={() => navigate(`/projeto/${project.id}`)}>
+                Revisar o vídeo →
+              </button>
+              <button className="act sc-next-note" onClick={() => navigate(`/projeto/${project.id}/montagem`)}>
+                ↻ Montar de novo
+              </button>
+            </>
+          )}
         </aside>
       </div>
       {toast.node}

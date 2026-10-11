@@ -37,6 +37,13 @@ export async function listIdeas(): Promise<Idea[]> {
   return (await storage.findAll()).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }
 
+export async function getIdea(id: string) {
+  checkId(id)
+  const idea = await storage.findById(id)
+  if (!idea) throw new AppError('Ideia não encontrada', 404, 'NOT_FOUND')
+  return idea
+}
+
 export async function updateIdea(id: string, changes: { status?: IdeaStatus; discardReason?: string; projectId?: string }) {
   checkId(id)
   const idea = await storage.findById(id)
@@ -68,8 +75,45 @@ function section(title: string, lines: string[], empty?: string) {
  * `request`: um ajuste no lote atual ("mais polêmicas", "junta a 2 com a 5"), que é trocado inteiro.
  */
 export async function brainstorm(input: { seed?: string; request?: string }) {
+  await createIdeas(input)
+  return listIdeas()
+}
+
+/**
+ * Criar sozinho (ADR 0026, adendo): a IA escolhe o assunto num brainstorm próprio, sem tema, e devolve
+ * uma ideia só. Fica nas obras que o canal já fala (o público veio por elas), com um assunto ainda não feito.
+ * Não mexe no lote de ideias novas da tela; a ideia já nasce guardada (vira "feita" com o vídeo).
+ * - `channel`: os títulos dos vídeos que o criador fez à mão: dizem as obras do canal;
+ * - `done`: todos os títulos já feitos (à mão e sozinho), para não repetir o assunto;
+ * - `recent`: os mais recentes, para variar a obra dentro do canal.
+ */
+export async function brainstormOne(input: { channel: string[]; done: string[]; recent: string[] }) {
+  const list = (titles: string[]) => titles.map(t => `- ${t}`).join('\n')
+  const note = [
+    'Este vídeo vai ser criado sozinho pelo app, sem o criador escolher o tema: escolha você a ideia.',
+    input.channel.length
+      ? `Fique nas obras que o canal já fala, porque o público veio por elas: nada de obra nova que o canal nunca tratou. Os vídeos que o criador fez:\n${list(input.channel)}`
+      : '',
+    input.done.length ? `Assuntos que já viraram vídeo (não repita o assunto, mesmo com outro título):\n${list(input.done)}` : '',
+    input.recent.length ? `Os mais recentes foram: ${input.recent.join('; ')}. Se der, varie a obra dentro das do canal.` : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+  const [idea] = await createIdeas({ note }, { count: 1, keepBatch: true, status: 'guardada' })
+  return idea
+}
+
+/**
+ * Pede as ideias à IA e grava. `note`: instrução do próprio app (não do criador).
+ * Por padrão, o lote novo substitui as ideias "novas"; `keepBatch` deixa o lote da tela como está.
+ */
+async function createIdeas(
+  input: { seed?: string; request?: string; note?: string },
+  opts: { count?: number; keepBatch?: boolean; status?: IdeaStatus } = {},
+): Promise<Idea[]> {
   const seed = input.seed?.trim().slice(0, 300) || undefined
   const request = input.request?.trim().slice(0, 300) || undefined
+  const count = opts.count ?? BATCH_SIZE
 
   const [metrics, projects, styles, tones, ideas] = await Promise.all([listMetrics(), listProjects(), listStyles(), listTones(), listIdeas()])
   const refs = buildRefs(metrics.videos, projects)
@@ -77,7 +121,8 @@ export async function brainstorm(input: { seed?: string; request?: string }) {
   const toneName = (p: ShortProject) => tones.find(t => t.id === p.toneId)?.name ?? p.tone
   const measuredCount = metrics.measured.instagram + metrics.measured.youtube
 
-  const current = ideas.filter(i => i.status === 'nova').sort((a, b) => a.position - b.position)
+  // ajustar o lote só faz sentido quando ele vai ser trocado
+  const current = opts.keepBatch ? [] : ideas.filter(i => i.status === 'nova').sort((a, b) => a.position - b.position)
   const kept = ideas.filter(i => i.status === 'guardada' || i.status === 'feita')
   const discarded = ideas.filter(i => i.status === 'descartada').slice(0, MAX_DISCARDED)
 
@@ -111,9 +156,15 @@ ${
       : ''
 }
 
-Sugira ${BATCH_SIZE} ideias de vídeo. Regras:
+${input.note ?? ''}
+
+Sugira ${count === 1 ? 'a melhor ideia de vídeo (uma só)' : `${count} ideias de vídeo`}. Regras:
 - Cada ideia tem um porquê concreto ligado aos dados: cite em "videos" as etiquetas dos vídeos cujo desempenho a sustenta, em "comments" as dos comentários que a pedem, e em "web" o que a pesquisa encontrou. Só cite o que sustenta a ideia de verdade. Se a ideia vem só da pesquisa, diga isso no "why".
-- Misture: ideias que repetem o que foi acima da mediana (mesmo assunto, personagem ou formato), pelo menos uma que atende um pedido dos comentários (se houver) e pelo menos uma atual, do que está acontecendo agora.
+${
+  count === 1
+    ? '- Prefira o que os números, os comentários ou a pesquisa sustentam, respeitando o que foi pedido acima sobre o assunto.'
+    : '- Misture: ideias que repetem o que foi acima da mediana (mesmo assunto, personagem ou formato), pelo menos uma que atende um pedido dos comentários (se houver) e pelo menos uma atual, do que está acontecendo agora.'
+}
 - Evite o que ficou abaixo da mediana, a não ser que haja um motivo claro para tentar de outro jeito; nesse caso, diga qual.
 - "theme" é escrito como o criador escreveria no campo "Sobre o que é o vídeo?": uma pergunta ou afirmação específica (ex.: "Por que o Luffy nunca mata ninguém em One Piece?"). Nada genérico.
 - "hook" é a primeira frase falada do vídeo, com até 15 palavras.
@@ -129,15 +180,17 @@ Responda só com JSON:
     toneIds: tones.map(t => t.id),
     defaultStyle: styles.some(s => s.id === 'comentario-anime') ? 'comentario-anime' : styles[0]?.id,
     defaultTone: tones.some(t => t.id === 'polemico') ? 'polemico' : tones[0]?.id,
-  }).slice(0, MAX_IDEAS)
+  }).slice(0, opts.count ?? MAX_IDEAS)
   if (cleaned.length === 0) throw new AppError('A IA não devolveu nenhuma ideia. Tente de novo.', 502, 'AI_EMPTY')
 
-  // o lote novo substitui as ideias "novas" que o usuário não guardou nem descartou
+  // o lote novo substitui as ideias "novas" que o usuário não guardou nem descartou (com keepBatch, nenhuma)
   await Promise.all(current.map(i => storage.delete(i.id)))
   const batchId = nanoid(8)
   const now = new Date().toISOString()
+  const saved: Idea[] = []
   for (const [i, idea] of cleaned.entries()) {
-    await storage.save({ ...idea, id: `idea_${nanoid(10)}`, status: 'nova', batchId, position: i + 1, seed, request, ai, createdAt: now, updatedAt: now })
+    const status = opts.status ?? 'nova'
+    saved.push(await storage.save({ ...idea, id: `idea_${nanoid(10)}`, status, batchId, position: i + 1, seed, request, ai, createdAt: now, updatedAt: now }))
   }
-  return listIdeas()
+  return saved
 }

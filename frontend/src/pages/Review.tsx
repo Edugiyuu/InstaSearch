@@ -217,6 +217,17 @@ function Review() {
     shortsApi.updateProject(project.id, { settings: { ...project.settings, caption } }).catch(e => toast.show(errorMessage(e)))
   }
 
+  /** Segue a criação sozinha da etapa onde parou; o andamento aparece na tela Ideias. */
+  const continueAutopilot = async () => {
+    try {
+      await shortsApi.continueAutopilot(project.id)
+      setProject(p => (p?.autopilot ? { ...p, autopilot: { ...p.autopilot, error: undefined } } : p))
+      toast.show('Continuando. Acompanhe na tela Ideias.')
+    } catch (e) {
+      toast.show(errorMessage(e))
+    }
+  }
+
   const saveForLater = async () => {
     try {
       setProject(await shortsApi.updateProject(project.id, { status: 'salvo' }))
@@ -316,6 +327,7 @@ function Review() {
         <Link to="/projetos" className="rv-back">← Projetos</Link>
         <strong className="rv-title">{project.title}</strong>
         <span className="meta">{style?.name ?? project.styleId} · {seconds}s</span>
+        {project.autopilot && <span className="meta" title="Roteiro, montagem e imagens feitos sozinhos (ADR 0026)">🤖 criado sozinho</span>}
         <span className="spacer" />
         <Link to={`/projeto/${project.id}/roteiro`} className="btn-o">Roteiro e voz</Link>
         {project.status === 'salvo' ? (
@@ -325,6 +337,17 @@ function Review() {
         )}
         <button className="btn-y" onClick={() => setPublishing(true)}>Publicar →</button>
       </header>
+
+      {project.autopilot && (project.autopilot.error || project.autopilot.stage !== 'pronto') && (
+        // ADR 0026: criado sozinho, mas ainda criando ou parado no meio
+        <p className="rv-auto">
+          🤖 {project.autopilot.error ? `A criação sozinha parou: ${project.autopilot.error}` : 'Este vídeo ainda está sendo criado sozinho…'}
+          {project.autopilot.error && (
+            <button className="act" onClick={continueAutopilot}>Continuar</button>
+          )}
+          <Link to="/ideias" className="act">Acompanhar em Ideias</Link>
+        </p>
+      )}
 
       <div className="rv-body">
         <section className="rv-video">

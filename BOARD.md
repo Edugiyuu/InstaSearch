@@ -6,7 +6,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-- [ ] Criação autônoma: botões "🤖 Criar sozinho" (na ideia e no alto da tela Ideias, com brainstorm se não houver ideia), fila de um por vez, roteiro → montagem → imagens, parando em "falta gravar a voz", com "Continuar" se falhar ([ADR 0026](docs/decisions/0026-criacao-autonoma-de-videos.md))
+_(nada; escolha a próxima em "A fazer")_
 
 ## A fazer
 
@@ -37,6 +37,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-10 · Criar sozinho: "🤖 Criar sozinho" na ideia e "🤖 Criar um vídeo sozinho" no alto da tela Ideias (brainstorm próprio de uma ideia, nas obras do canal, sem repetir assunto), fila de um por vez com a etapa na tela, roteiro → montagem → imagens, parando em "falta gravar a voz", com "Continuar" se parar ([ADR 0026](docs/decisions/0026-criacao-autonoma-de-videos.md))
 - [x] 2026-10-10 · ADR da criação autônoma: sem voz sintética (a voz é a única parte à mão), só por botão, ideias guardadas ou do brainstorm, imagens preenchidas e parada na Revisão ([ADR 0026](docs/decisions/0026-criacao-autonoma-de-videos.md))
 - [x] 2026-10-10 · Figurinhas: pop-up "😮 Figurinha" na cena (Automático, Nenhuma ou uma da biblioteca, com miniaturas; aparece mesmo sem reação e o chat respeita) e ajuste "Figurinhas: Nenhuma / Poucas / Muitas" do vídeo ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 2C)
 - [x] 2026-10-10 · Volume dos efeitos sonoros no pop-up do som: "Todos os efeitos" (o vídeo, 75% de início) e "Esta cena" (0 a 200%, multiplica o do vídeo; volta a 100% quando o som da cena muda)

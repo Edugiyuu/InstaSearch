@@ -119,6 +119,13 @@ export async function createProject(input: {
   return storage.save(project)
 }
 
+/** Criação autônoma (ADR 0026): grava em que etapa o projeto está. */
+export async function setAutopilot(id: string, autopilot: ShortProject['autopilot']) {
+  const project = await getProject(id)
+  project.autopilot = autopilot
+  return save(project)
+}
+
 /** Edição direta (roteiro, ajustes rápidos, título, legenda do post). */
 export async function updateProject(id: string, changes: Partial<ShortProject>) {
   const project = await getProject(id)

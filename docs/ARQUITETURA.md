@@ -119,6 +119,7 @@ backend/src/
 │   │   ├── llm.ts             a fila de IAs (Gemini → Claude)
 │   │   ├── shortsAI.ts        os prompts: roteiro, ajuste, escolher e catalogar imagens
 │   │   ├── projects.ts        criar, montar, ajustar, desfazer, transcrever
+│   │   ├── autopilot.ts       criar sozinho: a fila ideia → roteiro → montagem → imagens (ADR 0026)
 │   │   ├── library.ts         biblioteca e escolha por cena
 │   │   ├── imageSearch.ts     busca na web (Bing, Danbooru, AniList, Serper)
 │   │   ├── sceneEdits.ts      o chat só mexe nas cenas citadas
