@@ -21,6 +21,7 @@ Os princípios, o estado do projeto e o jeito de trabalhar. O código em si est�
 | Publicar no Instagram e no YouTube, agendar | ✅ Funciona |
 | Ideias a partir das métricas | ✅ Funciona |
 | Criar sozinho: ideia → roteiro → montagem → imagens, parando na voz | ✅ Funciona ([ADR 0026](docs/decisions/0026-criacao-autonoma-de-videos.md)) |
+| Debate das IAs antes de criar (Estrategista × Roteirista, chat ao vivo) | ✅ Funciona ([ADR 0027](docs/decisions/0027-debate-das-ias-antes-de-criar.md)) |
 | Imagens só da web | 📋 A fazer ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
 | Ferramentas antigas (perfis, análises, gerador de prompts) | ⚠️ Legado, quase tudo *stub* |
 

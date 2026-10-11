@@ -80,27 +80,26 @@ export async function brainstorm(input: { seed?: string; request?: string }) {
 }
 
 /**
- * Criar sozinho (ADR 0026, adendo): a IA escolhe o assunto num brainstorm próprio, sem tema, e devolve
- * uma ideia só. Fica nas obras que o canal já fala (o público veio por elas), com um assunto ainda não feito.
- * Não mexe no lote de ideias novas da tela; a ideia já nasce guardada (vira "feita" com o vídeo).
+ * As candidatas do debate das IAs (ADR 0027): um brainstorm próprio, sem tema, nas obras que o canal já
+ * fala (o público veio por elas) e com assuntos ainda não feitos (adendo do ADR 0026). Não grava nada nem
+ * mexe no lote de ideias novas da tela: só a vencedora do debate entra no banco.
  * - `channel`: os títulos dos vídeos que o criador fez à mão: dizem as obras do canal;
  * - `done`: todos os títulos já feitos (à mão e sozinho), para não repetir o assunto;
  * - `recent`: os mais recentes, para variar a obra dentro do canal.
  */
-export async function brainstormOne(input: { channel: string[]; done: string[]; recent: string[] }) {
+export async function brainstormCandidates(input: { channel: string[]; done: string[]; recent: string[] }, count: number) {
   const list = (titles: string[]) => titles.map(t => `- ${t}`).join('\n')
   const note = [
-    'Este vídeo vai ser criado sozinho pelo app, sem o criador escolher o tema: escolha você a ideia.',
+    'Estas ideias vão ser debatidas por duas IAs, e a escolhida vira vídeo sozinha, sem o criador escolher o tema: traga ideias fortes e diferentes entre si.',
     input.channel.length
       ? `Fique nas obras que o canal já fala, porque o público veio por elas: nada de obra nova que o canal nunca tratou. Os vídeos que o criador fez:\n${list(input.channel)}`
       : '',
     input.done.length ? `Assuntos que já viraram vídeo (não repita o assunto, mesmo com outro título):\n${list(input.done)}` : '',
-    input.recent.length ? `Os mais recentes foram: ${input.recent.join('; ')}. Se der, varie a obra dentro das do canal.` : '',
+    input.recent.length ? `Os mais recentes foram: ${input.recent.join('; ')}. Varie a obra dentro das do canal.` : '',
   ]
     .filter(Boolean)
     .join('\n\n')
-  const [idea] = await createIdeas({ note }, { count: 1, keepBatch: true, status: 'guardada' })
-  return idea
+  return createIdeas({ note }, { count, keepBatch: true, save: false })
 }
 
 /**
@@ -109,7 +108,7 @@ export async function brainstormOne(input: { channel: string[]; done: string[]; 
  */
 async function createIdeas(
   input: { seed?: string; request?: string; note?: string },
-  opts: { count?: number; keepBatch?: boolean; status?: IdeaStatus } = {},
+  opts: { count?: number; keepBatch?: boolean; status?: IdeaStatus; save?: boolean } = {},
 ): Promise<Idea[]> {
   const seed = input.seed?.trim().slice(0, 300) || undefined
   const request = input.request?.trim().slice(0, 300) || undefined
@@ -187,10 +186,22 @@ Responda só com JSON:
   await Promise.all(current.map(i => storage.delete(i.id)))
   const batchId = nanoid(8)
   const now = new Date().toISOString()
-  const saved: Idea[] = []
-  for (const [i, idea] of cleaned.entries()) {
-    const status = opts.status ?? 'nova'
-    saved.push(await storage.save({ ...idea, id: `idea_${nanoid(10)}`, status, batchId, position: i + 1, seed, request, ai, createdAt: now, updatedAt: now }))
-  }
-  return saved
+  const made: Idea[] = cleaned.map((idea, i) => ({
+    ...idea,
+    id: `idea_${nanoid(10)}`,
+    status: opts.status ?? 'nova',
+    batchId,
+    position: i + 1,
+    seed,
+    request,
+    ai,
+    createdAt: now,
+    updatedAt: now,
+  }))
+  // save: false → só para o debate (ADR 0027); só a vencedora entra no banco (storeIdea)
+  if (opts.save === false) return made
+  return Promise.all(made.map(idea => storage.save(idea)))
 }
+
+/** Grava uma ideia que veio de fora do brainstorm comum (a vencedora do debate). */
+export const storeIdea = (idea: Idea) => storage.save({ ...idea, updatedAt: new Date().toISOString() })

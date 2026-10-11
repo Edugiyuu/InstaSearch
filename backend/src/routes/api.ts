@@ -67,6 +67,8 @@ router.get('/metrics', insightsController.listMetrics)
 router.post('/metrics/refresh', insightsController.refreshMetrics)
 router.get('/ideas', ideasController.listIdeas)
 router.post('/ideas/brainstorm', ideasController.brainstorm)
+router.get('/ideas/debates', ideasController.listDebates)
+router.get('/ideas/debates/:id', ideasController.getDebate)
 router.put('/ideas/:id', ideasController.updateIdea)
 router.delete('/ideas/:id', ideasController.deleteIdea)
 

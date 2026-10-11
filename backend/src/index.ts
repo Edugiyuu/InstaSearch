@@ -46,6 +46,8 @@ resumeTranscriptions().catch(error => logger.warn(`⚠️ Não consegui retomar 
 // ...e o que a criação autônoma deixou pela metade vira "Continuar" (ADR 0026)
 const { markInterrupted } = await import('./services/shorts/autopilot.js')
 markInterrupted().catch(error => logger.warn(`⚠️ Não consegui marcar a criação automática interrompida: ${error.message}`))
+const { markInterruptedDebates } = await import('./services/ideas/debate.js')
+markInterruptedDebates().catch(error => logger.warn(`⚠️ Não consegui marcar os debates interrompidos: ${error.message}`))
 
 // Root route
 app.get('/', (req: Request, res: Response) => {

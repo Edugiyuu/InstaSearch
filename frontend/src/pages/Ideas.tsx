@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Idea, IdeaEvidence, IdeaStatus, newVideoLink } from '../api/ideas'
+import { Idea, IdeaEvidence, IdeaStatus, MAX_TURNS, newVideoLink } from '../api/ideas'
 import { formatCount, Platform, PLATFORM_LABEL, PlatformState, sharesPerThousand, VideoMetrics, watchedPercent } from '../api/insights'
 import { JOB_STAGE_LABEL, jobActive } from '../api/shorts'
 import { AiBadge, SearchList, Segmented, Spinner } from '../components/flow'
 import { useIdeas } from '../hooks/useIdeas'
 import { useAutopilot } from '../hooks/useAutopilot'
+import { useDebate } from '../hooks/useDebate'
+import { DebateChat } from '../components/DebateChat'
 import { useMetrics } from '../hooks/useInsights'
 import { useStyles, useTones } from '../hooks/useShorts'
 import './Ideas.css'
@@ -333,35 +335,52 @@ function IdeaCard({
 }
 
 /**
- * Criar sozinho (ADR 0026): o botão que escolhe a ideia e a lista do que está sendo criado, com a etapa
- * real de cada um. O vídeo para em "falta gravar a voz" e nunca é publicado sozinho.
+ * Criar sozinho (ADR 0026) com o debate das IAs (ADR 0027): o botão faz duas IAs debaterem 4 temas de um
+ * brainstorm próprio e, com acordo, criar o vídeo. O chat mostra o debate escolhido (?debate=) ou o mais
+ * recente da fila; a lista embaixo mostra a etapa real de cada vídeo. Nunca publica.
  */
 function AutoCreate({ autopilot }: { autopilot: ReturnType<typeof useAutopilot> }) {
   const { jobs, error, start, resume } = autopilot
+  const [params, setParams] = useSearchParams()
+  const shown = params.get('debate') ?? jobs.find(j => j.debateId)?.debateId
+  // o vídeo do debate mostrado: cada etapa nova na fila busca o debate de novo (chega o link do projeto)
+  const debateJob = jobs.find(j => j.debateId === shown)
+  const { debate, error: debateError } = useDebate(shown ?? undefined, debateJob?.stage)
+  const showDebate = (id: string) => setParams(p => ({ ...Object.fromEntries(p), debate: id }), { replace: true })
+
   return (
     <div className="panel panel-pad id-auto">
       <div className="id-auto-head">
         <div>
           <span className="label">Criar sozinho</span>
           <p className="meta">
-            A IA faz o próprio brainstorm, sem tema: escolhe um assunto ainda não feito, nas obras que o seu canal já fala (o público veio
-            por elas), escreve o roteiro, monta e procura as imagens. Para em “falta gravar a voz”: a voz é sua. Nunca publica. Para usar uma ideia sua, “🤖 Criar sozinho” no cartão
-            dela.
+            Duas IAs (a Estrategista, que olha os números do canal, e a Roteirista, que olha o gancho e o argumento) debatem 4 temas de um
+            brainstorm delas, nas obras que o seu canal já fala, e criticam uma à outra até aceitarem o mesmo, em no máximo {MAX_TURNS}{' '}
+            falas. Com acordo, elas escrevem o roteiro, montam e procuram as imagens, e explicam por que o tema é bom. Para em “falta gravar
+            a voz”: a voz é sua. Nunca publica.
           </p>
         </div>
-        <button className="btn-y" onClick={() => start()}>🤖 Criar um vídeo sozinho</button>
+        <button className="btn-y" onClick={() => start()}>🗣️ Debater e criar um vídeo</button>
       </div>
       {error && <p className="form-error">{error}</p>}
+
+      {debateError && <p className="form-error">{debateError}</p>}
+      {debate && <DebateChat debate={debate} creating={!!debateJob && jobActive(debateJob)} />}
+
       {jobs.length > 0 && (
         <ul className="id-jobs">
           {jobs.map(job => (
             <li key={job.id} className={`id-job ${job.stage}`}>
-              <span className="id-job-title">{job.title ?? 'Ideia da IA'}</span>
-              <span className={job.stage === 'erro' ? 'c-danger' : job.stage === 'pronto' ? 'c-success' : 'c-muted'}>
+              <span className="id-job-title">{job.title ?? (job.debateId ? 'Tema do debate' : 'Ideia')}</span>
+              <span className={job.stage === 'erro' || job.stage === 'sem-acordo' ? 'c-danger' : job.stage === 'pronto' ? 'c-success' : 'c-muted'}>
                 {jobActive(job) && <Spinner />} {JOB_STAGE_LABEL[job.stage]}
                 {job.error && `: ${job.error}`}
               </span>
               <span className="spacer" />
+              {job.debateId && job.debateId !== shown && (
+                <button className="act" onClick={() => showDebate(job.debateId!)}>Ver o debate</button>
+              )}
+              {job.stage === 'sem-acordo' && <button className="act" onClick={() => start()}>Debater de novo</button>}
               {job.stage === 'erro' &&
                 (job.projectId ? (
                   <button className="act" onClick={() => resume(job.projectId!)}>Continuar</button>

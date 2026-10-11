@@ -1,0 +1,11 @@
+.why-topic {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.why-topic p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}

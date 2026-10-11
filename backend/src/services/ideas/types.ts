@@ -45,3 +45,43 @@ export interface Idea {
   createdAt: string
   updatedAt: string
 }
+
+// ── Debate das IAs (ADR 0027) ─────────────────────────────
+
+/** As duas IAs do debate, com olhares diferentes. */
+export type Speaker = 'estrategista' | 'roteirista'
+
+export interface DebateMessage {
+  speaker: Speaker
+  /** A fala, como numa conversa. */
+  text: string
+  /** O tema (1, 2, 3…) que ela aceita para virar vídeo agora; null = ainda nenhum. */
+  vote: number | null
+  ai?: AiCredit
+  at: string
+}
+
+/**
+ * brainstorm → debatendo → resumindo → acordo (vira vídeo) ou sem-acordo (nenhum vídeo); erro em qualquer etapa.
+ */
+export type DebateStatus = 'brainstorm' | 'debatendo' | 'resumindo' | 'acordo' | 'sem-acordo' | 'erro'
+
+export interface Debate {
+  id: string
+  status: DebateStatus
+  /** Os temas em debate, na ordem em que as IAs os citam (1, 2, 3…). Não estão no banco de ideias. */
+  ideas: Idea[]
+  messages: DebateMessage[]
+  /** Quem está escrevendo agora, para a tela mostrar "pensando…". */
+  thinking?: Speaker
+  /** O número do tema aceito pelas duas. */
+  chosen?: number
+  /** Por que as duas acharam o tema bom (o resumo do debate); vai para o projeto. */
+  why?: string
+  /** A vencedora, gravada no banco de ideias. */
+  ideaId?: string
+  projectId?: string
+  error?: string
+  createdAt: string
+  updatedAt: string
+}

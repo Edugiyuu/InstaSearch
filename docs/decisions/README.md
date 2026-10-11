@@ -56,3 +56,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0024](0024-imagens-do-assunto-do-video.md) | Imagens do assunto do vídeo: a obra guia a busca e a escolha | Aceita |
 | [0025](0025-variacoes-volume-e-figurinhas.md) | Mais variações, volume dos efeitos e figurinha na cena | Aceita |
 | [0026](0026-criacao-autonoma-de-videos.md) | Criação autônoma de vídeos, sem publicar | Aceita |
+| [0027](0027-debate-das-ias-antes-de-criar.md) | Duas IAs debatem os temas antes de criar o vídeo | Aceita |

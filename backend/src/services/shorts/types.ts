@@ -217,6 +217,9 @@ export interface Autopilot {
   error?: string
   /** A ideia de onde o vídeo veio. */
   ideaId?: string
+  /** O debate das IAs que escolheu o tema (ADR 0027) e por que elas o acharam bom. */
+  debateId?: string
+  why?: string
   startedAt: string
 }
 

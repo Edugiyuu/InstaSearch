@@ -28,6 +28,7 @@ import { ShortPlayer, ShortPlayerHandle } from '../video/ShortPlayer'
 import { DEFAULT_SFX_VOLUME, sfxVolume, voiceTiming } from '../video/timeline'
 import { ScenePick, ScenePickOption } from '../components/ScenePick'
 import { BackdropPick } from '../components/BackdropPick'
+import { WhyTopic } from '../components/WhyTopic'
 import { StickerChoice, StickerPick } from '../components/StickerPick'
 import './Review.css'
 
@@ -571,6 +572,12 @@ function Review() {
               <p className="c-success rv-ok">✓ Todas as cenas têm imagem</p>
             )}
           </div>
+
+          {project.autopilot?.why && (
+            <div className="panel rv-card">
+              <WhyTopic autopilot={project.autopilot} />
+            </div>
+          )}
 
           {(project.ai?.script || project.ai?.images) && (
             <div className="panel rv-card rv-credits">

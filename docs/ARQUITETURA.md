@@ -127,7 +127,7 @@ backend/src/
 │   │   ├── render.ts · publish.ts   MP4, Instagram e YouTube
 │   │   └── types.ts           ShortProject, Beat… (o modelo de dados)
 │   ├── insights/              coleta e comparação das métricas
-│   ├── ideas/                 brainstorm e banco de ideias
+│   ├── ideas/                 brainstorm, banco de ideias e o debate das IAs (debate.ts, ADR 0027)
 │   └── storage/               FileStorage: um JSON por item
 └── middleware/errorHandler.ts AppError + asyncHandler
 

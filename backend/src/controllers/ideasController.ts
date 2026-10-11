@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import * as ideas from '../services/ideas/ideas.js'
+import * as debates from '../services/ideas/debate.js'
 
 // GET /api/ideas — o banco de ideias (ADR 0021)
 export const listIdeas = asyncHandler(async (_req: Request, res: Response) => {
@@ -31,4 +32,14 @@ export const updateIdea = asyncHandler(async (req: Request, res: Response) => {
 export const deleteIdea = asyncHandler(async (req: Request, res: Response) => {
   await ideas.deleteIdea(req.params.id)
   res.json({ success: true })
+})
+
+// GET /api/ideas/debates — os debates das IAs, do mais novo para o mais velho (ADR 0027)
+export const listDebates = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ success: true, data: await debates.listDebates() })
+})
+
+// GET /api/ideas/debates/:id — um debate, com as falas até agora (a tela consulta enquanto ele roda)
+export const getDebate = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await debates.getDebate(req.params.id) })
 })

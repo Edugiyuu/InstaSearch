@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { audioUrl, Beat, errorMessage, shortsApi } from '../api/shorts'
+import { WhyTopic } from '../components/WhyTopic'
 import { AiBadge, copyText, SearchList, Spinner, Stepper, useToast } from '../components/flow'
 import { useProject } from '../hooks/useShorts'
 import './Script.css'
@@ -147,6 +148,7 @@ function Script() {
             // ADR 0026: o resto foi feito sozinho; a voz é a parte do usuário
             <p className="sc-auto">🤖 Criado sozinho: o roteiro, a montagem e as imagens estão prontos. Só falta a sua voz.</p>
           )}
+          {project.autopilot?.why && <WhyTopic autopilot={project.autopilot} />}
           <p className="sc-voice-hint">Grave lendo o texto abaixo no celular ou no ElevenLabs e suba o áudio aqui.</p>
 
           <div className="sc-narration">{project.narration}</div>

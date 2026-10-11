@@ -184,14 +184,19 @@ export interface Autopilot {
   stage: 'montagem' | 'imagens' | 'pronto'
   error?: string
   ideaId?: string
+  /** O debate das IAs que escolheu o tema (ADR 0027) e por que elas o acharam bom. */
+  debateId?: string
+  why?: string
   startedAt: string
 }
 
 /** Um vídeo sendo criado sozinho (ADR 0026). */
 export interface AutopilotJob {
   id: string
-  stage: 'fila' | 'ideia' | 'roteiro' | 'montagem' | 'imagens' | 'pronto' | 'erro'
+  stage: 'fila' | 'ideia' | 'debate' | 'roteiro' | 'montagem' | 'imagens' | 'pronto' | 'erro' | 'sem-acordo'
   ideaId?: string
+  /** O debate das IAs que escolhe a ideia, quando o vídeo não veio de um cartão (ADR 0027). */
+  debateId?: string
   title?: string
   projectId?: string
   error?: string
@@ -202,15 +207,17 @@ export interface AutopilotJob {
 /** O que está acontecendo agora em cada etapa, como a tela mostra. */
 export const JOB_STAGE_LABEL: Record<AutopilotJob['stage'], string> = {
   fila: 'na fila',
-  ideia: 'a IA está escolhendo o assunto (brainstorm com pesquisa)',
+  ideia: 'lendo a ideia',
+  debate: 'as IAs estão debatendo o tema',
   roteiro: 'escrevendo o roteiro (com pesquisa)',
   montagem: 'montando as cenas',
   imagens: 'procurando as imagens que faltam',
   pronto: 'pronto · falta gravar a voz',
   erro: 'parou',
+  'sem-acordo': 'as IAs não chegaram a um acordo; nenhum vídeo foi criado',
 }
 
-export const jobActive = (job: AutopilotJob) => job.stage !== 'pronto' && job.stage !== 'erro'
+export const jobActive = (job: AutopilotJob) => job.stage !== 'pronto' && job.stage !== 'erro' && job.stage !== 'sem-acordo'
 
 /** Uma palavra ouvida pelo Whisper; tempos em segundos desde o começo do áudio. */
 export interface TranscriptWord {

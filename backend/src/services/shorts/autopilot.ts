@@ -1,24 +1,31 @@
 // Criação autônoma (ADR 0026): ideia → roteiro → montagem → imagens, parando em "falta gravar a voz".
+// Sem ideia escolhida, a ideia sai do debate das IAs (ADR 0027).
 // Nunca publica. Um vídeo por vez, numa fila em memória (como a do Whisper): o roteiro com pesquisa e a
 // visão gastam cota de IA, e duas montagens juntas disputariam o limite.
 
 import { nanoid } from 'nanoid'
 import { AppError } from '../../middleware/errorHandler.js'
 import { logger } from '../../utils/logger.js'
-import { brainstormOne, getIdea, updateIdea } from '../ideas/ideas.js'
+import { createDebate, linkProject, runDebate } from '../ideas/debate.js'
+import { getIdea, updateIdea } from '../ideas/ideas.js'
 import type { Idea } from '../ideas/types.js'
 import { assemble, autoFillImages, createProject, getProject, listProjects, setAutopilot } from './projects.js'
 import type { Autopilot } from './types.js'
 
-/** fila → ideia (escolhe ou faz um brainstorm) → roteiro → montagem → imagens → pronto (ou erro). */
-export type JobStage = 'fila' | 'ideia' | 'roteiro' | 'montagem' | 'imagens' | 'pronto' | 'erro'
+/**
+ * fila → ideia (a do cartão) ou debate (as IAs escolhem, ADR 0027) → roteiro → montagem → imagens → pronto.
+ * Termina em erro, ou em sem-acordo quando o debate acaba sem as duas aceitarem um tema (nenhum vídeo).
+ */
+export type JobStage = 'fila' | 'ideia' | 'debate' | 'roteiro' | 'montagem' | 'imagens' | 'pronto' | 'erro' | 'sem-acordo'
 
 /** Um vídeo sendo criado; a tela Ideias acompanha por aqui. */
 export interface AutopilotJob {
   id: string
   stage: JobStage
-  /** A ideia escolhida pelo usuário; sem ela, o app escolhe (ADR 0026, 3B). */
+  /** A ideia escolhida pelo usuário; sem ela, as IAs debatem e escolhem (ADR 0027). */
   ideaId?: string
+  /** O debate que escolheu a ideia; a tela mostra o chat. */
+  debateId?: string
   /** O tema da ideia, depois o título do projeto. */
   title?: string
   projectId?: string
@@ -27,7 +34,7 @@ export interface AutopilotJob {
   updatedAt: string
 }
 
-const ACTIVE: JobStage[] = ['fila', 'ideia', 'roteiro', 'montagem', 'imagens']
+const ACTIVE: JobStage[] = ['fila', 'ideia', 'debate', 'roteiro', 'montagem', 'imagens']
 /** Quantos jobs terminados a tela ainda mostra (o resto fica no próprio projeto). */
 const KEEP_DONE = 10
 
@@ -88,8 +95,19 @@ const step = (job: AutopilotJob, stage: JobStage) => {
 async function run(job: AutopilotJob) {
   try {
     if (!job.projectId) {
-      step(job, 'ideia')
-      const idea = job.ideaId ? await getIdea(job.ideaId) : await pickIdea()
+      let idea: Idea
+      if (job.ideaId) {
+        step(job, 'ideia')
+        idea = await getIdea(job.ideaId)
+      } else {
+        step(job, 'debate')
+        const debate = await createDebate()
+        job.debateId = debate.id
+        const won = await runDebate(debate)
+        // sem acordo, nenhum vídeo (ADR 0027, 2A): o chat mostra por quê
+        if (!won) return step(job, 'sem-acordo')
+        idea = won
+      }
       job.ideaId = idea.id
       job.title = idea.theme
 
@@ -97,7 +115,14 @@ async function run(job: AutopilotJob) {
       const project = await createProject({ theme: idea.theme, styleId: idea.styleId, toneId: idea.toneId, duration: idea.duration })
       job.projectId = project.id
       job.title = project.title
-      await setAutopilot(project.id, { stage: 'montagem', ideaId: idea.id, startedAt: job.startedAt })
+      await setAutopilot(project.id, {
+        stage: 'montagem',
+        ideaId: idea.id,
+        startedAt: job.startedAt,
+        // o porquê do debate fica no projeto ("Por que este tema")
+        ...(job.debateId ? { debateId: job.debateId, why: idea.why } : {}),
+      })
+      if (job.debateId) await linkProject(job.debateId, project.id)
       // como no "Criar vídeo" à mão: a ideia vira "feita" e aponta para o projeto
       await updateIdea(idea.id, { status: 'feita', projectId: project.id })
     }
@@ -131,24 +156,6 @@ async function run(job: AutopilotJob) {
       if (project?.autopilot) await setAutopilot(job.projectId, { ...project.autopilot, error: job.error }).catch(() => undefined)
     }
   }
-}
-
-/** Quantos projetos recentes entram no "varie a obra". */
-const RECENT = 3
-
-/**
- * A ideia do botão geral (ADR 0026, adendo): um brainstorm próprio, sem tema, com a IA escolhendo o
- * assunto nas obras do canal. Não usa as ideias da tela (essas têm o "Criar sozinho" no cartão), que vêm
- * do tema que o usuário pediu no brainstorm dele e fariam todo vídeo ser sobre a mesma coisa.
- */
-async function pickIdea(): Promise<Idea> {
-  const projects = await listProjects()
-  return brainstormOne({
-    // só os feitos à mão dizem o nicho: um tema que a IA escolheu sozinha não vira "obra do canal"
-    channel: projects.filter(p => !p.autopilot).map(p => p.title),
-    done: projects.map(p => p.title),
-    recent: projects.slice(0, RECENT).map(p => p.title),
-  })
 }
 
 /** Ao subir o servidor: o que estava no meio parou junto, então vira "Continuar" no projeto. */

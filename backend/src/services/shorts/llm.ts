@@ -36,6 +36,8 @@ export interface AskOptions {
   research?: boolean
   /** O que pesquisar; sem valor, a instrução do roteiro (provas para a tese). As ideias pedem o que está acontecendo agora. */
   researchNote?: string
+  /** Só o Claude (API ou Claude Code), sem o Gemini nem como reserva: o debate das IAs (ADR 0027) é entre dois Sonnet 5.5. */
+  claudeOnly?: boolean
 }
 
 type Provider = AiProvider
@@ -323,6 +325,7 @@ function parseStream(out: string): any[] {
 
 /** A fila normal de provedores (o primeiro é o principal; os outros são reserva). */
 function preferred(opts: AskOptions): Provider[] {
+  if (opts.claudeOnly) return [...(claudeConfigured() ? ['claude' as const] : []), ...(claudeCodeEnabled() ? ['claude-code' as const] : [])]
   const mode = (process.env.LLM_PROVIDER || 'auto').toLowerCase()
   if (mode === 'gemini') return ['gemini']
   if (mode === 'claude') return opts.audio ? [] : ['claude']
@@ -374,7 +377,9 @@ export async function askJsonMeta<T>(prompt: string, opts: AskOptions = {}): Pro
     throw new AppError(
       opts.audio
         ? 'Só o Gemini consegue ouvir áudio, e ele não está disponível.'
-        : 'Nenhuma IA configurada. Coloque GEMINI_API_KEY ou ANTHROPIC_API_KEY no backend/.env.',
+        : opts.claudeOnly
+          ? 'O debate das IAs usa só o Claude: coloque ANTHROPIC_API_KEY ou ligue CLAUDE_CODE=on no backend/.env.'
+          : 'Nenhuma IA configurada. Coloque GEMINI_API_KEY ou ANTHROPIC_API_KEY no backend/.env.',
       503,
       'AI_NOT_CONFIGURED',
     )
