@@ -1,5 +1,18 @@
 import { describe, expect, it } from '@jest/globals'
-import { mentions } from './imageSearch.js'
+import { bingSafeSearch, mentions } from './imageSearch.js'
+
+describe('bingSafeSearch: a busca segura do Bing vem do .env', () => {
+  it('sem valor, ou com um valor desconhecido, fica no moderado', () => {
+    expect(bingSafeSearch(undefined)).toBe('moderate')
+    expect(bingSafeSearch('')).toBe('moderate')
+    expect(bingSafeSearch('desligado')).toBe('moderate')
+  })
+
+  it('aceita off e strict, sem ligar para maiúsculas e espaços', () => {
+    expect(bingSafeSearch(' OFF ')).toBe('off')
+    expect(bingSafeSearch('Strict')).toBe('strict')
+  })
+})
 
 describe('mentions: a busca já cita a obra do vídeo? (ADR 0024)', () => {
   it('não cita: a obra entra na busca', () => {

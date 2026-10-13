@@ -297,10 +297,21 @@ function decodeHtml(text: string) {
   return text.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>')
 }
 
+export type SafeSearch = 'off' | 'moderate' | 'strict'
+
+/**
+ * Busca segura do Bing, de `BING_SAFESEARCH` no .env. O padrão é moderate: bloqueia nudez explícita,
+ * mas deixa passar o sugestivo (fanservice, roupa curta), que o strict cortava. Valor desconhecido = padrão.
+ */
+export function bingSafeSearch(value = process.env.BING_SAFESEARCH): SafeSearch {
+  const v = value?.trim().toLowerCase()
+  return v === 'off' || v === 'strict' ? v : 'moderate'
+}
+
 async function searchBing(q: string, page: number, source: 'web' | 'manga') {
   const count = 35
   const { data } = await http.get<string>('https://www.bing.com/images/async', {
-    params: { q, first: (page - 1) * count, count, mmasync: 1, setlang: 'pt-br', adlt: 'strict' },
+    params: { q, first: (page - 1) * count, count, mmasync: 1, setlang: 'pt-br', adlt: bingSafeSearch() },
     headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8' },
     responseType: 'text',
   })

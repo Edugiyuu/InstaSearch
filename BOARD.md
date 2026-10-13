@@ -10,7 +10,6 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## A fazer
 
-- [ ] Busca segura do Bing em "moderada" (hoje `strict`), configurável por `BING_SAFESEARCH` no `.env` (off | moderate | strict)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
 - [ ] Remover a dependência `openai`, que não é usada (pendência do [ADR 0006](docs/decisions/0006-remover-openai.md))
@@ -39,6 +38,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-13 · Busca segura do Bing em "moderada" (era `strict`, que cortava até imagens sugestivas), configurável por `BING_SAFESEARCH` no `.env` (off | moderate | strict); o Danbooru continua só "geral"
 - [x] 2026-10-13 · Imagens só da web: a montagem e o chat buscam na web (sem `matchBeats`, a escolha por palavras e o ajuste "Quem escolhe as imagens"), "↻ Buscar de novo na web" na Revisão, sem a aba Imagens; a catalogação ficou porque marca o zoom ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 1B)
 - [x] 2026-10-13 · Variedade nos temas do debate: o código tira as ideias que repetem a personagem dos 3 últimos vídeos ou uma obra com 2 dos 4 últimos, 4 temas de obras diferentes em ordem sorteada, marcas 🔥 em alta / 🕰️ atemporal e uma 🎲 aposta do nicho, e as IAs pesam a variedade ([ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md))
 - [x] 2026-10-11 · Debate das IAs: "🗣️ Debater e criar um vídeo" faz duas Sonnet 5.5 (Estrategista × Roteirista) debaterem 4 temas de um brainstorm delas num chat ao vivo, até 6 falas, com o acordo conferido pelos votos; com acordo, criam o vídeo e o projeto mostra "Por que este tema" ([ADR 0027](docs/decisions/0027-debate-das-ias-antes-de-criar.md))
