@@ -25,12 +25,6 @@
   margin-bottom: 22px;
 }
 
-.lib-kind.on {
-  background: var(--text);
-  border-color: var(--text);
-  color: var(--bg);
-}
-
 .lib-count {
   margin-left: 4px;
   opacity: 0.6;
@@ -255,10 +249,6 @@
 
 .lib-zoom-hint {
   margin-top: 10px;
-}
-
-.lib-use {
-  margin-top: 16px;
 }
 
 .lib-delete {

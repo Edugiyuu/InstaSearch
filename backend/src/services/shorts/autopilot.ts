@@ -136,7 +136,7 @@ async function run(job: AutopilotJob) {
 
     if (autopilot.stage === 'montagem') {
       step(job, 'montagem')
-      await assemble(id)
+      await assemble(id, { images: false })
       await advance('imagens')
     }
     if (autopilot.stage === 'imagens') {

@@ -7,14 +7,14 @@ import { generateId } from '../../utils/idGenerator.js'
 import { logger } from '../../utils/logger.js'
 import { getStyle } from './styles.js'
 import { CHANNEL_CATCHPHRASE_ID, defaultCatchphrases } from './catchphrases.js'
-import { forgetProject, importImageFromUrl, listStickers, matchBeats, pickSfx, refreshStickers, syncUsage } from './library.js'
+import { forgetProject, importImageFromUrl, listStickers, pickSfx, refreshStickers, syncUsage } from './library.js'
 import { fetchThumb, searchWebImages, type WebImage } from './imageSearch.js'
 import { adjustBeats, generateScript, pickWebImagesWithAI } from './shortsAI.js'
 import { listSounds, syncSoundUsage } from './sounds.js'
 import { normalize } from './library.js'
 import { transcribeAudio, WHISPER_MODEL } from './transcription.js'
 import { BUILT_IN_TONES, getTone, toneByName } from './tones.js'
-import { STICKER_LEVELS, type AiCredit, type Beat, type FramingChoice, type ProjectSettings, type ShortProject, type Transcript } from './types.js'
+import { STICKER_LEVELS, type AiCredit, type AssemblyLogEntry, type Beat, type FramingChoice, type ProjectSettings, type ShortProject, type Transcript } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const AUDIO_DIR = path.join(__dirname, '../../../data/short_projects/audio')
@@ -158,24 +158,28 @@ export async function recordOutput(id: string, changes: Pick<Partial<ShortProjec
   return save({ ...project, ...changes })
 }
 
-/** 04b: escolhe as imagens e passa o projeto para revisão. */
 /**
  * De que é o vídeo, para as IAs que escolhem imagens e para o chat (ADR 0024). Projeto antigo, sem o campo:
  * o tema, que costuma citar a obra. Vazio quando o roteiro disse que o vídeo não é sobre nada específico.
  */
 export const subjectOf = (p: ShortProject) => p.subject ?? p.theme
 
-export async function assemble(id: string) {
+/**
+ * 04b: a montagem. As imagens vêm só da web (ADR 0022, 1B): as que a montagem pôs antes saem e são
+ * buscadas de novo ("Escolher de novo"); as que o usuário escolheu ficam. Depois, figurinhas, sons e
+ * música, e o projeto passa para a revisão. `images: false`: só limpa, e a busca fica para depois
+ * (a criação sozinha mostra a busca como uma etapa própria, ADR 0026).
+ */
+export async function assemble(id: string, opts: { images?: boolean } = {}) {
   const project = await getProject(id)
-  const { beats, log, ai } = await matchBeats(project.beats, id, {
-    ai: (project.settings.imagePicker ?? 'ia') === 'ia',
-    title: project.title,
-    subject: subjectOf(project),
-    narration: project.narration,
-    stickers: project.settings.stickers,
-  })
-  project.beats = beats
-  if (ai) project.ai = { ...project.ai, images: ai }
+  project.beats = project.beats.map(b => (b.locked ? b : { ...b, imageId: undefined, imageStatus: 'missing' as const }))
+  const log: AssemblyLogEntry[] = []
+  if (opts.images !== false) {
+    const fill = await fillFromWeb(project)
+    if (fill.ai) log.push({ beatId: 'ia', status: 'match', message: '✨ A IA olhou as sugestões da web e escolheu as imagens', ai: fill.ai })
+    for (const r of fill.results) log.push({ beatId: r.beatId, status: r.ok ? 'match' : 'missing', message: r.message })
+  }
+  project.beats = await refreshStickers(id, project.beats, project.settings.stickers)
   if (project.musicId === undefined) {
     const style = await getStyle(project.styleId)
     const musicId = await pickMusic(style.music)
@@ -185,7 +189,7 @@ export async function assemble(id: string) {
   return { project: await save(project), log }
 }
 
-/** "Peça um ajuste": a IA muda as batidas e a montagem procura imagens para as novas. */
+/** "Peça um ajuste": a IA muda as batidas e a montagem busca na web as imagens das cenas novas ou mudadas. */
 /** openScene: a cena aberta na prévia (a primeira é 1), para o chat entender "esta cena". */
 export async function adjust(id: string, request: string, openScene?: number) {
   if (!request?.trim()) throw new AppError('Escreva o que quer mudar', 400, 'VALIDATION')
@@ -204,25 +208,17 @@ export async function adjust(id: string, request: string, openScene?: number) {
   })
 
   const changed = out.beats !== project.beats
-  const stickers = out.settings.stickers
-  const { beats, ai } = changed
-    ? await matchBeats(out.beats, id, {
-        ai: (project.settings.imagePicker ?? 'ia') === 'ia',
-        title: project.title,
-        subject: subjectOf(project),
-        narration: out.narration,
-        keepExisting: true,
-        stickers,
-      })
-    : stickers !== project.settings.stickers
-      ? { beats: await refreshStickers(id, project.beats, stickers), ai: undefined }
-      : { beats: project.beats, ai: undefined }
+  const stickersChanged = out.settings.stickers !== project.settings.stickers
 
   project.undo = [project.beats, ...project.undo].slice(0, MAX_UNDO)
-  project.beats = beats
   project.narration = out.narration
   project.settings = out.settings as ProjectSettings
-  if (ai) project.ai = { ...project.ai, images: ai }
+  if (changed) {
+    project.beats = out.beats
+    // a cena nova, ou com outra busca, chega sem imagem (cleanBeats)
+    if (project.beats.some(needsImage)) await fillFromWeb(project)
+  }
+  if (changed || stickersChanged) project.beats = await refreshStickers(id, project.beats, project.settings.stickers)
   project.history = [
     ...project.history,
     { id: generateId('adj'), request: request.trim(), reply: out.reply, at: new Date().toISOString(), ai: out.ai },
@@ -297,15 +293,26 @@ async function inParallel<T>(items: T[], work: (item: T) => Promise<void>) {
   await Promise.all([worker(), worker(), worker()])
 }
 
+/** "Preencher sozinho" na tela de troca de imagem: busca na web as cenas que faltam e grava. */
+export async function autoFillImages(id: string) {
+  const project = await getProject(id)
+  const { results, total } = await fillFromWeb(project)
+  await syncUsage(id, project.beats)
+  const saved = await save(project)
+  const added = results.filter(r => r.ok).length
+  logger.info(`🖼️ Imagens automáticas em ${id}: ${added} de ${total}`)
+  return { project: saved, added, total, results }
+}
+
 /**
- * Preenche as cenas sem imagem com sugestões da internet (ADR 0020):
+ * Preenche as cenas sem imagem com sugestões da internet (ADR 0020), no projeto em memória (quem chama grava):
  * 1. busca (o meme ou a variação primeiro, quando a cena pede) e separa até 4 candidatas;
  * 2. a IA olha as miniaturas, várias cenas por chamada, e escolhe a que mostra o personagem certo, ou nenhuma;
  * 3. importa a escolhida, que é catalogada em segundo plano (ADR 0017).
  * Se a IA de visão não responder, usa a mais bem colocada, sem marcar os personagens como conferidos.
+ * A imagem escolhida não fica travada: "Escolher de novo" busca outra. Travada é só a que o usuário escolheu.
  */
-export async function autoFillImages(id: string) {
-  const project = await getProject(id)
+async function fillFromWeb(project: ShortProject) {
   const pending = project.beats.filter(needsImage)
   const results: { beatId: string; ok: boolean; message: string }[] = []
   const context = `${project.theme} ${project.title}`
@@ -408,7 +415,6 @@ export async function autoFillImages(id: string) {
       const b = project.beats.find(x => x.id === beat.id)!
       b.imageId = img.id
       b.imageStatus = 'match'
-      b.locked = true
       const twist = beat.twist && options.get(beat.id)!.indexOf(pick) < 2 ? ` (${beat.twist.kind === 'meme' ? 'meme' : 'variação'})` : ''
       const note = checked ? (reason ? ` · ${reason}` : '') : ' · sem conferir: a IA de visão não respondeu'
       results.push({ beatId: beat.id, ok: true, message: `“${beat.text}” → ${pick.title}${twist}${note}` })
@@ -417,12 +423,8 @@ export async function autoFillImages(id: string) {
     }
   })
 
-  await syncUsage(id, project.beats)
   if (ai) project.ai = { ...project.ai, images: ai }
-  const saved = await save(project)
-  const added = results.filter(r => r.ok).length
-  logger.info(`🖼️ Imagens automáticas em ${id}: ${added} de ${pending.length}`)
-  return { project: saved, added, total: pending.length, results }
+  return { results, total: pending.length, ai }
 }
 
 /** Editor: o fundo da cena (tela cheia, inteira, as molduras) ou automático (null). */

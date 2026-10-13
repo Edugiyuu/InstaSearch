@@ -6,13 +6,13 @@ import { fileURLToPath } from 'url'
 import { FileStorage } from '../storage/FileStorage.js'
 import { generateId } from '../../utils/idGenerator.js'
 import { logger } from '../../utils/logger.js'
-import { catalogImage, ImageChoice, pickImagesWithAI } from './shortsAI.js'
+import { catalogImage } from './shortsAI.js'
 import { listSounds, soundIsType } from './sounds.js'
 import { normalize } from './text.js'
 import { imageSize } from './videoScenes.js'
 
 export { normalize }
-import type { AiCredit, AssemblyLogEntry, Beat, ImageStatus, LibraryImage, MediaKind, SoundItem, StickerLevel } from './types.js'
+import type { Beat, LibraryImage, MediaKind, SoundItem, StickerLevel } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const LIBRARY_FILES_DIR = path.join(__dirname, '../../../data/library/files')
@@ -244,19 +244,11 @@ async function catalogInBackground(id: string) {
   }
 }
 
-/** Imagem com personagens que ninguém conferiu (antes do ADR 0020, o preenchimento automático copiava os da cena). */
-const unchecked = (i: LibraryImage) => !i.catalogued && !i.charactersChecked && i.characters.length > 0 && !['video', 'cena'].includes(i.kind)
-
-/**
- * Ao subir o servidor: volta para a fila o que ficou pela metade e as imagens com personagens
- * não conferidos (catalogar de novo corrige o rótulo; se a IA falhar, tenta no próximo início).
- */
+/** Ao subir o servidor: volta para a fila o que ficou pela metade (a catalogação marca onde dar zoom). */
 export async function resumeCataloguing() {
   const all = await storage.findAll()
-  const toCheck = all.filter(i => !i.cataloguing && unchecked(i))
-  for (const img of toCheck) await storage.save({ ...img, cataloguing: true })
-  const pending = all.filter(i => i.cataloguing || toCheck.includes(i))
-  if (pending.length) logger.info(`🏷️ Catalogando ${pending.length} imagem(ns) em segundo plano (${toCheck.length} com personagens não conferidos)`)
+  const pending = all.filter(i => i.cataloguing)
+  if (pending.length) logger.info(`🏷️ Catalogando ${pending.length} imagem(ns) em segundo plano`)
   pending.forEach(i => enqueueCatalog(i.id))
   void measureLibrary(all)
 }
@@ -272,16 +264,6 @@ async function measureLibrary(all: LibraryImage[]) {
     measured++
   }
   if (measured) logger.info(`📐 ${measured} imagem(ns) medidas para o enquadramento`)
-}
-
-/**
- * A imagem mostra algum dos personagens que a cena pede? Só vale com os personagens conferidos
- * (catalogada pela IA, escrita pelo usuário ou confirmada pela visão). Cena sem personagem: qualquer uma serve.
- */
-function showsWanted(beat: Beat, img: LibraryImage) {
-  if (!beat.characters.length) return true
-  if (!img.catalogued && !img.charactersChecked) return false
-  return matchCharacters(beat.characters, img, haystack(img)) > 0
 }
 
 export async function updateImage(id: string, changes: Partial<LibraryImage>) {
@@ -334,166 +316,6 @@ export async function forgetProject(projectId: string) {
   await syncUsage(projectId, [])
 }
 
-/** Personagens pedidos que aparecem na imagem (ou no nome/etiquetas, para animais e objetos). */
-function matchCharacters(wanted: string[], img: LibraryImage, hay: string): number {
-  const have = img.characters.map(normalize)
-  return wanted.filter(w => {
-    const n = normalize(w)
-    return have.some(h => h.includes(n) || n.includes(h)) || tokens(n).some(t => t.length > 2 && hay.includes(t))
-  }).length
-}
-
-/** Relevância por palavras (personagem vale mais), sem contar repetição. */
-function relevance(beat: Beat, img: LibraryImage) {
-  const hay = haystack(img)
-  return matchCharacters(beat.characters, img, hay) * 3 + tokens(beat.query).filter(w => hay.includes(w)).length
-}
-
-/** Biblioteca grande: manda para a IA só as melhores candidatas de cada cena. */
-function shortlist(beats: Beat[], images: LibraryImage[], perBeat: number) {
-  const picked = new Set<LibraryImage>()
-  for (const beat of beats) {
-    images
-      .map(img => ({ img, score: relevance(beat, img) }))
-      .filter(r => r.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, perBeat)
-      .forEach(r => picked.add(r.img))
-  }
-  return [...picked]
-}
-
-export interface MatchOptions {
-  /** A IA escolhe lendo o roteiro inteiro; sem isso, escolha por palavras. */
-  ai?: boolean
-  title?: string
-  /** A obra do vídeo (ADR 0024): a IA não escolhe imagem de outra. */
-  subject?: string
-  narration?: string
-  /** Mantém as imagens que as cenas já têm (usado depois de um ajuste, para só preencher as novas). */
-  keepExisting?: boolean
-  /** O ajuste "Figurinhas" do vídeo. */
-  stickers?: StickerLevel
-}
-
-/**
- * Escolhe uma imagem da biblioteca para cada batida.
- * Batidas travadas (o usuário escolheu) ficam como estão.
- */
-export async function matchBeats(beats: Beat[], projectId: string, opts: MatchOptions = {}) {
-  const all = await storage.findAll()
-  // o vídeo inteiro não entra numa batida: as cenas dele, sim
-  const images = all.filter(i => i.kind !== 'figurinha' && i.kind !== 'video' && (i.catalogued || i.tags.length || i.characters.length))
-  const stickers = all.filter(i => i.kind === 'figurinha')
-  const sfx = await listSounds('sfx')
-  const usedHere = new Map<string, number>()
-  const keep = (b: Beat) => !!b.imageId && (b.locked || opts.keepExisting)
-  for (const b of beats) if (keep(b)) usedHere.set(b.imageId!, (usedHere.get(b.imageId!) ?? 0) + 1)
-
-  const log: AssemblyLogEntry[] = []
-
-  // escolha pela IA, com a escolha por palavras como reserva
-  let aiChoices: Map<string, ImageChoice> | null = null
-  let ai: AiCredit | undefined
-  const open = beats.filter(b => !keep(b))
-  if (opts.ai && open.length && images.length) {
-    try {
-      const candidates = images.length <= 120 ? images : shortlist(open, images, 10)
-      const usedElsewhere = new Map(candidates.map(i => [i.id, i.usedIn.filter(p => p !== projectId).length]))
-      const picked = await pickImagesWithAI({
-        title: opts.title ?? '',
-        subject: opts.subject,
-        narration: opts.narration ?? beats.map(b => b.say).join(' '),
-        beats: open,
-        images: candidates,
-        usedElsewhere,
-      })
-      aiChoices = new Map(picked.choices.map(c => [c.beatId, c]))
-      ai = picked.ai
-      log.push({ beatId: 'ia', status: 'match', message: '✨ A IA leu o roteiro e escolheu as imagens', ai })
-    } catch (error: any) {
-      log.push({ beatId: 'ia', status: 'similar', message: `A IA não respondeu (${String(error.message).slice(0, 80)}); escolhi pelas palavras` })
-    }
-  }
-  const byId = new Map(images.map(i => [i.id, i]))
-
-  const result = beats.map(beat => {
-    if (keep(beat)) return beat
-
-    const choice = aiChoices?.get(beat.id)
-    if (choice) {
-      const picked = choice.imageId ? byId.get(choice.imageId) : undefined
-      // o prompt já proíbe outro personagem, mas a IA às vezes usa mesmo assim (o Wamuu numa cena do Vanilla Ice)
-      const img = picked && showsWanted(beat, picked) ? picked : undefined
-      const status: ImageStatus = img ? choice.fit : 'missing'
-      if (img) usedHere.set(img.id, (usedHere.get(img.id) ?? 0) + 1)
-      // o zoom vai para a área que a IA indicou, se a imagem tiver essa área marcada
-      const focus = img && choice.focus && img.regions.some(r => normalize(r.label) === normalize(choice.focus!)) ? choice.focus : beat.focus
-      log.push({
-        beatId: beat.id,
-        status,
-        message: img
-          ? `“${beat.text}” → ${img.name}${choice.reason ? ` · ${choice.reason}` : ''}`
-          : picked
-            ? `“${beat.text}” → recusei “${picked.name}”: ${picked.catalogued || picked.charactersChecked ? 'não mostra' : 'personagens ainda não conferidos, e a cena pede'} ${beat.characters.join(' e ')}`
-            : `“${beat.text}” → falta imagem: ${beat.query}`,
-      })
-      return { ...beat, imageId: img?.id, imageStatus: status, focus }
-    }
-
-    const words = tokens(`${beat.query} ${beat.focus ?? ''}`)
-    type Candidate = { img: LibraryImage; score: number; chars: number; hits: number }
-    let best: Candidate | null = null
-    // a mais relevante sem contar repetição: vira "parecida" se não houver outra
-    let relevant: Candidate | null = null
-
-    for (const img of images) {
-      const hay = haystack(img)
-      // personagem só conta se foi conferido: sem isso, o rótulo pode ser só o que outra cena pediu
-      const chars = showsWanted(beat, img) ? matchCharacters(beat.characters, img, hay) : 0
-      const hits = words.filter(w => hay.includes(w)).length
-      const repeats = usedHere.get(img.id) ?? 0
-      const others = img.usedIn.filter(p => p !== projectId).length
-      const score = chars * 3 + hits - repeats * 2.5 - others * 0.3
-      if (!best || score > best.score) best = { img, score, chars, hits }
-      const relevance = chars * 3 + hits
-      if (!relevant || relevance > relevant.score) relevant = { img, score: relevance, chars, hits }
-    }
-
-    let status: ImageStatus = 'missing'
-    if (best) {
-      const needsChars = beat.characters.length > 0
-      if (needsChars ? best.chars >= 1 && best.hits >= 1 : best.hits >= 2) status = 'match'
-      else if (needsChars ? best.chars >= 1 || best.hits >= 2 : best.hits >= 1) status = 'similar'
-    }
-
-    if (status === 'missing' && relevant && (beat.characters.length ? relevant.chars >= 1 : relevant.hits >= 1)) {
-      best = relevant
-      status = 'similar'
-    }
-
-    const imageId = status === 'missing' ? undefined : best!.img.id
-    if (imageId) usedHere.set(imageId, (usedHere.get(imageId) ?? 0) + 1)
-
-    log.push({
-      beatId: beat.id,
-      status,
-      message:
-        status === 'match'
-          ? `“${beat.text}” → ${best!.img.name}`
-          : status === 'similar'
-            ? `“${beat.text}” → ${best!.img.name} (parecida; ideal: ${beat.query})`
-            : `“${beat.text}” → falta imagem: ${beat.query}`,
-    })
-    return { ...beat, imageId, imageStatus: status }
-  })
-
-  // figurinhas e efeitos sonoros (não dependem de a imagem estar travada)
-  const withExtras = stickersAndSfx(result, stickers, sfx, opts.stickers)
-  await syncUsage(projectId, withExtras)
-  return { beats: withExtras, log, ai }
-}
-
 /** Figurinha e efeito sonoro de cada batida; o que o usuário escolheu na cena fica. */
 function stickersAndSfx(beats: Beat[], stickers: LibraryImage[], sfx: SoundItem[], level?: StickerLevel) {
   const stickerUses = new Map<string, number>()
@@ -509,7 +331,7 @@ function stickersAndSfx(beats: Beat[], stickers: LibraryImage[], sfx: SoundItem[
 export const listStickers = async () => (await storage.findAll()).filter(i => i.kind === 'figurinha')
 
 /**
- * Escolhe de novo as figurinhas (e os sons que dependem delas) sem mexer nas imagens:
+ * Escolhe as figurinhas e os efeitos sonoros (que dependem delas), sem mexer nas imagens: na montagem,
  * depois do ajuste "Figurinhas" do vídeo ou de uma escolha na cena.
  */
 export async function refreshStickers(projectId: string, beats: Beat[], level?: StickerLevel) {

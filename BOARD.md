@@ -10,13 +10,15 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## A fazer
 
-- [ ] Imagens só da web: tirar da montagem as imagens da biblioteca, o ajuste "Quem escolhe as imagens" e a aba Imagens ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 1B)
+- [ ] Busca segura do Bing em "moderada" (hoje `strict`), configurável por `BING_SAFESEARCH` no `.env` (off | moderate | strict)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
 - [ ] Remover a dependência `openai`, que não é usada (pendência do [ADR 0006](docs/decisions/0006-remover-openai.md))
 
 ## Backlog
 
+- [ ] O `npx tsc --noEmit -p backend` (e `-p frontend`) da Definição de Pronto não roda da raiz: o TypeScript está só em `backend/` e `frontend/`, e o `npx` sai sem checar nada; trocar no CLAUDE.md por `npm --prefix backend exec tsc -- --noEmit` (ou parecido)
+- [ ] Decidir se a aba Vídeos (episódios divididos em cenas) sai também: sem a escolha na biblioteca, a montagem não usa mais as cenas sozinha; hoje elas só aparecem na tela Trocar imagem, e não há nenhum vídeo enviado
 - [ ] Figurinha automática combina pouco: escolhe só pelas etiquetas da reação, sem olhar a obra do vídeo (num vídeo da Tatsumaki, "chocado" pegou "guria sorrindo", e 6 de 8 reações ficaram sem figurinha); talvez preferir as do assunto, como o pop-up já faz
 - [ ] 5 imagens da biblioteca sem largura e altura (o `imageSize` com ffprobe falhou nelas; uma é um JPEG salvo como `.webp`): sem a medida, o enquadramento e a moldura usam o plano B
 - [ ] Configurar o ESLint no frontend: não há arquivo de configuração, então o `npm run lint` falha antes de analisar qualquer arquivo
@@ -37,6 +39,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-13 · Imagens só da web: a montagem e o chat buscam na web (sem `matchBeats`, a escolha por palavras e o ajuste "Quem escolhe as imagens"), "↻ Buscar de novo na web" na Revisão, sem a aba Imagens; a catalogação ficou porque marca o zoom ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 1B)
 - [x] 2026-10-13 · Variedade nos temas do debate: o código tira as ideias que repetem a personagem dos 3 últimos vídeos ou uma obra com 2 dos 4 últimos, 4 temas de obras diferentes em ordem sorteada, marcas 🔥 em alta / 🕰️ atemporal e uma 🎲 aposta do nicho, e as IAs pesam a variedade ([ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md))
 - [x] 2026-10-11 · Debate das IAs: "🗣️ Debater e criar um vídeo" faz duas Sonnet 5.5 (Estrategista × Roteirista) debaterem 4 temas de um brainstorm delas num chat ao vivo, até 6 falas, com o acordo conferido pelos votos; com acordo, criam o vídeo e o projeto mostra "Por que este tema" ([ADR 0027](docs/decisions/0027-debate-das-ias-antes-de-criar.md))
 - [x] 2026-10-10 · Criar sozinho: "🤖 Criar sozinho" na ideia e "🤖 Criar um vídeo sozinho" no alto da tela Ideias (brainstorm próprio de uma ideia, nas obras do canal, sem repetir assunto), fila de um por vez com a etapa na tela, roteiro → montagem → imagens, parando em "falta gravar a voz", com "Continuar" se parar ([ADR 0026](docs/decisions/0026-criacao-autonoma-de-videos.md))

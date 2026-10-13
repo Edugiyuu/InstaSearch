@@ -53,7 +53,7 @@ Quando o Gemini responde *429* (cota), o app lê o horário em que a cota volta 
 | Roteiro | tema + estilo + tom → título, narração e cenas (pesquisa na web antes) |
 | Peça um ajuste | cenas + pedido → cenas novas + resposta |
 | Escolher imagens | cena + miniaturas da web → a que mostra o personagem certo, ou nenhuma (visão) |
-| Catalogar | imagem ou som → personagens, etiquetas, áreas de zoom |
+| Catalogar | imagem (em segundo plano) ou som → personagens, etiquetas, áreas de zoom |
 | Legenda do post | título + narração → legenda + hashtags |
 | Ideias | métricas + comentários + web → 6 ideias com provas |
 
@@ -65,7 +65,7 @@ Gasto típico por vídeo: 1 chamada no roteiro, umas 4 para escolher imagens, 1 
 
 A regra é a do [ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md): **o personagem é obrigatório, a ação é preferência**. Melhor uma cena vazia, que você vê, do que uma imagem errada, que passa. E a imagem tem que ser **do assunto do vídeo** ([ADR 0024](decisions/0024-imagens-do-assunto-do-video.md)): o roteiro anota a obra (`subject`), toda busca a leva, e as duas IAs que escolhem recusam imagem de outra obra, menos o meme de reação.
 
-> **Mudando agora:** o [ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md) tira a biblioteca de imagens da montagem (o losango "Biblioteca tem imagem…"): cada vídeo vai buscar as suas na web. Está em "A fazer" no [BOARD](../BOARD.md).
+As imagens vêm **só da web** ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)): a montagem tira as que ela mesma pôs antes e busca de novo, e o chat busca as das cenas novas ou mudadas. Só a imagem que você escolheu fica travada. O arquivo baixado continua em `data/library/`, porque a prévia e o render precisam dele, mas não é oferecido a outro vídeo.
 
 Depois das imagens, a montagem põe as **figurinhas** (pela etiqueta da reação, ex.: "chocado"; o vídeo não desenha emoji), os **efeitos sonoros** (pelo tipo de efeito e pelo nome do arquivo) e a **música** (pelo clima do estilo).
 
@@ -117,10 +117,10 @@ backend/src/
 ├── services/
 │   ├── shorts/                o fluxo tema → Short
 │   │   ├── llm.ts             a fila de IAs (Gemini → Claude)
-│   │   ├── shortsAI.ts        os prompts: roteiro, ajuste, escolher e catalogar imagens
+│   │   ├── shortsAI.ts        os prompts: roteiro, ajuste, escolher imagens da web (visão) e catalogar
 │   │   ├── projects.ts        criar, montar, ajustar, desfazer, transcrever
 │   │   ├── autopilot.ts       criar sozinho: a fila ideia → roteiro → montagem → imagens (ADR 0026)
-│   │   ├── library.ts         biblioteca e escolha por cena
+│   │   ├── library.ts         arquivos baixados, figurinhas e sons de cada cena
 │   │   ├── imageSearch.ts     busca na web (Bing, Danbooru, AniList, Serper)
 │   │   ├── sceneEdits.ts      o chat só mexe nas cenas citadas
 │   │   ├── transcription.ts   Whisper local

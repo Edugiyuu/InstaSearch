@@ -19,7 +19,7 @@ const googleImages = (q: string) => `https://www.google.com/search?tbm=isch&q=${
 
 const FIRST_SUGGESTIONS = 10
 
-/** 05: uma cena por vez — escolha uma sugestão da internet, cole, arraste ou use a biblioteca. */
+/** 05: uma cena por vez — escolha uma sugestão da internet, cole ou arraste (ADR 0022: imagens só da web). */
 function ReplaceImage() {
   const { id } = useParams()
   const [params] = useSearchParams()
@@ -84,13 +84,14 @@ function ReplaceImage() {
     searchWeb(beat.query, beat.characters, beat.searchTags)
   }, [beat?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // as imagens vêm só da web (ADR 0022, 1B); da biblioteca, só as cenas dos vídeos que o usuário enviou
   useEffect(() => {
     if (!query.trim()) return
     const t = setTimeout(() => {
       shortsApi
         .listImages(query)
         .then(async found => {
-          const scenes = (list: LibraryImage[]) => list.filter(i => i.kind !== 'figurinha' && i.kind !== 'video')
+          const scenes = (list: LibraryImage[]) => list.filter(i => i.kind === 'cena')
           setResults(scenes(found).length ? scenes(found) : scenes(await shortsApi.listImages()))
         })
         .catch(() => setResults([]))
@@ -110,13 +111,7 @@ function ReplaceImage() {
       const img = Array.isArray(out) ? out[0] : out
       setImages(prev => [img, ...prev])
       await choose(img.id)
-      toast.show(
-        img.cataloguing
-          ? 'Imagem salva na biblioteca. A IA cataloga em segundo plano.'
-          : img.catalogued
-            ? `Imagem salva na biblioteca como “${img.name}”`
-            : 'Imagem salva (sem catalogação da IA)',
-      )
+      toast.show(img.cataloguing ? 'Imagem posta na cena. A IA marca onde dar zoom em segundo plano.' : 'Imagem posta na cena')
       return true
     } catch (e) {
       toast.show(errorMessage(e))
@@ -256,7 +251,7 @@ function ReplaceImage() {
           <div className="ri-new">
             <div className="ri-web-head">
               <span className="label">Sugestões para esta cena</span>
-              <span className="meta">Clique em uma para usar. Ela vai para a sua biblioteca.</span>
+              <span className="meta">Clique em uma para usar nesta cena.</span>
             </div>
 
             <form
@@ -388,10 +383,8 @@ function ReplaceImage() {
           </div>
         </div>
 
-        <span className="label ri-lib-label">Ou escolha da sua biblioteca</span>
-        {results.length === 0 ? (
-          <p className="meta">Sua biblioteca ainda está vazia. As imagens que você escolher aqui ficam salvas para os próximos vídeos.</p>
-        ) : (
+        {results.length > 0 && <span className="label ri-lib-label">Ou use uma cena dos seus vídeos</span>}
+        {results.length > 0 && (
           <div className="ri-lib">
             {results.slice(0, 14).map(img => (
               <button key={img.id} className={img.id === beat.imageId ? 'on' : ''} onClick={() => choose(img.id)} title={img.description}>

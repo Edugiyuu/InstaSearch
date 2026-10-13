@@ -36,24 +36,25 @@ O caminho de um vídeo, tela por tela, as outras telas do app e um glossário do
 
 ### 3. Montagem
 
-Você não faz nada: o app escolhe uma imagem por cena, põe as figurinhas de reação, os efeitos sonoros nos cortes (whoosh nas setas, erro nos X, boom no gancho) e uma música do clima do estilo. A tela mostra cada decisão e abre a revisão sozinha. Como as imagens são escolhidas está em [ARQUITETURA.md](ARQUITETURA.md#montagem-e-imagens).
+Você não faz nada: o app busca na web uma imagem por cena (a IA olha as sugestões e escolhe; leva 1 ou 2 minutos), põe as figurinhas de reação, os efeitos sonoros nos cortes (whoosh nas setas, erro nos X, boom no gancho) e uma música do clima do estilo. A tela mostra cada decisão e abre a revisão sozinha. Como as imagens são escolhidas está em [ARQUITETURA.md](ARQUITETURA.md#montagem-e-imagens).
 
 ### 4. Revisão
 
 O centro do app. A **prévia ao vivo** é a composição final: o que você vê é exatamente o que vai para o MP4.
 
-- **Barra de cenas** abaixo do vídeo: 🟥 sem imagem, 🟧 imagem parecida, pontinho laranja = cena com som. Clique para pular (`/projeto/:id?cena=3` abre direto numa cena).
+- **Barra de cenas** abaixo do vídeo: 🟥 sem imagem, pontinho laranja = cena com som. Clique para pular (`/projeto/:id?cena=3` abre direto numa cena).
 - **Controles da cena**, numa linha sob a barra ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)). Tudo começa no **Automático** (o que a IA fez); o que você escolhe fica travado e a montagem não troca mais.
   - **🖼 Trocar**: abre a tela Trocar imagem dessa cena.
   - **▣ Fundo**: como a imagem aparece (tabela abaixo).
   - **🔊 Efeito sonoro**: automático, sem som ou qualquer som da sua biblioteca, com **▶** para ouvir. No alto do pop-up ficam dois volumes: **Todos os efeitos** (o vídeo inteiro, 75% de início) e **Esta cena** (mais alto ou mais baixo que os outros; 100% = igual). Ao soltar o controle, o som toca no volume novo. Trocar o som da cena volta o volume dela para 100%.
   - **😮 Figurinha**: um pop-up com miniaturas: **Automático** (o que a montagem escolheu), **Nenhuma** ou uma figurinha da sua biblioteca, com as do assunto do vídeo primeiro. A escolhida aparece mesmo numa cena sem reação (e junto de uma seta ou um X), e nem a montagem, nem o chat, nem o ajuste "Figurinhas" a trocam.
 - **✨ Peça um ajuste**: um chat. Cite cenas pelo número da tela ("na cena 6 põe um X", "cenas 3 e 4", "esta cena"). Se o pedido cita cenas, **só elas mudam**: se a IA mexer em outra, o app desfaz. A resposta diz o que *de fato* mudou, conferido pelo app ([ADR 0017](decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md)). **Desfazer** volta a versão anterior.
-- **Precisa de você**: cenas sem imagem ou com imagem parecida → **Resolver agora** ou **✨ Preencher automático**.
+- **Precisa de você**: cenas sem imagem → **Resolver agora** ou **✨ Preencher automático**.
 - **Ajustes rápidos** (valem para o vídeo inteiro):
 
 | Ajuste | Opções |
 |---|---|
+| Imagens | **↻ Buscar de novo na web**: troca as imagens que a montagem escolheu; as que você escolheu ficam. As imagens vêm sempre da web, nunca de vídeos anteriores ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
 | Ritmo | Calmo · Normal · Rápido · Frenético (a IA junta ou divide cenas, sem mudar a fala) |
 | Efeitos | Poucos · Na medida · Muitos (setas, X, círculos, reações) |
 | Figurinhas | **Nenhuma** (tira as automáticas na hora, sem IA) · **Poucas** (onde a IA pôs uma reação; é o padrão) · **Muitas** (a IA põe reações em cerca de 1 cena a cada 3). As escolhidas na cena ficam. Só aparece figurinha quando alguma da biblioteca combina com a reação |
@@ -102,7 +103,7 @@ O modal gera a **legenda do post** com hashtags e já começa o **render do MP4*
 | **Início** (`/`) | Criação rápida (tema + estilo + Começar), seus vídeos e próximas publicações |
 | **Projetos** (`/projetos`) | Todos os vídeos, filtrados por etapa: no roteiro, faltam imagens, prontos, salvos, publicados |
 | **Ideias** (`/ideias`) | **Desempenho**: cada Reel e Short comparado com a mediana dos seus vídeos na mesma idade ("2,4× a sua mediana, aos 7 dias"). **Ideias**: a IA propõe lotes de 6 temas, cada um com as provas (seus números, comentários do público, o que está em alta na web). Guardar, descartar com motivo, **Criar vídeo** ([ADR 0021](decisions/0021-ideias-a-partir-do-desempenho.md)). **🤖 Criar sozinho** (no cartão, com aquela ideia) e **🗣️ Debater e criar um vídeo** (no alto): duas IAs Sonnet 5.5, a **Estrategista** (números e público do canal) e a **Roteirista** (gancho, argumento e imagens), debatem 4 temas de um brainstorm delas, nas obras que o canal já fala e sem repetir assunto. Os 4 são de **obras diferentes**, e o app tira os que repetem a personagem de um dos 3 últimos vídeos ou uma obra que já tem 2 dos 4 últimos (a lista do que ficou fora aparece no chat). Cada tema vem marcado **🔥 em alta** ou **🕰️ atemporal**, para o canal não viver só de hype, e um deles pode ser uma **🎲 aposta**: algo bombando no mesmo nicho, numa obra que o canal nunca tratou ([ADR 0028](decisions/0028-variedade-nos-temas-do-debate.md)). O debate aparece como um chat ao vivo, e o vídeo só é criado quando as duas votam no mesmo tema, em no máximo 6 falas; sem acordo, nenhum vídeo ([ADR 0027](decisions/0027-debate-das-ias-antes-de-criar.md)). Com acordo, o app escreve o roteiro, monta e procura as imagens, um vídeo por vez, mostrando a etapa de cada um. Para em "falta gravar a voz" e nunca publica; se parar no meio, **Continuar** segue da etapa ([ADR 0026](decisions/0026-criacao-autonoma-de-videos.md)). O projeto mostra **🗣️ Por que este tema**, com o link para o debate |
-| **Biblioteca** (`/biblioteca`) | O material que você cuida: figurinhas (PNG transparente), efeitos sonoros (nomeie `whoosh_01.mp3`), músicas (cole o link de um Reel/TikTok/Short), bordões, tons e vídeos. A aba Imagens está de saída ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
+| **Biblioteca** (`/biblioteca`) | O material que você cuida: figurinhas (PNG transparente), efeitos sonoros (nomeie `whoosh_01.mp3`), músicas (cole o link de um Reel/TikTok/Short), bordões, tons e vídeos (as cenas de um episódio, para usar na tela Trocar imagem). Não há aba de imagens: as das cenas vêm da web a cada vídeo ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
 | **Estilos** (`/estilos`) | Cada estilo é uma configuração (ritmo, efeitos, legenda, música, tipo de imagem, instruções para a IA). Mudar um que vem com o app salva uma cópia sua |
 | **Calendário** (`/calendario`) | Posts agendados, publicados e com falha; publicar agora, cancelar |
 | **Configurações** (`/configuracoes`) | Contas conectadas (Instagram, YouTube), estado de cada IA (com a hora em que a cota do Gemini volta) e o download do Whisper |

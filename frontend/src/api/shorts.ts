@@ -62,14 +62,11 @@ export interface Beat {
   framing?: FramingChoice
 }
 
-export type ImagePicker = 'ia' | 'palavras'
 
 export interface ProjectSettings {
   pace: Pace
   effects: EffectsLevel
   caption: CaptionMode
-  /** Quem escolhe as imagens: a IA lendo o roteiro (padrão) ou a busca por palavras. */
-  imagePicker?: ImagePicker
   /** Bordão de abertura (Biblioteca → Bordões); toca antes da narração. null = sem abertura. */
   intro?: string | null
   /** Bordão do final; null = sem final. */
@@ -570,7 +567,6 @@ export interface AiStatus {
   claudeCode: { enabled: boolean; model: string }
 }
 
-export const PICKER_LABEL: Record<ImagePicker, string> = { ia: 'IA lê o roteiro', palavras: 'Por palavras' }
 
 export const PACE_LABEL: Record<Pace, string> = { calmo: 'Calmo', normal: 'Normal', rapido: 'Rápido', frenetico: 'Frenético' }
 export const EFFECTS_LABEL: Record<EffectsLevel, string> = { poucos: 'Poucos', medida: 'Na medida', muitos: 'Muitos' }

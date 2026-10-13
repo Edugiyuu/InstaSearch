@@ -72,6 +72,15 @@ O usuário escolheu **1B, 2C, 3B e 4A**.
 - **No vídeo:** `settings.stickers` (sem valor = Poucas). **Nenhuma** não chama a IA: as automáticas saem na hora (`refreshStickers`), e voltar a Poucas as põe de novo. **Muitas** pede ao chat reações em cerca de 1 cena a cada 3, e **Poucas**, vindo de Muitas, pede para tirar as que sobram. O chat também conhece o ajuste ("tira as figurinhas" vira Nenhuma).
 - **Limite:** a figurinha automática é escolhida pelas etiquetas da reação. Com uma biblioteca de figurinhas de outras obras, "Muitas" põe a reação, mas a cena fica sem figurinha (no teste, 6 de 8).
 
+**Como ficaram as imagens só da web (1B), em 2026-10-13:**
+
+- **A montagem busca na web** (`assemble` em `projects.ts`): tira as imagens que ela mesma pôs antes e chama a busca com visão do 0020 (`fillFromWeb`, o antigo corpo do "Preencher automático"). Sai `matchBeats` (`library.ts`), `pickImagesWithAI` (`shortsAI.ts`) e o ajuste `settings.imagePicker`. Na Revisão, o botão virou "↻ Buscar de novo na web".
+- **A imagem que a montagem escolhe não fica mais travada** (`locked`). Antes, o "Preencher automático" travava a escolha para a montagem da biblioteca não trocá-la; agora, travada é só a que o usuário escolheu, e "Buscar de novo" troca as outras. Nos projetos antigos, as imagens que o preenchimento travou continuam travadas.
+- **O chat busca na web** as imagens das cenas novas ou com outra busca, na mesma hora. Antes, ele procurava na biblioteca e deixava faltando o que não achasse. O ajuste fica mais lento quando cria cenas.
+- **A criação sozinha** (0026) continua com as etapas "montagem" e "imagens" separadas: ela chama `assemble(id, { images: false })` e depois a busca.
+- **A catalogação em segundo plano ficou**, ao contrário do que a decisão acima dizia. Ela não servia só para reaproveitar: é ela que marca as **áreas de zoom** (`regions`) que o vídeo usa para dar zoom no rosto (`focusRegion` em `timeline.ts`). Sem ela, o zoom do 0020 acabaria. Sai só a parte que catalogava de novo as imagens com personagens não conferidos, que só servia para a escolha na biblioteca.
+- **A aba Vídeos ficou**, como decidido. Sem a escolha na biblioteca, a montagem não usa mais as cenas dos episódios sozinha: elas aparecem na tela Trocar imagem, em "Ou use uma cena dos seus vídeos", quando existirem.
+
 ## Alternativas consideradas
 
 As alternativas de cada escolha estão na seção acima, com o motivo de não serem a recomendação (ou de o usuário não ter escolhido).

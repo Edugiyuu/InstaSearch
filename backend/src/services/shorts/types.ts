@@ -114,8 +114,6 @@ export interface ProjectSettings {
   pace: Pace
   effects: EffectsLevel
   caption: CaptionMode
-  /** Quem escolhe as imagens: a IA lendo o roteiro (padrão) ou a busca por palavras. */
-  imagePicker?: 'ia' | 'palavras'
   /** Bordão de abertura (id em Biblioteca → Bordões); toca antes da narração. null = sem abertura. */
   intro?: string | null
   /**

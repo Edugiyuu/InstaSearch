@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { errorMessage, imageUrl, LibraryImage, MediaKind, mediaUrl, shortsApi } from '../api/shorts'
+import { useSearchParams } from 'react-router-dom'
+import { errorMessage, imageUrl, LibraryImage, mediaUrl, shortsApi } from '../api/shorts'
 import { Spinner, useToast } from '../components/flow'
 import { useLibrary } from '../hooks/useShorts'
 import SoundLibrary from './SoundLibrary'
@@ -9,21 +9,21 @@ import ToneLibrary from './ToneLibrary'
 import TagEditor from '../components/TagEditor'
 import './Library.css'
 
+// sem aba "Imagens": as imagens das cenas vêm só da web, a cada vídeo (ADR 0022, 1B)
 const TABS = [
-  { id: 'imagens', label: 'Imagens' },
-  { id: 'videos', label: 'Vídeos' },
   { id: 'figurinhas', label: 'Figurinhas' },
   { id: 'sfx', label: 'Efeitos sonoros' },
   { id: 'musica', label: 'Músicas' },
   { id: 'bordoes', label: 'Bordões' },
   { id: 'tons', label: 'Tons' },
+  { id: 'videos', label: 'Vídeos' },
 ] as const
 
 type Tab = (typeof TABS)[number]['id']
 
 function Library() {
   const [params, setParams] = useSearchParams()
-  const tab = (TABS.find(t => t.id === params.get('aba'))?.id ?? 'imagens') as Tab
+  const tab = (TABS.find(t => t.id === params.get('aba'))?.id ?? TABS[0].id) as Tab
 
   return (
     <div className="page library">
@@ -37,7 +37,6 @@ function Library() {
           ))}
         </nav>
       </div>
-      {tab === 'imagens' && <ImageLibrary key="imagens" mode="imagens" />}
       {tab === 'videos' && <ImageLibrary key="videos" mode="videos" />}
       {tab === 'figurinhas' && <ImageLibrary key="figurinhas" mode="figurinhas" />}
       {tab === 'sfx' && <SoundLibrary key="sfx" kind="sfx" />}
@@ -48,18 +47,9 @@ function Library() {
   )
 }
 
-const KINDS: { id: MediaKind | 'all'; label: string }[] = [
-  { id: 'all', label: 'Tudo' },
-  { id: 'imagem', label: 'Imagens' },
-  { id: 'meme', label: 'Memes' },
-  { id: 'print', label: 'Prints' },
-  { id: 'logo', label: 'Logos' },
-]
+type Mode = 'videos' | 'figurinhas'
 
-type Mode = 'imagens' | 'videos' | 'figurinhas'
-
-const inMode = (img: LibraryImage, mode: Mode) =>
-  mode === 'figurinhas' ? img.kind === 'figurinha' : mode === 'videos' ? img.kind === 'cena' : !['figurinha', 'cena', 'video'].includes(img.kind)
+const inMode = (img: LibraryImage, mode: Mode) => (mode === 'figurinhas' ? img.kind === 'figurinha' : img.kind === 'cena')
 
 const STAGE: Record<NonNullable<LibraryImage['processing']>['stage'], string> = {
   preparando: 'convertendo',
@@ -77,19 +67,17 @@ const usage = (img: LibraryImage) =>
   img.usedIn.length === 0 ? 'nunca usada' : `usada em ${img.usedIn.length} ${img.usedIn.length === 1 ? 'vídeo' : 'vídeos'}`
 
 /**
- * Imagens das cenas, cenas de vídeo (um episódio enviado vira várias cenas) ou figurinhas
- * (recortes com fundo transparente que entram no lugar dos emojis).
+ * Cenas de vídeo (um episódio enviado vira várias cenas) ou figurinhas (recortes com fundo
+ * transparente que entram no lugar dos emojis).
  */
 function ImageLibrary({ mode }: { mode: Mode }) {
   const stickers = mode === 'figurinhas'
   const videos = mode === 'videos'
-  const navigate = useNavigate()
   const { images, setImages, loading, error } = useLibrary()
   const toast = useToast()
   const fileInput = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
   const [found, setFound] = useState<Set<string> | null>(null)
-  const [kind, setKind] = useState<MediaKind | 'all'>('all')
   const [character, setCharacter] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [uploading, setUploading] = useState(0)
@@ -133,7 +121,6 @@ function ImageLibrary({ mode }: { mode: Mode }) {
   const visible = pool.filter(
     i =>
       (!found || found.has(i.id)) &&
-      (videos || kind === 'all' || i.kind === kind) &&
       (!character || i.characters.includes(character)) &&
       (!videoId || i.videoId === videoId),
   )
@@ -258,9 +245,7 @@ function ImageLibrary({ mode }: { mode: Mode }) {
           placeholder={
             stickers
               ? 'Busque pela reação: “chocado”, “rindo”…'
-              : videos
-                ? 'Busque a cena: “gojo tirando a venda”, “sukuna luta”'
-                : 'Busque do jeito que você fala: “sukuna sorrindo no mangá”'
+              : 'Busque a cena: “gojo tirando a venda”, “sukuna luta”'
           }
         />
         {videos && (
@@ -272,7 +257,7 @@ function ImageLibrary({ mode }: { mode: Mode }) {
           />
         )}
         <button className="btn-y" onClick={() => fileInput.current?.click()} disabled={!!sending}>
-          ⭱ {stickers ? 'Importar figurinhas' : videos ? 'Importar vídeo' : 'Importar imagens'}
+          ⭱ {stickers ? 'Importar figurinhas' : 'Importar vídeo'}
         </button>
         <input
           ref={fileInput}
@@ -289,9 +274,7 @@ function ImageLibrary({ mode }: { mode: Mode }) {
       <p className="lib-hint">
         {stickers
           ? 'Figurinhas entram no vídeo no lugar dos emojis, escolhidas pela reação da cena. Use PNG com fundo transparente. A IA etiqueta a reação sozinha.'
-          : videos
-            ? 'Envie um episódio ou trecho do anime: ele é dividido em cenas nos cortes e a IA descreve cada uma (quem aparece, o que acontece). A montagem usa as cenas em movimento nas partes de ação. O som do episódio não entra no Short.'
-            : 'A IA cataloga cada imagem sozinha: quem aparece, do que se trata e onde dar zoom. Também dá para arrastar ou colar (Ctrl+V) aqui.'}
+          : 'Envie um episódio ou trecho do anime: ele é dividido em cenas nos cortes e a IA descreve cada uma (quem aparece, o que acontece). Para usar uma cena, escolha na tela de troca de imagem da cena. O som do episódio não entra no Short.'}
       </p>
 
       {videos && (sending || videoList.length > 0) && (
@@ -344,13 +327,6 @@ function ImageLibrary({ mode }: { mode: Mode }) {
       )}
 
       <div className="lib-filters">
-        {mode === 'imagens' && <div className="chips">
-          {KINDS.map(k => (
-            <button key={k.id} className={`chip lib-kind ${kind === k.id ? 'on' : ''}`} onClick={() => setKind(k.id)}>
-              {k.label}
-            </button>
-          ))}
-        </div>}
         {characters.length > 0 && (
           <div className="chips">
             <button className={`chip ${character === null ? 'on' : ''}`} onClick={() => setCharacter(null)}>Todos</button>
@@ -369,9 +345,7 @@ function ImageLibrary({ mode }: { mode: Mode }) {
             {visible.length}{' '}
             {stickers
               ? visible.length === 1 ? 'figurinha' : 'figurinhas'
-              : videos
-                ? visible.length === 1 ? 'cena' : 'cenas'
-                : visible.length === 1 ? 'imagem' : 'imagens'}
+              : visible.length === 1 ? 'cena' : 'cenas'}
             {character ? ` do ${character}` : ''}
           </h2>
           {error && <p className="form-error">{error}</p>}
@@ -382,13 +356,11 @@ function ImageLibrary({ mode }: { mode: Mode }) {
               <p className="meta">As cenas aparecem aqui quando a divisão terminar.</p>
             ) : (
               <button className="lib-empty" onClick={() => fileInput.current?.click()}>
-                <strong>{stickers ? 'Nenhuma figurinha ainda' : videos ? 'Nenhum vídeo ainda' : 'Sua biblioteca está vazia'}</strong>
+                <strong>{stickers ? 'Nenhuma figurinha ainda' : 'Nenhum vídeo ainda'}</strong>
                 <span>
                   {stickers
                     ? 'Importe figurinhas de reação (chocado, rindo, bravo, pensando…). Sem figurinhas, o vídeo usa emojis.'
-                    : videos
-                      ? 'Importe episódios ou trechos (mp4, mkv, mov). Cada corte do episódio vira uma cena que pode entrar no Short, em movimento.'
-                      : 'Importe as imagens que você usa nos vídeos (prints, painéis de mangá, memes). Quanto mais imagens, menos cenas ficam faltando.'}
+                    : 'Importe episódios ou trechos (mp4, mkv, mov). Cada corte do episódio vira uma cena que pode entrar no Short, em movimento.'}
                 </span>
               </button>
             )
@@ -446,11 +418,6 @@ function ImageLibrary({ mode }: { mode: Mode }) {
               <button className="act" onClick={() => recatalog(selected)}>✨ Catalogar com a IA</button>
             )}
 
-            {mode === 'imagens' && (
-              <button className="btn-y lib-use" onClick={() => navigate(`/novo?tema=${encodeURIComponent(selected.description || selected.name)}`)}>
-              Usar em um vídeo
-            </button>
-            )}
             <button className="btn-o lib-delete" onClick={() => remove(selected)}>Apagar</button>
           </aside>
         )}

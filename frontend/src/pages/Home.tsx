@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getUpcomingPosts } from '../services/api'
 import type { Post } from '../types'
@@ -32,13 +32,6 @@ function Home() {
     navigate(`/novo?tema=${encodeURIComponent(theme.trim())}&estilo=${styleId}`)
   }
 
-  const characters = useMemo(() => {
-    const count = new Map<string, number>()
-    images.forEach(i => i.characters.forEach(c => count.set(c, (count.get(c) ?? 0) + 1)))
-    return [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4)
-  }, [images])
-
-  const unused = images.filter(i => i.usedIn.length === 0).length
   const stickerCount = images.filter(i => i.kind === 'figurinha').length
 
   return (
@@ -85,23 +78,11 @@ function Home() {
       <div className="home-bottom">
         <Link to="/biblioteca" className="panel panel-pad home-lib">
           <h2 className="panel-title">Sua biblioteca</h2>
-          <div className="home-lib-count">{images.length - stickerCount}</div>
-          <p className="c-muted">
-            imagens{images.length > 0 && ` · ${unused} nunca usadas`}
-            {stickerCount > 0 && ` · ${stickerCount} figurinhas`}
+          <div className="home-lib-count">{stickerCount}</div>
+          <p className="c-muted">figurinhas</p>
+          <p className="meta home-lib-tip">
+            As imagens das cenas vêm da web a cada vídeo. Aqui ficam as figurinhas, os sons, as músicas, os bordões e os tons.
           </p>
-          {characters.length > 0 && (
-            <p className="home-lib-chars">
-              {characters.map(([c, n]) => (
-                <span key={c}>{c} {n}</span>
-              ))}
-            </p>
-          )}
-          {images.length < 30 && (
-            <p className="meta home-lib-tip">
-              Quanto mais imagens, menos cenas ficam faltando. Importe prints e painéis dos animes que você comenta.
-            </p>
-          )}
         </Link>
 
         <section className="panel panel-pad home-upcoming">

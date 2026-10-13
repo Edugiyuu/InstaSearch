@@ -13,8 +13,6 @@ import {
   imageUrl,
   Pace,
   PACE_LABEL,
-  ImagePicker,
-  PICKER_LABEL,
   ShortProject,
   shortsApi,
   soundUrl,
@@ -199,12 +197,6 @@ function Review() {
   }
 
   const repickImages = (label: string) => run(label, async () => (await shortsApi.assemble(project.id)).project)
-
-  const setPicker = (imagePicker: ImagePicker) =>
-    run(imagePicker === 'ia' ? 'A IA escolhe as imagens' : 'Escolher imagens por palavras', async () => {
-      await shortsApi.updateProject(project.id, { settings: { ...project.settings, imagePicker } })
-      return (await shortsApi.assemble(project.id)).project
-    })
 
   /** Abertura ou final: o id de um bordão da biblioteca, ou null para nenhum. */
   const setCatchphrase = (slot: 'intro' | 'outro', id: string | null) => {
@@ -591,10 +583,14 @@ function Review() {
           <div className="panel rv-card">
             <span className="label">Ajustes rápidos</span>
             <div className="rv-knob">
-              <span>Quem escolhe as imagens</span>
-              <Segmented value={project.settings.imagePicker ?? 'ia'} options={PICKER_LABEL} onChange={setPicker} disabled={!!working} />
-              <button className="act rv-repick" onClick={() => repickImages('Escolher as imagens de novo')} disabled={!!working}>
-                ↻ Escolher de novo {(project.settings.imagePicker ?? 'ia') === 'ia' ? 'com a IA' : ''}
+              <span>Imagens</span>
+              <button
+                className="act rv-repick"
+                onClick={() => repickImages('Buscando as imagens de novo na web')}
+                disabled={!!working}
+                title="Busca de novo na web as imagens que a montagem escolheu; as que você escolheu ficam"
+              >
+                ↻ Buscar de novo na web
               </button>
             </div>
             <div className="rv-knob">

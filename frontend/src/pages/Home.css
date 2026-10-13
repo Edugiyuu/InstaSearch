@@ -87,15 +87,6 @@
   margin-top: 10px;
 }
 
-.home-lib-chars {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  margin-top: 12px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
 .home-lib-tip {
   margin-top: 14px;
   line-height: 1.5;

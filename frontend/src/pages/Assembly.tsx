@@ -45,17 +45,18 @@ function Assembly() {
   const decisions = log.filter(l => l.beatId !== 'ia')
   const pickedBy = log.find(l => l.beatId === 'ia')?.ai
   const scriptBy = project?.ai?.script
-  const missing = decisions.filter(l => l.status === 'missing').length
-  const similar = decisions.filter(l => l.status === 'similar').length
+  const found = decisions.filter(l => l.status !== 'missing').length
   const effects = project?.beats.filter(b => b.effect !== 'none').length ?? 0
   const pct = project ? Math.round(40 + (60 * shown) / Math.max(1, log.length)) : 20
 
   const steps = [
     { label: scriptBy ? `Roteiro dividido em cenas (${aiName(scriptBy)})` : 'Roteiro dividido em cenas', state: 'done' },
     {
-      label: project
-        ? `Imagens: ${decisions.length - missing - similar} certas, ${similar} parecidas, ${missing} faltando${pickedBy ? ` (escolhidas por ${aiName(pickedBy)})` : ''}`
-        : 'Procurando imagens na sua biblioteca',
+      label: !project
+        ? 'Buscando imagens na web; a IA olha as sugestões e escolhe'
+        : decisions.length
+          ? `Imagens da web: ${found} de ${decisions.length} cenas${pickedBy ? ` (escolhidas por ${aiName(pickedBy)})` : ''}`
+          : 'Imagens: as cenas já tinham as que você escolheu',
       state: done ? 'done' : 'doing',
     },
     { label: project ? `${effects} efeitos (setas, X, emojis) e legendas` : 'Efeitos e legendas', state: done ? 'done' : 'todo' },
@@ -99,7 +100,7 @@ function Assembly() {
                   {l.message}
                 </li>
               ))}
-              {!project && <li className="c-muted">Lendo as cenas…</li>}
+              {!project && <li className="c-muted">Buscando na web as imagens de cada cena (leva 1 ou 2 minutos)…</li>}
             </ul>
           </section>
         </div>
