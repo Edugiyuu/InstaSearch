@@ -6,8 +6,6 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-_(nada; escolha a próxima em "A fazer")_
-
 ## A fazer
 
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
@@ -38,6 +36,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-13 · Opção "Imagens sugestivas" em Configurações (desligada por padrão: Bing rígido e Danbooru só "geral"; ligada: Bing moderado e Danbooru "sensível"), no lugar do `BING_SAFESEARCH` do `.env`
 - [x] 2026-10-13 · Danbooru traz imagens "gerais" e "sensíveis" (só "gerais" com `BING_SAFESEARCH=strict`; questionável e explícito nunca), e a documentação diz que o Bing não aceita `off` pela internet (fica no moderado)
 - [x] 2026-10-13 · Busca segura do Bing em "moderada" (era `strict`, que cortava até imagens sugestivas), configurável por `BING_SAFESEARCH` no `.env` (off | moderate | strict); o Danbooru continua só "geral"
 - [x] 2026-10-13 · Imagens só da web: a montagem e o chat buscam na web (sem `matchBeats`, a escolha por palavras e o ajuste "Quem escolhe as imagens"), "↻ Buscar de novo na web" na Revisão, sem a aba Imagens; a catalogação ficou porque marca o zoom ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 1B)

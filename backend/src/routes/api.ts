@@ -117,6 +117,8 @@ router.delete('/posts/:id', postController.deletePost)
 
 // Shorts (tema → roteiro → montagem automática → revisão)
 router.get('/shorts/ai-status', shortsController.getAiStatus)
+router.get('/shorts/settings', shortsController.getSettings)
+router.put('/shorts/settings', shortsController.updateSettings)
 router.get('/shorts/projects', shortsController.listProjects)
 router.post('/shorts/projects', shortsController.createProject)
 router.get('/shorts/projects/:id', shortsController.getProject)

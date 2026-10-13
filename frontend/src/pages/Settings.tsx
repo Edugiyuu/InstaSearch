@@ -1,4 +1,5 @@
-import { AiStatus, errorMessage, shortsApi, WhisperStatus, YouTubeStatus } from '../api/shorts'
+import { AiStatus, AppSettings, errorMessage, shortsApi, WhisperStatus, YouTubeStatus } from '../api/shorts'
+import { Segmented } from '../components/flow'
 import { FormEvent, ReactNode, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useInstagram } from '../hooks/useInstagram'
@@ -73,6 +74,24 @@ function Settings() {
   }, [])
 
   // Whisper (ADR 0018): estado real; enquanto baixa, atualiza o andamento
+  // preferências do app: por enquanto, só as imagens sugestivas
+  const [prefs, setPrefs] = useState<AppSettings | null>(null)
+  const [prefsError, setPrefsError] = useState<string | null>(null)
+  useEffect(() => {
+    shortsApi.settings().then(setPrefs).catch(e => setPrefsError(errorMessage(e)))
+  }, [])
+  const setSuggestive = async (on: boolean) => {
+    if (!prefs) return
+    setPrefs({ ...prefs, suggestiveImages: on }) // muda na hora; volta se o servidor recusar
+    try {
+      setPrefs(await shortsApi.updateSettings({ suggestiveImages: on }))
+      setPrefsError(null)
+    } catch (e) {
+      setPrefs(prefs)
+      setPrefsError(errorMessage(e))
+    }
+  }
+
   const [whisper, setWhisper] = useState<WhisperStatus | null>(null)
   const whisperBusy = whisper?.state === 'baixando'
   useEffect(() => {
@@ -405,6 +424,36 @@ function Settings() {
           <dd>não instalado</dd>
           <dt>Padrão</dt>
           <dd>upload do seu áudio</dd>
+        </Card>
+
+        <Card
+          title="Imagens"
+          actions={
+            prefs && (
+              <Segmented
+                value={prefs.suggestiveImages ? 'on' : 'off'}
+                options={{ off: 'Desligadas', on: 'Ligadas' }}
+                onChange={v => setSuggestive(v === 'on')}
+              />
+            )
+          }
+        >
+          <dt>Imagens sugestivas</dt>
+          <dd>
+            {!prefs ? (prefsError ? <span className="c-danger">{prefsError}</span> : 'carregando…') : prefs.suggestiveImages ? 'ligadas' : 'desligadas'}
+          </dd>
+          <dt>O que muda</dt>
+          <dd>
+            {prefs?.suggestiveImages
+              ? 'As sugestões da web trazem fanservice, roupa curta e pose ousada (Bing moderado e fanarts “sensíveis” do Danbooru). Nudez nunca entra.'
+              : 'As sugestões da web cortam até o sugestivo (Bing no rígido e só fanarts “gerais” do Danbooru).'}
+          </dd>
+          {prefsError && prefs && (
+            <>
+              <dt>Erro</dt>
+              <dd className="c-danger">{prefsError}</dd>
+            </>
+          )}
         </Card>
 
         <Card

@@ -14,6 +14,7 @@ import * as videoScenes from '../services/shorts/videoScenes.js'
 import * as styles from '../services/shorts/styles.js'
 import * as sounds from '../services/shorts/sounds.js'
 import { aiStatus } from '../services/shorts/llm.js'
+import { getAppSettings, updateAppSettings } from '../services/shorts/appSettings.js'
 import * as render from '../services/shorts/render.js'
 import * as publish from '../services/shorts/publish.js'
 import * as catchphrases from '../services/shorts/catchphrases.js'
@@ -58,6 +59,15 @@ const audioUpload = multer({
 
 export const getAiStatus = asyncHandler(async (_req: Request, res: Response) => {
   res.json({ success: true, data: aiStatus() })
+})
+
+/** Preferências do app (tela Configurações). */
+export const getSettings = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ success: true, data: await getAppSettings() })
+})
+
+export const updateSettings = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await updateAppSettings(req.body ?? {}) })
 })
 
 // ── Projetos ──────────────────────────────────────────────

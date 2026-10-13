@@ -1,24 +1,13 @@
 import { describe, expect, it } from '@jest/globals'
-import { bingSafeSearch, danbooruRatings, mentions } from './imageSearch.js'
+import { mentions, safety } from './imageSearch.js'
 
-describe('danbooruRatings: o que entra do Danbooru', () => {
-  it('"sensível" entra, menos no strict; questionável e explícito nunca', () => {
-    expect(danbooruRatings('moderate')).toEqual(['g', 's'])
-    expect(danbooruRatings('off')).toEqual(['g', 's'])
-    expect(danbooruRatings('strict')).toEqual(['g'])
-  })
-})
-
-describe('bingSafeSearch: a busca segura do Bing vem do .env', () => {
-  it('sem valor, ou com um valor desconhecido, fica no moderado', () => {
-    expect(bingSafeSearch(undefined)).toBe('moderate')
-    expect(bingSafeSearch('')).toBe('moderate')
-    expect(bingSafeSearch('desligado')).toBe('moderate')
+describe('safety: o filtro das sugestões pela opção "Imagens sugestivas"', () => {
+  it('desligada: Bing rígido e Danbooru só "geral"', () => {
+    expect(safety(false)).toEqual({ bing: 'strict', danbooru: ['g'] })
   })
 
-  it('aceita off e strict, sem ligar para maiúsculas e espaços', () => {
-    expect(bingSafeSearch(' OFF ')).toBe('off')
-    expect(bingSafeSearch('Strict')).toBe('strict')
+  it('ligada: Bing moderado e Danbooru também "sensível"; nunca questionável nem explícito', () => {
+    expect(safety(true)).toEqual({ bing: 'moderate', danbooru: ['g', 's'] })
   })
 })
 

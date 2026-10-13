@@ -5,7 +5,7 @@
  *  - Google Imagens via Serper (opcional, precisa de SERPER_API_KEY)
  *  - Bing Imagens (sem chave): a internet toda, e uma segunda busca só por painéis reais do mangá
  *  - AniList: arte oficial do personagem (sem chave)
- *  - Danbooru: posts "gerais" e "sensíveis" (só "gerais" com BING_SAFESEARCH=strict), ordenados por nota (sem chave)
+ *  - Danbooru: posts "gerais" (e "sensíveis", com "Imagens sugestivas" ligado), ordenados por nota (sem chave)
  *
  * Nada é baixado aqui: o usuário escolhe uma sugestão e o app importa pelo
  * link (POST /library/import-url), que salva e cataloga na biblioteca.
@@ -13,6 +13,7 @@
 
 import axios from 'axios'
 import { logger } from '../../utils/logger.js'
+import { getAppSettings } from './appSettings.js'
 import { listImages, normalize } from './library.js'
 
 export type WebImageSource = 'google' | 'web' | 'manga' | 'anilist' | 'danbooru'
@@ -169,7 +170,9 @@ export async function searchWebImages(input: WebSearchInput): Promise<WebSearchR
   const creative = /\b(memes?|fanart|genderswap|genderbend|chibi|cosplay)\b/.test(normalize(q))
   // o roteiro só escreve "mangá" quando a obra tem mangá (ADR 0024); o estilo sozinho não decide mais
   const mangaFirst = !creative && /mang|painel|quadrinho/.test(normalize(q))
-  const key = `${normalize(q)}|${names.map(normalize).join(',')}|${normalize(context)}|${tags.join(',')}|${page}`
+  const filter = safety((await getAppSettings()).suggestiveImages)
+  // o filtro entra na chave: ao mudar a opção, a mesma busca não volta com o resultado do filtro antigo
+  const key = `${normalize(q)}|${names.map(normalize).join(',')}|${normalize(context)}|${tags.join(',')}|${page}|${filter.bing}`
   const hit = cache.get(key)
   if (hit && Date.now() - hit.at < CACHE_MS) return withoutLibrary(hit.value)
 
@@ -181,7 +184,7 @@ export async function searchWebImages(input: WebSearchInput): Promise<WebSearchR
     .join(' ')
   const [g, w, people] = await Promise.all([
     google ? safe('Google', () => searchGoogle(googleQuery, page)) : null,
-    safe('Bing', () => searchBing(googleQuery, page, 'web')),
+    safe('Bing', () => searchBing(googleQuery, page, 'web', filter)),
     safe('AniList', () => resolveCharacters(names, `${q} ${context}`)),
   ])
   // o retrato oficial é sempre o mesmo: só na primeira página
@@ -199,9 +202,10 @@ export async function searchWebImages(input: WebSearchInput): Promise<WebSearchR
         names.map((n, i) => ({ name: fullNames[i], series: people?.[i]?.series ?? [] })),
         tags,
         page,
+        filter,
       ),
     ),
-    names.length && !creative ? safe('Mangá', () => searchBing(mangaQuery, page, 'manga')) : null,
+    names.length && !creative ? safe('Mangá', () => searchBing(mangaQuery, page, 'manga', filter)) : null,
   ])
 
   // o que bate com a cena vem primeiro; o retrato e o resto do personagem depois.
@@ -297,29 +301,22 @@ function decodeHtml(text: string) {
   return text.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>')
 }
 
-export type SafeSearch = 'off' | 'moderate' | 'strict'
-
 /**
- * Busca segura do Bing, de `BING_SAFESEARCH` no .env. O padrão é moderate: bloqueia nudez explícita,
- * mas deixa passar o sugestivo (fanservice, roupa curta), que o strict cortava. Valor desconhecido = padrão.
+ * O filtro das sugestões, pela opção "Imagens sugestivas" das Configurações. Desligada: Bing no rígido
+ * (corta até o sugestivo) e Danbooru só "geral". Ligada: Bing moderado (deixa o sugestivo, bloqueia o
+ * explícito) e Danbooru também "sensível". Sem "off": o Bing o ignora num pedido anônimo e fica no
+ * moderado, e "questionável" e "explícito" nunca entram, porque nudez num vídeo derruba a conta do Instagram.
  */
-export function bingSafeSearch(value = process.env.BING_SAFESEARCH): SafeSearch {
-  const v = value?.trim().toLowerCase()
-  return v === 'off' || v === 'strict' ? v : 'moderate'
+export function safety(suggestive: boolean) {
+  return suggestive ? { bing: 'moderate', danbooru: ['g', 's'] } : { bing: 'strict', danbooru: ['g'] }
 }
 
-/**
- * Classificações do Danbooru que entram: "geral" sempre e "sensível" (o sugestivo, sem nudez), menos
- * no strict. "Questionável" e "explícito" nunca: um vídeo com nudez derruba a conta do Instagram.
- */
-export function danbooruRatings(safe: SafeSearch = bingSafeSearch()): string[] {
-  return safe === 'strict' ? ['g'] : ['g', 's']
-}
+export type Safety = ReturnType<typeof safety>
 
-async function searchBing(q: string, page: number, source: 'web' | 'manga') {
+async function searchBing(q: string, page: number, source: 'web' | 'manga', filter: Safety) {
   const count = 35
   const { data } = await http.get<string>('https://www.bing.com/images/async', {
-    params: { q, first: (page - 1) * count, count, mmasync: 1, setlang: 'pt-br', adlt: bingSafeSearch() },
+    params: { q, first: (page - 1) * count, count, mmasync: 1, setlang: 'pt-br', adlt: filter.bing },
     headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8' },
     responseType: 'text',
   })
@@ -486,7 +483,7 @@ interface DanbooruResult {
   searched: string
 }
 
-async function searchDanbooru(people: { name: string; series: string[] }[], scene: string[], page: number): Promise<DanbooruResult | null> {
+async function searchDanbooru(people: { name: string; series: string[] }[], scene: string[], page: number, filter: Safety): Promise<DanbooruResult | null> {
   const chars = [...new Set((await Promise.all(people.map(p => characterTag(p.name, p.series)))).filter((t): t is string => Boolean(t)))]
   // sem personagem, as etiquetas da cena ("cityscape", "night") trazem uma cidade de qualquer anime (ADR 0024)
   if (chars.length === 0) return null
@@ -498,7 +495,7 @@ async function searchDanbooru(people: { name: string; series: string[] }[], scen
   const generalQuery = [chars[0], page === 1 ? 'order:score' : 'order:random']
 
   const series = { root: '' }
-  const ratings = danbooruRatings()
+  const ratings = filter.danbooru
   const usedTags: string[] = []
   const run = async (tags: string[], limit: number, p: number) => {
     const data = await safe('Danbooru', async () => {

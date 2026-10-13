@@ -435,6 +435,8 @@ export const shortsApi = {
   youtubeDisconnect: () => api.delete('/youtube/account'),
 
   aiStatus: () => data<AiStatus>(api.get('/shorts/ai-status')),
+  settings: () => data<AppSettings>(api.get('/shorts/settings')),
+  updateSettings: (changes: Partial<AppSettings>) => data<AppSettings>(api.put('/shorts/settings', changes)),
   listStyles: () => data<ShortStyle[]>(api.get('/shorts/styles')),
   listTones: () => data<Tone[]>(api.get('/shorts/tones')),
   /** Tom embutido ou sem id: cria um novo (mudar um embutido gera uma cópia). */
@@ -584,6 +586,12 @@ export const STATUS_LABEL: Record<ProjectStatus, string> = {
 }
 
 /** Batidas que ainda precisam de uma imagem escolhida pelo usuário. */
+/** Preferências do app inteiro (tela Configurações). */
+export interface AppSettings {
+  /** Imagens sugestivas nas sugestões da web: Bing moderado e Danbooru "sensível". Desligado por padrão. */
+  suggestiveImages: boolean
+}
+
 export const beatsNeedingImage = (p: ShortProject) => p.beats.filter(b => !b.locked && b.imageStatus !== 'match')
 
 /** Texto e cor do status de um projeto nas listas. */
