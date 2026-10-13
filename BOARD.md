@@ -38,6 +38,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-13 · Danbooru traz imagens "gerais" e "sensíveis" (só "gerais" com `BING_SAFESEARCH=strict`; questionável e explícito nunca), e a documentação diz que o Bing não aceita `off` pela internet (fica no moderado)
 - [x] 2026-10-13 · Busca segura do Bing em "moderada" (era `strict`, que cortava até imagens sugestivas), configurável por `BING_SAFESEARCH` no `.env` (off | moderate | strict); o Danbooru continua só "geral"
 - [x] 2026-10-13 · Imagens só da web: a montagem e o chat buscam na web (sem `matchBeats`, a escolha por palavras e o ajuste "Quem escolhe as imagens"), "↻ Buscar de novo na web" na Revisão, sem a aba Imagens; a catalogação ficou porque marca o zoom ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), 1B)
 - [x] 2026-10-13 · Variedade nos temas do debate: o código tira as ideias que repetem a personagem dos 3 últimos vídeos ou uma obra com 2 dos 4 últimos, 4 temas de obras diferentes em ordem sorteada, marcas 🔥 em alta / 🕰️ atemporal e uma 🎲 aposta do nicho, e as IAs pesam a variedade ([ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md))

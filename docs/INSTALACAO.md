@@ -46,7 +46,7 @@ Abra **http://localhost:5173**. A API fica em http://localhost:3000/api (`/api/h
 | `CLAUDE_CODE=on`, `CLAUDE_CODE_PATH` | Reserva pelo Claude Code do seu plano Pro/Max (veja abaixo) |
 | `LLM_PROVIDER` | `auto` (padrão: Gemini → Claude API → Claude Code) ou só um: `gemini`, `claude`, `claude-code` |
 | `SERPER_API_KEY` | Opcional: Google Imagens nas sugestões |
-| `BING_SAFESEARCH` | Busca segura do Bing: `moderate` (padrão; bloqueia nudez explícita, deixa o sugestivo), `off` (sem filtro) ou `strict` (corta até o sugestivo) |
+| `BING_SAFESEARCH` | Busca segura das sugestões: `moderate` (padrão; o Bing deixa o sugestivo e bloqueia o explícito, e o Danbooru traz imagens "gerais" e "sensíveis") ou `strict` (corta até o sugestivo; Danbooru só "gerais"). `off` dá no mesmo que `moderate`: o Bing não deixa desligar o filtro pela internet |
 | `CLOUDINARY_CLOUD_NAME`, `_API_KEY`, `_API_SECRET` | Para publicar no Instagram |
 | `YOUTUBE_CLIENT_ID`, `_CLIENT_SECRET`, `_REDIRECT_URI`, `FRONTEND_URL` | Para enviar ao YouTube |
 | `INSTAGRAM_ACCESS_TOKEN` | Só para o script `backend/scripts/add-token.js` |

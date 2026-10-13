@@ -5,7 +5,7 @@
  *  - Google Imagens via Serper (opcional, precisa de SERPER_API_KEY)
  *  - Bing Imagens (sem chave): a internet toda, e uma segunda busca só por painéis reais do mangá
  *  - AniList: arte oficial do personagem (sem chave)
- *  - Danbooru: só posts com classificação "geral" (rating:g), ordenados por nota (sem chave)
+ *  - Danbooru: posts "gerais" e "sensíveis" (só "gerais" com BING_SAFESEARCH=strict), ordenados por nota (sem chave)
  *
  * Nada é baixado aqui: o usuário escolhe uma sugestão e o app importa pelo
  * link (POST /library/import-url), que salva e cataloga na biblioteca.
@@ -308,6 +308,14 @@ export function bingSafeSearch(value = process.env.BING_SAFESEARCH): SafeSearch 
   return v === 'off' || v === 'strict' ? v : 'moderate'
 }
 
+/**
+ * Classificações do Danbooru que entram: "geral" sempre e "sensível" (o sugestivo, sem nudez), menos
+ * no strict. "Questionável" e "explícito" nunca: um vídeo com nudez derruba a conta do Instagram.
+ */
+export function danbooruRatings(safe: SafeSearch = bingSafeSearch()): string[] {
+  return safe === 'strict' ? ['g'] : ['g', 's']
+}
+
 async function searchBing(q: string, page: number, source: 'web' | 'manga') {
   const count = 35
   const { data } = await http.get<string>('https://www.bing.com/images/async', {
@@ -490,12 +498,13 @@ async function searchDanbooru(people: { name: string; series: string[] }[], scen
   const generalQuery = [chars[0], page === 1 ? 'order:score' : 'order:random']
 
   const series = { root: '' }
+  const ratings = danbooruRatings()
   const usedTags: string[] = []
   const run = async (tags: string[], limit: number, p: number) => {
     const data = await safe('Danbooru', async () => {
       const res = await http.get(`${DANBOORU}/posts.json`, {
         params: {
-          tags: [...tags, 'rating:g'].join(' '),
+          tags: [...tags, `rating:${ratings.join(',')}`].join(' '),
           limit,
           page: p,
           only: 'id,rating,file_ext,file_size,image_width,image_height,preview_file_url,large_file_url,file_url,tag_string_character,tag_string_copyright,is_banned',
@@ -519,7 +528,7 @@ async function searchDanbooru(people: { name: string; series: string[] }[], scen
     const out: WebImage[] = []
     for (const p of posts) {
       if (out.length >= max) break
-      const img = postImage(p, series.root, chars.length === 1)
+      const img = postImage(p, series.root, chars.length === 1, ratings)
       if (!img) continue
       // a mesma imagem costuma aparecer repetida (versões com e sem texto)
       const twin = (i: WebImage) =>
@@ -541,8 +550,8 @@ async function searchDanbooru(people: { name: string; series: string[] }[], scen
 }
 
 /** Post do Danbooru → sugestão, ou null se não serve (classificação, formato, crossover). */
-function postImage(p: any, series: string, singleCharacter: boolean): WebImage | null {
-  if (p.rating !== 'g' || p.is_banned || !['jpg', 'jpeg', 'png', 'webp'].includes(p.file_ext)) return null
+function postImage(p: any, series: string, singleCharacter: boolean, ratings: string[]): WebImage | null {
+  if (!ratings.includes(p.rating) || p.is_banned || !['jpg', 'jpeg', 'png', 'webp'].includes(p.file_ext)) return null
   if (!p.preview_file_url || !p.large_file_url) return null
   // crossover com muitos personagens raramente é o que a cena pede
   const chars = String(p.tag_string_character ?? '').split(' ').filter(Boolean).map(tagName)

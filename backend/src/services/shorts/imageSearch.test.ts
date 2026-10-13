@@ -1,5 +1,13 @@
 import { describe, expect, it } from '@jest/globals'
-import { bingSafeSearch, mentions } from './imageSearch.js'
+import { bingSafeSearch, danbooruRatings, mentions } from './imageSearch.js'
+
+describe('danbooruRatings: o que entra do Danbooru', () => {
+  it('"sensível" entra, menos no strict; questionável e explícito nunca', () => {
+    expect(danbooruRatings('moderate')).toEqual(['g', 's'])
+    expect(danbooruRatings('off')).toEqual(['g', 's'])
+    expect(danbooruRatings('strict')).toEqual(['g'])
+  })
+})
 
 describe('bingSafeSearch: a busca segura do Bing vem do .env', () => {
   it('sem valor, ou com um valor desconhecido, fica no moderado', () => {

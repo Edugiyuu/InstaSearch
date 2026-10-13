@@ -80,8 +80,8 @@ Uma cena por vez ("Cena 1 de 3"). A tela já abre com **sugestões da internet**
 
 | Fonte | O que traz | Precisa de chave? |
 |---|---|---|
-| Bing Imagens | Resultados gerais e **painéis de mangá** (primeiro quando a cena pede mangá). Busca segura moderada: passa o sugestivo, não o explícito (`BING_SAFESEARCH` no `.env` muda) | Não |
-| Danbooru | Ilustrações classificadas como "geral" do personagem da cena, filtradas pelas etiquetas (`smirk`, `hands_in_pockets`…); cena sem personagem não usa | Não |
+| Bing Imagens | Resultados gerais e **painéis de mangá** (primeiro quando a cena pede mangá). Busca segura moderada: passa o sugestivo, não o explícito (`BING_SAFESEARCH=strict` no `.env` corta o sugestivo; desligar de vez o Bing não deixa) | Não |
+| Danbooru | Ilustrações classificadas como "geral" ou "sensível" (o sugestivo, sem nudez; só "geral" com `BING_SAFESEARCH=strict`) do personagem da cena, filtradas pelas etiquetas (`smirk`, `hands_in_pockets`…); cena sem personagem não usa | Não |
 | AniList | A arte oficial do personagem (desempata "Sakura" pela série do vídeo) | Não |
 | Google Imagens | Via [serper.dev](https://serper.dev), 2.500 buscas grátis | `SERPER_API_KEY` |
 
