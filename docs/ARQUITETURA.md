@@ -65,6 +65,8 @@ Gasto típico por vídeo: 1 chamada no roteiro, umas 4 para escolher imagens, 1 
 
 A regra é a do [ADR 0020](decisions/0020-imagens-especificas-memes-e-zoom.md): **o personagem é obrigatório, a ação é preferência**. Melhor uma cena vazia, que você vê, do que uma imagem errada, que passa. E a imagem tem que ser **do assunto do vídeo** ([ADR 0024](decisions/0024-imagens-do-assunto-do-video.md)): o roteiro anota a obra (`subject`), toda busca a leva, e as duas IAs que escolhem recusam imagem de outra obra, menos o meme de reação.
 
+A IA de visão olha **6 sugestões por cena: 3 da web e 3 fanarts do Danbooru** (as mais votadas do personagem), intercaladas (`pickCandidates` em `imageSearch.ts`). Sem essas vagas, o Google e o Bing enchiam as primeiras posições e a fanart nunca chegava a ela. Entre as que mostram o personagem certo, ela prefere arte bem desenhada a um print borrado; o print do anime vale mais quando a fala cita um momento de um episódio. Ela também prefere a imagem mais chamativa (expressão intensa, ação, close dramático) e, com **Imagens sugestivas** ligada, a versão mais ousada de uma personagem, sem nudez.
+
 As imagens vêm **só da web** ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)): a montagem tira as que ela mesma pôs antes e busca de novo, e o chat busca as das cenas novas ou mudadas. Só a imagem que você escolheu fica travada. O arquivo baixado continua em `data/library/`, porque a prévia e o render precisam dele, mas não é oferecido a outro vídeo.
 
 Depois das imagens, a montagem põe as **figurinhas** (pela etiqueta da reação, ex.: "chocado"; o vídeo não desenha emoji), os **efeitos sonoros** (pelo tipo de efeito e pelo nome do arquivo) e a **música** (pelo clima do estilo).

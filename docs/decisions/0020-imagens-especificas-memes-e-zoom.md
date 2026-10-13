@@ -80,6 +80,17 @@ O usuário gostou da sugestão "✨ Buscar a variação: “tatsumaki chibi fana
 
 Fica no `TWIST_RULE` (`shortsAI.ts`), que vale para o roteiro e para o chat. Por que no prompt e não num ajuste rápido ("Memes: poucos / médio / muitos", a 3B): o pedido foi "mais", sem pedir controle; o chat continua aceitando "menos variações" para um vídeo só.
 
+## Adendo (2026-10-13): vagas de fanart
+
+O usuário achou as imagens boas, mas pediu **mais fanart**. A causa estava na escolha das candidatas, não na visão: a IA olhava as 4 primeiras de uma lista em que o Google e o Bing vêm antes do Danbooru, e `rankCandidates` só reordenava as 8 primeiras. Na prática, a visão via prints e wallpapers da web, e a fanart do Danbooru (as mais votadas do personagem) quase nunca chegava a ela.
+
+- **Escolhida: vagas de fanart.** A visão olha **6 sugestões por cena, 3 da web e 3 do Danbooru, intercaladas** (`pickCandidates` em `imageSearch.ts`). Um lado com menos sugestões cede as vagas ao outro: cena sem personagem (sem Danbooru) fica com 6 da web. Para não aumentar o número de chamadas, vão 4 cenas por chamada em vez de 5 (umas 24 miniaturas cada).
+- **O prompt da visão** passou a preferir arte bonita e bem desenhada (fanart caprichada ou arte oficial), nítida e colorida, a um print borrado; o print do anime vale mais quando a fala cita um momento específico de um episódio. A regra do personagem certo continua acima de tudo.
+- **A tela Trocar imagem também intercala.** Ela mostra as 10 primeiras sugestões da busca, e o Danbooru vinha no fim da lista, atrás do "Ver mais". Agora a própria busca (`searchWebImages`) devolve web e fanart alternadas (`interleave`), e as 10 primeiras já trazem umas 5 fanarts. Com **Imagens sugestivas** ligada, nas personagens elas costumam ser as ousadas (das 40 fanarts mais votadas da Makima, 39 são "sensíveis").
+- **Imagens chamativas, e ousadas quando liberado.** Depois de ver o resultado, o usuário pediu imagens "um pouco mais apelativas" e escolheu as duas leituras: a visão sempre prefere a imagem que prende o olho no feed (expressão intensa, ação, cores fortes, close dramático, aura); e, com a opção **Imagens sugestivas** ligada nas Configurações, também prefere a versão mais ousada de uma personagem (fanservice, pose sensual, roupa curta), sem nudez nem nada sexual. Desligada, essa regra nem vai no prompt. As regras do assunto e do personagem certo continuam acima das duas.
+- Descartadas pelo usuário: **mais uma fonte de fanart** (Zerochan), que daria variedade, mas é mais uma fonte para manter; e **fanart sempre primeiro**, com a web só quando não há fanart, que perderia os prints dos momentos citados.
+- **Custa:** miniaturas maiores por chamada (24 em vez de 20) e chamadas um pouco mais lentas. **Revisar quando:** as fanarts ficarem repetidas entre vídeos do mesmo personagem (as mais votadas são sempre as mesmas), ou a visão passar a escolher fanart de traço muito diferente do anime.
+
 ## Alternativas consideradas
 
 As alternativas de cada escolha estão na seção acima, com o motivo de não serem a recomendação.

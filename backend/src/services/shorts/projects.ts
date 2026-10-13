@@ -8,7 +8,8 @@ import { logger } from '../../utils/logger.js'
 import { getStyle } from './styles.js'
 import { CHANNEL_CATCHPHRASE_ID, defaultCatchphrases } from './catchphrases.js'
 import { forgetProject, importImageFromUrl, listStickers, pickSfx, refreshStickers, syncUsage } from './library.js'
-import { fetchThumb, searchWebImages, type WebImage } from './imageSearch.js'
+import { getAppSettings } from './appSettings.js'
+import { fetchThumb, pickCandidates, searchWebImages, type WebImage } from './imageSearch.js'
 import { adjustBeats, generateScript, pickWebImagesWithAI } from './shortsAI.js'
 import { listSounds, syncSoundUsage } from './sounds.js'
 import { normalize } from './library.js'
@@ -258,31 +259,12 @@ export async function setBeatImage(id: string, beatId: string, imageId: string |
 /** Cenas que ainda precisam de imagem: sem imagem, ou com uma parecida que o usuário não aprovou. */
 const needsImage = (b: Beat) => !b.locked && b.imageStatus !== 'match'
 
-/**
- * As sugestões que valem mostrar para a IA, das melhores para as piores: as primeiras batem com a
- * cena; entre elas, prefere imagem em pé, com boa resolução e sem gente a mais (cena só do Gojo
- * não quer o Gojo com o Toji).
- */
-function rankCandidates(images: WebImage[], wanted: number) {
-  const score = (i: WebImage, n: number) => {
-    const tall = i.width && i.height ? (i.height >= i.width * 0.9 ? 2 : 0) : 1
-    const sharp = i.width && i.width >= 700 ? 1 : 0
-    const extra = Math.max(0, new Set(i.characters ?? []).size - Math.max(1, wanted))
-    return tall + sharp - extra * 0.8 - n * 0.35
-  }
-  return images
-    .slice(0, 8)
-    .map((img, n) => ({ img, s: score(img, n) }))
-    .sort((a, b) => b.s - a.s)
-    .map(r => r.img)
-}
-
 /** Fontes cujos personagens vêm das etiquetas (Danbooru) ou do cadastro (AniList), e não de um título qualquer. */
 const trustedSource = (img: WebImage) => (img.source === 'danbooru' || img.source === 'anilist') && !!img.characters?.length
 
-/** Sugestões por cena mostradas à IA, e cenas por chamada de visão (≈ 20 miniaturas). */
-const PER_SCENE = 4
-const SCENES_PER_CALL = 5
+/** Sugestões por cena mostradas à IA (metade fanart, ver `pickCandidates`), e cenas por chamada de visão (≈ 24 miniaturas). */
+const PER_SCENE = 6
+const SCENES_PER_CALL = 4
 
 /** 3 por vez: rápido sem abusar das fontes. */
 async function inParallel<T>(items: T[], work: (item: T) => Promise<void>) {
@@ -316,6 +298,7 @@ async function fillFromWeb(project: ShortProject) {
   const pending = project.beats.filter(needsImage)
   const results: { beatId: string; ok: boolean; message: string }[] = []
   const context = `${project.theme} ${project.title}`
+  const { suggestiveImages: suggestive } = await getAppSettings()
   const search = (query: string, beat: Beat, tags: string[]) =>
     searchWebImages({ query, characters: beat.characters, tags, subject: project.subject, context })
 
@@ -327,8 +310,8 @@ async function fillFromWeb(project: ShortProject) {
       const twist = beat.twist ? await search(beat.twist.query, beat, beat.twist.tags ?? []).catch(() => null) : null
       const wanted = beat.characters.length
       const list = twist
-        ? [...rankCandidates(twist.images, wanted).slice(0, 2), ...rankCandidates(literal.images, wanted)]
-        : rankCandidates(literal.images, wanted)
+        ? [...pickCandidates(twist.images, wanted, PER_SCENE).slice(0, 2), ...pickCandidates(literal.images, wanted, PER_SCENE)]
+        : pickCandidates(literal.images, wanted, PER_SCENE)
       const unique = list.filter((img, i) => list.findIndex(o => o.url === img.url) === i).slice(0, PER_SCENE)
       if (unique.length) options.set(beat.id, unique)
       else results.push({ beatId: beat.id, ok: false, message: `Nada encontrado para “${beat.query}”` })
@@ -368,7 +351,7 @@ async function fillFromWeb(project: ShortProject) {
     try {
       const out = await pickWebImagesWithAI(
         viewable.map(s => ({ beat: s.beat, thumbs: s.thumbs })),
-        { title: project.title, subject: subjectOf(project) },
+        { title: project.title, subject: subjectOf(project), suggestive },
       )
       ai = out.ai
       viewable.forEach((s, k) => {

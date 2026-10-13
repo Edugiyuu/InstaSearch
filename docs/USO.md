@@ -81,7 +81,7 @@ Uma cena por vez ("Cena 1 de 3"). A tela já abre com **sugestões da internet**
 | Fonte | O que traz | Precisa de chave? |
 |---|---|---|
 | Bing Imagens | Resultados gerais e **painéis de mangá** (primeiro quando a cena pede mangá). Busca segura no rígido; com **Imagens sugestivas** ligada, no moderado (passa o sugestivo, nunca o explícito) | Não |
-| Danbooru | Ilustrações classificadas como "geral" (e "sensível", o sugestivo sem nudez, com **Imagens sugestivas** ligada) do personagem da cena, filtradas pelas etiquetas (`smirk`, `hands_in_pockets`…); cena sem personagem não usa | Não |
+| Danbooru | Ilustrações classificadas como "geral" (e "sensível", o sugestivo sem nudez, com **Imagens sugestivas** ligada) do personagem da cena, filtradas pelas etiquetas (`smirk`, `hands_in_pockets`…). É a fonte de fanart: na montagem, metade das sugestões que a IA olha vem daqui, e na tela Trocar imagem elas vêm alternadas com as da web. Cena sem personagem não usa | Não |
 | AniList | A arte oficial do personagem (desempata "Sakura" pela série do vídeo) | Não |
 | Google Imagens | Via [serper.dev](https://serper.dev), 2.500 buscas grátis | `SERPER_API_KEY` |
 
@@ -106,7 +106,7 @@ O modal gera a **legenda do post** com hashtags e já começa o **render do MP4*
 | **Biblioteca** (`/biblioteca`) | O material que você cuida: figurinhas (PNG transparente), efeitos sonoros (nomeie `whoosh_01.mp3`), músicas (cole o link de um Reel/TikTok/Short), bordões, tons e vídeos (as cenas de um episódio, para usar na tela Trocar imagem). Não há aba de imagens: as das cenas vêm da web a cada vídeo ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
 | **Estilos** (`/estilos`) | Cada estilo é uma configuração (ritmo, efeitos, legenda, música, tipo de imagem, instruções para a IA). Mudar um que vem com o app salva uma cópia sua |
 | **Calendário** (`/calendario`) | Posts agendados, publicados e com falha; publicar agora, cancelar |
-| **Configurações** (`/configuracoes`) | Contas conectadas (Instagram, YouTube), estado de cada IA (com a hora em que a cota do Gemini volta), o download do Whisper e **Imagens sugestivas**: desligada por padrão; ligada, as sugestões da web trazem fanservice e pose ousada (Bing moderado, Danbooru "sensível"), mas nunca nudez. O Bing não deixa desligar o filtro de vez num pedido pela internet |
+| **Configurações** (`/configuracoes`) | Contas conectadas (Instagram, YouTube), estado de cada IA (com a hora em que a cota do Gemini volta), o download do Whisper e **Imagens sugestivas**: desligada por padrão; ligada, as sugestões da web trazem fanservice e pose ousada (Bing moderado, Danbooru "sensível"), e a IA que escolhe as imagens prefere a versão mais ousada de uma personagem, mas nunca nudez. O Bing não deixa desligar o filtro de vez num pedido pela internet |
 | Ferramentas antigas | As telas da primeira versão do projeto (publicar clipes prontos, gerador de prompts, perfis). Ficam no rodapé do menu; a maioria é *stub* |
 
 **Bordões** são o que abre ou fecha o vídeo, em três tipos: **clipe pronto** (um vídeo seu com som), **montado** (imagem + um áudio seu + texto) e **se inscreve** (foto, @, frase e o botão sendo clicado).

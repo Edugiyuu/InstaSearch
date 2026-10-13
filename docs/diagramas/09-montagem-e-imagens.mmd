@@ -2,8 +2,8 @@ flowchart TD
     B["Cena do roteiro<br/>o que mostrar, personagens,<br/>etiquetas, meme?"] --> LOCK{"Você já escolheu<br/>a imagem desta cena?"}
     LOCK -- "sim" --> OK["✅ entra na cena"]
     LOCK -- "não" --> SRCH["Busca na web, com a obra do vídeo<br/>meme primeiro, depois a cena"]
-    SRCH --> TOP["4 melhores por cena"]
-    TOP --> VIS{"A IA olha as miniaturas<br/>(~5 cenas por chamada):<br/>é da obra e mostra o personagem?"}
+    SRCH --> TOP["6 por cena:<br/>3 da web + 3 fanarts do Danbooru"]
+    TOP --> VIS{"A IA olha as miniaturas<br/>(~4 cenas por chamada):<br/>é da obra e mostra o personagem?<br/>prefere arte caprichada"}
     VIS -- "sim" --> OK
     VIS -- "nenhuma mostra" --> MISS["🟥 falta imagem<br/>(nunca entra imagem errada)"]
     MISS --> HAND["🖼 Trocar imagem<br/>(você escolhe)"]

@@ -444,8 +444,11 @@ export interface WebPickScene {
  */
 export async function pickWebImagesWithAI(
   scenes: WebPickScene[],
-  /** O título e a obra do vídeo (ADR 0024); sem obra, não há a regra do assunto. */
-  video: { title: string; subject?: string },
+  /**
+   * O título e a obra do vídeo (ADR 0024); sem obra, não há a regra do assunto. `suggestive`: a opção
+   * "Imagens sugestivas" das Configurações, que libera preferir a versão mais ousada.
+   */
+  video: { title: string; subject?: string; suggestive?: boolean },
 ): Promise<{ picks: { index: number | null; reason: string; characters: string[] }[]; ai: AiCredit }> {
   const images = scenes.flatMap(s => s.thumbs.map(t => ({ data: t.data.toString('base64'), mimeType: t.mimeType })))
   const offsets: number[] = []
@@ -469,6 +472,9 @@ Para cada cena, escolha entre as imagens dela a que melhor mostra o que a cena p
 - O personagem certo é obrigatório. Nunca escolha outro personagem, mesmo parecido ou da mesma série.
 - A ação ou emoção pedida é preferência: se nenhuma imagem mostra a ação, mas alguma mostra bem o personagem, escolha essa.
 - Entre as que mostram o personagem, prefira a que mostra a ação ou emoção pedida, e o personagem em destaque (não perdido no meio de muita gente).
+- Prefira arte bonita e bem desenhada (fanart caprichada ou arte oficial), nítida e colorida, a um print borrado ou de baixa resolução. Print do anime só vale mais quando a fala cita um momento específico de um episódio.
+- Prefira a imagem mais chamativa, que prende o olho no feed: expressão intensa, ação, cores fortes, close dramático, aura ou poder. Uma imagem parada e sem graça perde para uma que impacta.${video.suggestive ? `
+- Imagens sugestivas estão liberadas: quando a cena mostra uma personagem, prefira a versão mais ousada e atraente (fanservice, pose sensual, roupa curta), desde que não tenha nudez nem nada sexual explícito. Isso não passa por cima das regras do assunto e do personagem certo.` : ''}
 - Evite capa de volume, colagem de várias imagens, texto ou marca d'água grandes, a não ser que a cena peça isso.
 - Meme: só se for mesmo um meme, do assunto ou de reação que combina com a fala. Variação: fanart do personagem daquele jeito.
 - Use null quando nenhuma imagem é do assunto ou mostra o personagem pedido: melhor faltar do que pôr a imagem errada.

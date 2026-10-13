@@ -6,14 +6,19 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
+
 ## A fazer
 
+- [ ] Clipes do YouTube nos momentos marcantes: o roteiro marca 1 ou 2 cenas, a montagem busca, baixa e escolhe o trecho com visão (ADR 0029)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
 - [ ] Remover a dependência `openai`, que não é usada (pendência do [ADR 0006](docs/decisions/0006-remover-openai.md))
 
 ## Backlog
 
+- [ ] "↻ Buscar de novo na web" troca todas as imagens sem desfazer (a montagem não entra no `undo` do projeto) e não pede confirmação; num projeto com todas as cenas travadas, não faz nada e não avisa
+- [ ] Uns 12 projetos antigos têm todas as imagens travadas pelo "Preencher automático" de antes do [ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), e não dá para separar das que o usuário escolheu
+- [ ] Personagem pelo apelido acha o errado no AniList: "Mob" vira "Mob no Haha" (a mãe dele), porque o nome procurado bate palavra por palavra; aí o Danbooru não traz nenhuma fanart do Mob (o nome completo, "Shigeo Kageyama", funciona)
 - [ ] O `npx tsc --noEmit -p backend` (e `-p frontend`) da Definição de Pronto não roda da raiz: o TypeScript está só em `backend/` e `frontend/`, e o `npx` sai sem checar nada; trocar no CLAUDE.md por `npm --prefix backend exec tsc -- --noEmit` (ou parecido)
 - [ ] Decidir se a aba Vídeos (episódios divididos em cenas) sai também: sem a escolha na biblioteca, a montagem não usa mais as cenas sozinha; hoje elas só aparecem na tela Trocar imagem, e não há nenhum vídeo enviado
 - [ ] Figurinha automática combina pouco: escolhe só pelas etiquetas da reação, sem olhar a obra do vídeo (num vídeo da Tatsumaki, "chocado" pegou "guria sorrindo", e 6 de 8 reações ficaram sem figurinha); talvez preferir as do assunto, como o pop-up já faz
@@ -36,6 +41,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-13 · Mais fanart nas imagens: a IA de visão vê 6 sugestões por cena (3 da web e 3 fanarts do Danbooru) e prefere arte bem desenhada e chamativa (e ousada, com "Imagens sugestivas" ligada) ; a tela Trocar imagem alterna web e fanart (adendo ao [ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))
 - [x] 2026-10-13 · Opção "Imagens sugestivas" em Configurações (desligada por padrão: Bing rígido e Danbooru só "geral"; ligada: Bing moderado e Danbooru "sensível"), no lugar do `BING_SAFESEARCH` do `.env`
 - [x] 2026-10-13 · Danbooru traz imagens "gerais" e "sensíveis" (só "gerais" com `BING_SAFESEARCH=strict`; questionável e explícito nunca), e a documentação diz que o Bing não aceita `off` pela internet (fica no moderado)
 - [x] 2026-10-13 · Busca segura do Bing em "moderada" (era `strict`, que cortava até imagens sugestivas), configurável por `BING_SAFESEARCH` no `.env` (off | moderate | strict); o Danbooru continua só "geral"

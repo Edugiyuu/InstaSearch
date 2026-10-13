@@ -208,19 +208,19 @@ export async function searchWebImages(input: WebSearchInput): Promise<WebSearchR
     names.length && !creative ? safe('Mangá', () => searchBing(mangaQuery, page, 'manga', filter)) : null,
   ])
 
-  // o que bate com a cena vem primeiro; o retrato e o resto do personagem depois.
-  // Estilo de mangá: os painéis reais do mangá na frente de tudo.
+  // de cada lado, o que bate com a cena vem primeiro; o retrato e o resto do personagem depois.
+  // Estilo de mangá: os painéis reais do mangá na frente da web.
   const manga = m?.images ?? []
-  const ordered = [
+  const web = [
     ...(mangaFirst ? manga : []),
     ...(g?.images ?? []),
     ...(w?.images ?? []).slice(0, 12),
-    ...(d?.specific ?? []),
     ...(mangaFirst ? [] : manga),
     ...(a?.images ?? []),
     ...(w?.images ?? []).slice(12),
-    ...(d?.general ?? []),
   ]
+  // web e fanart intercaladas: com a fanart no fim, a tela Trocar imagem (10 primeiras) nunca a mostrava
+  const ordered = interleave(web, [...(d?.specific ?? []), ...(d?.general ?? [])])
   const seen = new Set<string>()
   const images = ordered.filter(img => {
     if (seen.has(img.url)) return false
@@ -264,6 +264,57 @@ function guessNames(query: string): string[] {
     .split(/[\s,;:.!?()]+/)
     .filter(w => w.length > 2 && /^[A-ZÀ-Ú]/.test(w) && !STOP.has(w.toLowerCase()))
     .slice(0, 2)
+}
+
+// ─── Candidatas para a IA de visão ────────────────────────
+
+/** Quantos personagens a imagem tem além dos que a cena pede (cena só do Gojo não quer o Gojo com o Toji). */
+const extraPeople = (i: WebImage, wanted: number) => Math.max(0, new Set(i.characters ?? []).size - Math.max(1, wanted))
+
+/**
+ * As sugestões que valem mostrar para a IA, das melhores para as piores: as primeiras batem com a
+ * cena; entre elas, prefere imagem em pé, com boa resolução e sem gente a mais.
+ */
+export function rankCandidates(images: WebImage[], wanted: number) {
+  const score = (i: WebImage, n: number) => {
+    const tall = i.width && i.height ? (i.height >= i.width * 0.9 ? 2 : 0) : 1
+    const sharp = i.width && i.width >= 700 ? 1 : 0
+    return tall + sharp - extraPeople(i, wanted) * 0.8 - n * 0.35
+  }
+  return images
+    .slice(0, 8)
+    .map((img, n) => ({ img, s: score(img, n) }))
+    .sort((a, b) => b.s - a.s)
+    .map(r => r.img)
+}
+
+/**
+ * As sugestões que a IA de visão olha numa cena: metade da web (Google, Bing, mangá, AniList) e metade
+ * fanart do Danbooru, intercaladas. Sem as vagas, a web enchia as primeiras posições e a fanart com nota
+ * alta nunca chegava à IA (adendo de 2026-10-13 ao ADR 0020). Um lado com menos sugestões cede as vagas.
+ */
+export function pickCandidates(images: WebImage[], wanted: number, max = 6) {
+  const web = rankCandidates(images.filter(i => i.source !== 'danbooru'), wanted)
+  // o Danbooru já vem na ordem certa (as da cena primeiro, depois as gerais por nota): só desce quem tem gente a mais
+  const fanart = images
+    .filter(i => i.source === 'danbooru')
+    .map((img, n) => ({ img, n }))
+    .sort((a, b) => extraPeople(a.img, wanted) - extraPeople(b.img, wanted) || a.n - b.n)
+    .map(r => r.img)
+  const half = Math.ceil(max / 2)
+  const fanartCount = Math.min(fanart.length, max - Math.min(web.length, half))
+  const webCount = Math.min(web.length, max - fanartCount)
+  return interleave(web.slice(0, webCount), fanart.slice(0, fanartCount))
+}
+
+/** Uma de cada lista, alternando (a, b, a, b…); a que sobra vai no fim. */
+export function interleave<T>(a: T[], b: T[]): T[] {
+  const out: T[] = []
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    if (i < a.length) out.push(a[i])
+    if (i < b.length) out.push(b[i])
+  }
+  return out
 }
 
 // ─── Google (Serper) ──────────────────────────────────────
