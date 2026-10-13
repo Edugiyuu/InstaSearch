@@ -89,9 +89,13 @@ export interface RawIdea {
   videos?: unknown
   comments?: unknown
   web?: unknown
+  work?: unknown
+  character?: unknown
+  trend?: unknown
+  bet?: unknown
 }
 
-export type CleanIdea = Pick<Idea, 'theme' | 'hook' | 'styleId' | 'toneId' | 'duration' | 'why' | 'evidence'>
+export type CleanIdea = Pick<Idea, 'theme' | 'hook' | 'styleId' | 'toneId' | 'duration' | 'why' | 'evidence' | 'work' | 'character' | 'trend' | 'bet'>
 
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '')
 const list = (v: unknown) => (Array.isArray(v) ? v.map(x => String(x).replace(/[[\]\s]/g, '').toUpperCase()) : [])
@@ -140,6 +144,10 @@ export function cleanIdeas(
       duration: snapDuration(r.duration),
       why: text(r.why, 600),
       evidence,
+      work: text(r.work, 80) || undefined,
+      character: text(r.character, 80) || undefined,
+      trend: r.trend === 'alta' || r.trend === 'atemporal' ? r.trend : undefined,
+      bet: r.bet === true || undefined,
     })
     if (out.length >= MAX_IDEAS) break
   }

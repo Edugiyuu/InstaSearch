@@ -5,7 +5,7 @@ import { Spinner } from './flow'
 import './DebateChat.css'
 
 const STATUS: Record<Debate['status'], string> = {
-  brainstorm: 'Gerando 4 ideias nas obras do canal…',
+  brainstorm: 'Gerando os temas…',
   debatendo: 'Debatendo',
   resumindo: 'As duas aceitaram; escrevendo o porquê…',
   acordo: 'Acordo',
@@ -51,6 +51,15 @@ export function DebateChat({ debate, creating }: { debate: Debate; /** o vídeo 
                 <span className="dc-topic">
                   {idea.theme}
                   <span className="meta">“{idea.hook}”</span>
+                  <span className="dc-tags">
+                    {idea.work && <span className="dc-tag">{idea.work}</span>}
+                    {idea.trend && <span className={`dc-tag ${idea.trend}`}>{idea.trend === 'alta' ? '🔥 em alta' : '🕰️ atemporal'}</span>}
+                    {idea.bet && (
+                      <span className="dc-tag bet" title="Algo bombando no nicho do canal, numa obra que ele ainda não tratou">
+                        🎲 aposta
+                      </span>
+                    )}
+                  </span>
                 </span>
                 {voters.map(s => (
                   <span key={s} className={`dc-voter ${s}`} title={`${SPEAKER_NAME[s]} aceita este tema`}>
@@ -62,11 +71,25 @@ export function DebateChat({ debate, creating }: { debate: Debate; /** o vídeo 
           })}
         </ol>
       )}
+      {!!debate.rejected?.length && (
+        <details className="dc-rejected">
+          <summary>
+            {debate.rejected.length} ideia(s) do brainstorm ficaram fora pela variedade
+          </summary>
+          <ul>
+            {debate.rejected.map((r, i) => (
+              <li key={i}>
+                {r.theme} <span className="meta">· {r.reason}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       <div className="dc-chat">
         {debate.status === 'brainstorm' && (
           <p className="dc-note">
-            <Spinner /> Pesquisando o que está acontecendo nas obras do canal e gerando os temas…
+            <Spinner /> Pesquisando o que está acontecendo nas obras do canal e no nicho, e gerando os temas…
           </p>
         )}
         {debate.messages.map((m, i) => (

@@ -200,3 +200,43 @@
     max-width: 100%;
   }
 }
+
+/* Marcas do tema (ADR 0028): a obra, em alta × atemporal e a aposta */
+.dc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.dc-tag {
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  background: var(--panel-3);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.dc-tag.alta {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.dc-tag.bet {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.dc-rejected {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dc-rejected summary {
+  cursor: pointer;
+}
+
+.dc-rejected ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}

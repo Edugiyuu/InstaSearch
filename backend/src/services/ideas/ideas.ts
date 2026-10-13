@@ -79,27 +79,40 @@ export async function brainstorm(input: { seed?: string; request?: string }) {
   return listIdeas()
 }
 
+/** A pesquisa do debate (ADR 0028): o que acontece nas obras do canal e o que está viralizando no nicho. */
+const RESEARCH_DEBATE = `${RESEARCH} Pesquise também o que está viralizando AGORA no nicho do canal (o mesmo tipo de conteúdo dos vídeos dele, por exemplo anime, desenho, games e cultura geek), mesmo fora das obras que o canal já tratou: trends de fãs, memes, versões alternativas de personagens (como a "Malfoid", a versão mulher do Draco Malfoy), polêmicas e estreias de que o público está falando.`
+
 /**
- * As candidatas do debate das IAs (ADR 0027): um brainstorm próprio, sem tema, nas obras que o canal já
- * fala (o público veio por elas) e com assuntos ainda não feitos (adendo do ADR 0026). Não grava nada nem
- * mexe no lote de ideias novas da tela: só a vencedora do debate entra no banco.
- * - `channel`: os títulos dos vídeos que o criador fez à mão: dizem as obras do canal;
+ * As candidatas do debate das IAs (ADR 0027 e 0028): um brainstorm próprio, sem tema, que não grava nada
+ * nem mexe no lote de ideias novas da tela (só a vencedora do debate entra no banco). Pede mais ideias do
+ * que o debate usa, cada uma com a obra, a personagem e se está em alta: o código filtra depois (variety.ts).
+ * - `channel`: os títulos dos vídeos que o criador fez à mão: dizem as obras e o nicho do canal;
  * - `done`: todos os títulos já feitos (à mão e sozinho), para não repetir o assunto;
- * - `recent`: os mais recentes, para variar a obra dentro do canal.
+ * - `recent`: os mais recentes, com obra e "em alta", para variar;
+ * - `avoid`: as ideias que o filtro tirou numa tentativa anterior, com o motivo.
  */
-export async function brainstormCandidates(input: { channel: string[]; done: string[]; recent: string[] }, count: number) {
+export async function brainstormCandidates(
+  input: { channel: string[]; done: string[]; recent: string; avoid?: { theme: string; reason: string }[] },
+  count: number,
+) {
   const list = (titles: string[]) => titles.map(t => `- ${t}`).join('\n')
   const note = [
     'Estas ideias vão ser debatidas por duas IAs, e a escolhida vira vídeo sozinha, sem o criador escolher o tema: traga ideias fortes e diferentes entre si.',
-    input.channel.length
-      ? `Fique nas obras que o canal já fala, porque o público veio por elas: nada de obra nova que o canal nunca tratou. Os vídeos que o criador fez:\n${list(input.channel)}`
-      : '',
+    input.channel.length ? `Os vídeos que o criador fez (dizem as obras e o nicho do canal; o público veio por eles):\n${list(input.channel)}` : '',
     input.done.length ? `Assuntos que já viraram vídeo (não repita o assunto, mesmo com outro título):\n${list(input.done)}` : '',
-    input.recent.length ? `Os mais recentes foram: ${input.recent.join('; ')}. Varie a obra dentro das do canal.` : '',
+    input.recent ? `Os últimos vídeos, do mais novo para o mais velho:\n${input.recent}` : '',
+    input.avoid?.length
+      ? `Numa tentativa anterior, estas ideias foram recusadas pela regra de variedade (não traga parecidas):\n${input.avoid.map(a => `- ${a.theme} (${a.reason})`).join('\n')}`
+      : '',
+    `Regras de variedade (o app confere e descarta o que não cumprir):
+- Cada ideia é de uma obra diferente.
+- Não use a personagem principal de nenhum dos 3 últimos vídeos, nem uma obra que já tem 2 dos 4 últimos.
+- A maioria das ideias é do que está em alta agora, mas pelo menos 2 são atemporais: uma análise, comparação ou curiosidade que não depende da notícia da semana.
+- Fora isso, fique nas obras que o canal já fala. A exceção é UMA ideia de aposta ("bet": true): algo que está bombando agora no mesmo nicho do canal, mesmo numa obra que ele nunca tratou (uma trend de fãs, um meme, uma versão alternativa de personagem). Só se a pesquisa confirmou que está bombando, e nunca de outro nicho (nada de culinária num canal de anime).`,
   ]
     .filter(Boolean)
     .join('\n\n')
-  return createIdeas({ note }, { count, keepBatch: true, save: false })
+  return createIdeas({ note }, { count, keepBatch: true, save: false, variety: true })
 }
 
 /**
@@ -108,7 +121,7 @@ export async function brainstormCandidates(input: { channel: string[]; done: str
  */
 async function createIdeas(
   input: { seed?: string; request?: string; note?: string },
-  opts: { count?: number; keepBatch?: boolean; status?: IdeaStatus; save?: boolean } = {},
+  opts: { count?: number; keepBatch?: boolean; status?: IdeaStatus; save?: boolean; variety?: boolean } = {},
 ): Promise<Idea[]> {
   const seed = input.seed?.trim().slice(0, 300) || undefined
   const request = input.request?.trim().slice(0, 300) || undefined
@@ -160,7 +173,9 @@ ${input.note ?? ''}
 Sugira ${count === 1 ? 'a melhor ideia de vídeo (uma só)' : `${count} ideias de vídeo`}. Regras:
 - Cada ideia tem um porquê concreto ligado aos dados: cite em "videos" as etiquetas dos vídeos cujo desempenho a sustenta, em "comments" as dos comentários que a pedem, e em "web" o que a pesquisa encontrou. Só cite o que sustenta a ideia de verdade. Se a ideia vem só da pesquisa, diga isso no "why".
 ${
-  count === 1
+  opts.variety
+    ? '- Aprenda com o que foi acima da mediana, mas repita o FORMATO que deu certo (o tipo de pergunta, o tom, o recorte) com outra obra ou personagem, nunca o mesmo assunto. Pelo menos uma ideia atende um pedido dos comentários, se houver.'
+    : count === 1
     ? '- Prefira o que os números, os comentários ou a pesquisa sustentam, respeitando o que foi pedido acima sobre o assunto.'
     : '- Misture: ideias que repetem o que foi acima da mediana (mesmo assunto, personagem ou formato), pelo menos uma que atende um pedido dos comentários (se houver) e pelo menos uma atual, do que está acontecendo agora.'
 }
@@ -168,12 +183,13 @@ ${
 - "theme" é escrito como o criador escreveria no campo "Sobre o que é o vídeo?": uma pergunta ou afirmação específica (ex.: "Por que o Luffy nunca mata ninguém em One Piece?"). Nada genérico.
 - "hook" é a primeira frase falada do vídeo, com até 15 palavras.
 - "duration": 15, 20, 30 ou 40 (segundos).
+- "work": o nome oficial completo da obra (ex.: "One-Punch Man", nunca "OPM"); "character": a personagem principal do tema (nome e sobrenome, se tiver), ou vazio se não houver uma; "trend": "alta" se o tema depende do que está acontecendo agora, ou "atemporal".${opts.variety ? '\n- "bet": true só na ideia de aposta; nas outras, false.' : ''}
 - "why": 2 ou 3 frases, citando os números quando houver ("o vídeo do Gojo foi 2,4× a mediana"). No "why", chame os vídeos pelo título e os comentários pelo texto: o criador não vê as etiquetas [V1] e [C1], que servem só para "videos" e "comments".
 
 Responda só com JSON:
-{ "ideas": [ { "theme": "...", "hook": "...", "styleId": "...", "toneId": "...", "duration": 30, "why": "...", "videos": ["V1"], "comments": ["C2"], "web": "o que a pesquisa encontrou, ou vazio" } ] }`
+{ "ideas": [ { "theme": "...", "hook": "...", "styleId": "...", "toneId": "...", "duration": 30, "why": "...", "videos": ["V1"], "comments": ["C2"], "web": "o que a pesquisa encontrou, ou vazio", "work": "...", "character": "...", "trend": "alta"${opts.variety ? ', "bet": false' : ''} } ] }`
 
-  const { data, ai } = await askJsonMeta<{ ideas?: RawIdea[] }>(prompt, { research: true, researchNote: RESEARCH })
+  const { data, ai } = await askJsonMeta<{ ideas?: RawIdea[] }>(prompt, { research: true, researchNote: opts.variety ? RESEARCH_DEBATE : RESEARCH })
   const cleaned = cleanIdeas(Array.isArray(data.ideas) ? data.ideas : [], refs, {
     styleIds: styles.map(s => s.id),
     toneIds: tones.map(t => t.id),

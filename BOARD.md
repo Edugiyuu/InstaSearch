@@ -37,6 +37,7 @@ _(nada; escolha a próxima em "A fazer")_
 
 ## Feito
 
+- [x] 2026-10-13 · Variedade nos temas do debate: o código tira as ideias que repetem a personagem dos 3 últimos vídeos ou uma obra com 2 dos 4 últimos, 4 temas de obras diferentes em ordem sorteada, marcas 🔥 em alta / 🕰️ atemporal e uma 🎲 aposta do nicho, e as IAs pesam a variedade ([ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md))
 - [x] 2026-10-11 · Debate das IAs: "🗣️ Debater e criar um vídeo" faz duas Sonnet 5.5 (Estrategista × Roteirista) debaterem 4 temas de um brainstorm delas num chat ao vivo, até 6 falas, com o acordo conferido pelos votos; com acordo, criam o vídeo e o projeto mostra "Por que este tema" ([ADR 0027](docs/decisions/0027-debate-das-ias-antes-de-criar.md))
 - [x] 2026-10-10 · Criar sozinho: "🤖 Criar sozinho" na ideia e "🤖 Criar um vídeo sozinho" no alto da tela Ideias (brainstorm próprio de uma ideia, nas obras do canal, sem repetir assunto), fila de um por vez com a etapa na tela, roteiro → montagem → imagens, parando em "falta gravar a voz", com "Continuar" se parar ([ADR 0026](docs/decisions/0026-criacao-autonoma-de-videos.md))
 - [x] 2026-10-10 · ADR da criação autônoma: sem voz sintética (a voz é a única parte à mão), só por botão, ideias guardadas ou do brainstorm, imagens preenchidas e parada na Revisão ([ADR 0026](docs/decisions/0026-criacao-autonoma-de-videos.md))

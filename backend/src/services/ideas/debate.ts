@@ -14,15 +14,16 @@ import { listStyles } from '../shorts/styles.js'
 import { listTones } from '../shorts/tones.js'
 import type { ShortProject } from '../shorts/types.js'
 import { buildRefs, commentLine, videoLine } from './clean.js'
-import { brainstormCandidates, storeIdea } from './ideas.js'
+import { brainstormCandidates, listIdeas, storeIdea } from './ideas.js'
 import type { Debate, DebateMessage, Idea, Speaker } from './types.js'
+import { pickCandidates, varietyLines, type RecentVideo } from './variety.js'
 
 /** No máximo 6 falas, 3 de cada (ADR 0027, 2A). */
 export const MAX_TURNS = 6
 /** 4 temas: o debate cabe em poucas falas (ADR 0027, 3A). */
 export const CANDIDATES = 4
-/** Quantos projetos recentes entram no "varie a obra". */
-const RECENT = 3
+/** O brainstorm traz mais do que o debate usa, porque o filtro de variedade tira algumas (ADR 0028). */
+const BRAINSTORM = 6
 
 const storage = new FileStorage<Debate>('debates')
 
@@ -30,7 +31,7 @@ const ROLES: Record<Speaker, { name: string; focus: string }> = {
   estrategista: {
     name: 'Estrategista',
     focus:
-      'os números e o público do canal: o que ficou acima ou abaixo da mediana, o que os comentários pedem, se o assunto já foi feito e se o tema fala com quem já segue o canal',
+      'os números e o público do canal: o que ficou acima ou abaixo da mediana, o que os comentários pedem, se o assunto já foi feito, se o tema fala com quem já segue o canal e a variedade (repetir a obra ou a personagem dos últimos vídeos cansa o público, mesmo que tenha ido bem, e o canal precisa equilibrar temas em alta com atemporais)',
   },
   roteirista: {
     name: 'Roteirista',
@@ -75,17 +76,10 @@ export function agreement(messages: DebateMessage[]) {
 export async function runDebate(debate: Debate): Promise<Idea | null> {
   try {
     const projects = await listProjects()
-    const ideas = await brainstormCandidates(
-      {
-        // só os feitos à mão dizem o nicho: um tema que a IA escolheu sozinha não vira "obra do canal"
-        channel: projects.filter(p => !p.autopilot).map(p => p.title),
-        done: projects.map(p => p.title),
-        recent: projects.slice(0, RECENT).map(p => p.title),
-      },
-      CANDIDATES,
-    )
-    await update(debate, { status: 'debatendo', ideas })
-    const context = await channelContext(projects)
+    const recent = await recentVideos(projects)
+    const { ideas, rejected } = await candidates(projects, recent)
+    await update(debate, { status: 'debatendo', ideas, rejected })
+    const context = await channelContext(projects, recent)
 
     let speaker: Speaker = 'estrategista'
     for (let turn = 1; turn <= MAX_TURNS; turn++) {
@@ -116,8 +110,44 @@ export async function runDebate(debate: Debate): Promise<Idea | null> {
   }
 }
 
-/** O que as duas sabem do canal: os vídeos com os números, os comentários e o que já foi feito. */
-async function channelContext(projects: ShortProject[]) {
+/** Os vídeos feitos, do mais novo para o mais velho, com a obra e (nos criados sozinhos) o "em alta" da ideia. */
+async function recentVideos(projects: ShortProject[]): Promise<RecentVideo[]> {
+  const ideas = new Map((await listIdeas()).map(i => [i.id, i]))
+  return [...projects]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map(p => {
+      const idea = p.autopilot?.ideaId ? ideas.get(p.autopilot.ideaId) : undefined
+      return { title: p.title, theme: p.theme, work: p.subject || idea?.work, trend: idea?.trend }
+    })
+}
+
+/**
+ * Os temas do debate (ADR 0028): o brainstorm traz 6, o código tira os que repetem personagem ou obra
+ * e fica com até 4, de obras diferentes, em ordem sorteada. Se sobrarem menos de 2, pede de novo uma
+ * vez, dizendo o que foi recusado.
+ */
+async function candidates(projects: ShortProject[], recent: RecentVideo[]) {
+  const input = {
+    // só os feitos à mão dizem o nicho: um tema que a IA escolheu sozinha não vira "obra do canal"
+    channel: projects.filter(p => !p.autopilot).map(p => p.title),
+    done: projects.map(p => p.title),
+    recent: varietyLines(recent),
+  }
+  let picked = pickCandidates(await brainstormCandidates(input, BRAINSTORM), recent, CANDIDATES)
+  if (picked.chosen.length < 2) {
+    logger.info(`🗣️ Só ${picked.chosen.length} tema(s) passaram na variedade; pedindo outro brainstorm`)
+    const retry = pickCandidates(await brainstormCandidates({ ...input, avoid: picked.rejected }, BRAINSTORM), recent, CANDIDATES)
+    picked = { chosen: retry.chosen, rejected: [...picked.rejected, ...retry.rejected] }
+  }
+  if (picked.chosen.length < 2) {
+    throw new AppError('O brainstorm só trouxe temas repetidos (mesma obra ou personagem dos últimos vídeos). Tente de novo.', 502, 'AI_EMPTY')
+  }
+  return { ideas: picked.chosen, rejected: picked.rejected }
+}
+
+/** O que as duas sabem do canal: os vídeos com os números, os comentários, o que já foi feito e a variedade. */
+async function channelContext(projects: ShortProject[], recent: RecentVideo[]) {
+
   const [metrics, styles, tones] = await Promise.all([listMetrics(), listStyles(), listTones()])
   const refs = buildRefs(metrics.videos, projects)
   const names = {
@@ -129,14 +159,22 @@ async function channelContext(projects: ShortProject[]) {
     refs.videos.length ? refs.videos.map(v => videoLine(v, names)).join('\n') : 'Nenhum vídeo medido ainda.',
     refs.comments.length ? `## Comentários do público\n${refs.comments.map(commentLine).join('\n')}` : '',
     `## Todos os vídeos já feitos (o assunto não pode repetir)\n${projects.map(p => `- ${p.title}`).join('\n')}`,
+    recent.length ? `## A variedade dos últimos vídeos (do mais novo para o mais velho)\n${varietyLines(recent)}` : '',
   ]
     .filter(Boolean)
     .join('\n\n')
 }
 
+/** As marcas do tema para as IAs: obra, em alta ou atemporal, aposta. */
+const tags = (i: Idea) => {
+  const t = [i.work, i.trend === 'alta' ? 'em alta' : i.trend === 'atemporal' ? 'atemporal' : '', i.bet ? 'APOSTA: fora das obras do canal, mas do mesmo nicho e bombando agora' : '']
+  const text = t.filter(Boolean).join(' · ')
+  return text ? ` [${text}]` : ''
+}
+
 const ideaBlock = (ideas: Idea[]) =>
   ideas
-    .map((i, n) => `${n + 1}. ${i.theme}\n   gancho: "${i.hook}" · ${i.duration}s\n   quem deu a ideia defendeu: ${i.why}${i.evidence.length ? `\n   provas: ${i.evidence.map(e => e.text).join(' | ')}` : ''}`)
+    .map((i, n) => `${n + 1}. ${i.theme}${tags(i)}\n   gancho: "${i.hook}" · ${i.duration}s\n   quem deu a ideia defendeu: ${i.why}${i.evidence.length ? `\n   provas: ${i.evidence.map(e => e.text).join(' | ')}` : ''}`)
     .join('\n')
 
 const transcript = (messages: DebateMessage[]) =>
@@ -167,6 +205,7 @@ ${debate.messages.length ? transcript(debate.messages) : '(ninguém falou ainda)
       : 'Abra o debate: diga qual tema você defende e por quê, e o ponto fraco dos outros.'
   }
 - Critique de verdade: um tema só passa se for bom o bastante para gerar comentários, compartilhamentos e retenção neste canal, com este público. Use os números e os comentários acima.
+- Pese a variedade: o canal não deve repetir a obra dos últimos vídeos nem viver só de hype. Um tema marcado como APOSTA é de uma obra que o canal nunca tratou: aceite-o só se o assunto está mesmo bombando e combina com quem segue o canal.
 - Fale como numa conversa, em 2 a 4 frases, sem listas e sem markdown. Cite os temas pelo número. Pode sugerir um ajuste num tema (outro gancho, outro recorte), desde que continue sendo o mesmo assunto.
 - "vote": o número do tema que você aceita como bom o suficiente para virar vídeo agora, ou null se você ainda não aceita nenhum. O vídeo só é criado quando as duas votam no mesmo tema.${
     last

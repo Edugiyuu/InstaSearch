@@ -6,6 +6,9 @@ import type { AiCredit } from '../shorts/types.js'
 /** nova = do último brainstorm, ainda sem decisão; feita = virou projeto. */
 export type IdeaStatus = 'nova' | 'guardada' | 'descartada' | 'feita'
 
+/** alta = do que está acontecendo agora; atemporal = não depende da semana (ADR 0028). */
+export type Trend = 'alta' | 'atemporal'
+
 /** O que sustenta a ideia, sempre ligado a um dado real (nunca um link inventado pela IA). */
 export interface IdeaEvidence {
   kind: 'video' | 'comentario' | 'web'
@@ -29,6 +32,12 @@ export interface Idea {
   /** Por que a IA acha que vai funcionar, em 2 ou 3 frases. */
   why: string
   evidence: IdeaEvidence[]
+  /** A obra (nome completo) e a personagem principal: o código confere a variedade com elas (ADR 0028). */
+  work?: string
+  character?: string
+  trend?: Trend
+  /** Aposta: algo bombando no nicho do canal, mesmo numa obra que o canal nunca tratou (ADR 0028). */
+  bet?: boolean
   status: IdeaStatus
   /** Por que o usuário descartou ("já fiz", "não curto"); entra nos próximos brainstorms. */
   discardReason?: string
@@ -71,6 +80,8 @@ export interface Debate {
   status: DebateStatus
   /** Os temas em debate, na ordem em que as IAs os citam (1, 2, 3…). Não estão no banco de ideias. */
   ideas: Idea[]
+  /** As ideias do brainstorm que ficaram fora do debate, com o motivo (ADR 0028). */
+  rejected?: { theme: string; reason: string }[]
   messages: DebateMessage[]
   /** Quem está escrevendo agora, para a tela mostrar "pensando…". */
   thinking?: Speaker

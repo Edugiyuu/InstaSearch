@@ -22,6 +22,12 @@ export interface Idea {
   duration: number
   why: string
   evidence: IdeaEvidence[]
+  /** A obra, a personagem principal e se o tema está em alta (ADR 0028). */
+  work?: string
+  character?: string
+  trend?: 'alta' | 'atemporal'
+  /** Aposta: algo bombando no nicho, numa obra que o canal nunca tratou. */
+  bet?: boolean
   status: IdeaStatus
   discardReason?: string
   projectId?: string
@@ -55,6 +61,8 @@ export interface Debate {
   status: DebateStatus
   /** Os temas em debate, na ordem em que as IAs os citam (1, 2, 3…). */
   ideas: Idea[]
+  /** As ideias do brainstorm que o filtro de variedade tirou, com o motivo (ADR 0028). */
+  rejected?: { theme: string; reason: string }[]
   messages: DebateMessage[]
   thinking?: Speaker
   chosen?: number
