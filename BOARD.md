@@ -10,6 +10,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## A fazer
 
+- [ ] Volta de personagens que deram views no debate: uma vaga por debate para uma personagem de vídeo acima da mediana, com assunto novo; não pode ser a do último vídeo e descansa com 3 dos últimos 8 ou se o último vídeo dela ficou abaixo da mediana; as duas IAs passam a aceitar a volta ([ADR 0033](docs/decisions/0033-volta-de-personagens-que-deram-views.md))
 - [ ] Clipes do YouTube nos momentos marcantes: o roteiro marca 1 ou 2 cenas, a montagem busca, baixa e escolhe o trecho com visão (ADR 0029)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)

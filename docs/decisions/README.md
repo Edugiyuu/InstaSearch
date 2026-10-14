@@ -61,3 +61,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0030](0030-debate-em-rodadas-com-veto.md) | Debate em rodadas de temas, com 5 s para o criador vetar | Aceita |
 | [0031](0031-tons-editados-no-lugar.md) | Tons editados no lugar, sem "duplicar e editar" | Aceita |
 | [0032](0032-bordoes-personalizaveis.md) | Bordões personalizáveis: botão, áudio, animações e o que aparece | Aceita |
+| [0033](0033-volta-de-personagens-que-deram-views.md) | Volta de personagens que deram views, sem sugar até a última gota | Aceita |
