@@ -60,3 +60,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0028](0028-variedade-nos-temas-do-debate.md) | Variedade nos temas do debate: obra, personagem, hype e uma aposta do nicho | Aceita |
 | [0030](0030-debate-em-rodadas-com-veto.md) | Debate em rodadas de temas, com 5 s para o criador vetar | Aceita |
 | [0031](0031-tons-editados-no-lugar.md) | Tons editados no lugar, sem "duplicar e editar" | Aceita |
+| [0032](0032-bordoes-personalizaveis.md) | Bordões personalizáveis: botão, áudio, animações e o que aparece | Aceita |

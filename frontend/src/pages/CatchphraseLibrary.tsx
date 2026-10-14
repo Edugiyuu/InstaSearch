@@ -1,21 +1,39 @@
-import { useMemo, useRef, useState } from 'react'
+import { RefObject, useMemo, useRef, useState } from 'react'
 import { Player } from '@remotion/player'
 import {
+  afterButtonText,
+  BUTTON_PRESETS,
+  ButtonStyle,
   Catchphrase,
   catchphraseFileUrl,
+  catchphraseHasSound,
   CatchphraseKind,
   CATCHPHRASE_KIND_LABEL,
+  ClickStyle,
+  Entrance,
   errorMessage,
   imageUrl,
   LibraryImage,
   shortsApi,
+  SubscribePart,
+  TextAnim,
+  TextPosition,
 } from '../api/shorts'
-import { Spinner, useToast } from '../components/flow'
+import { Segmented, Spinner, useToast } from '../components/flow'
 import { useCatchphrases, useLibrary } from '../hooks/useShorts'
 import { CatchphrasePreview } from '../video/ShortVideo'
 import { catchphraseProps, FPS, HEIGHT, WIDTH } from '../video/timeline'
 
 const seconds = (n: number) => `${n.toFixed(1).replace('.', ',')}s`
+
+// As opções de personalização (ADR 0032), com os nomes que a tela mostra
+// chaves com uma casa decimal: "2" e "3" pareceriam números inteiros, e o JavaScript as poria antes de "2.5"
+const DURATIONS = { '2.0': '2 s', '2.5': '2,5 s', '3.0': '3 s', '4.0': '4 s', '5.0': '5 s', '6.0': '6 s' }
+const ENTRANCES: Record<Entrance, string> = { pulo: 'Pulo', deslizar: 'Deslizar', zoom: 'Zoom', tremida: 'Tremida' }
+const CLICKS: Record<ClickStyle, string> = { cursor: 'Cursor', dedo: 'Dedo', pulsar: 'Pulsar', nenhum: 'Sem clique' }
+const PARTS: Record<SubscribePart, string> = { foto: 'Foto', nome: 'Nome', frase: 'Frase', botao: 'Botão' }
+const TEXT_ANIMS: Record<TextAnim, string> = { pulo: 'Pulo', digitando: 'Digitando', tremer: 'Tremendo' }
+const TEXT_POSITIONS: Record<TextPosition, string> = { cima: 'Em cima', meio: 'No meio', baixo: 'Embaixo' }
 
 /** Imagens e cenas que servem de fundo para o bordão montado (figurinhas e episódios inteiros, não). */
 const usableBackground = (img: LibraryImage) => !['figurinha', 'video'].includes(img.kind)
@@ -173,6 +191,7 @@ function CatchphraseLibrary() {
                   disabled={!!busy}
                 />
               )}
+              <TimingFields c={selected} onChange={update} disabled={!!busy} />
 
               <span className="label bdo-section">Vídeos novos</span>
               <label className="bdo-check">
@@ -278,15 +297,7 @@ function MountedFields({
   return (
     <>
       <span className="label bdo-section">Sua fala</span>
-      {c.file && <audio controls src={catchphraseFileUrl(c.file)} className="bdo-audio" />}
-      <button className="act" onClick={() => audioInput.current?.click()} disabled={disabled}>
-        ⭱ {c.file ? 'Trocar o áudio' : 'Enviar o áudio'}
-      </button>
-      {!c.file && <span className="meta">Sem áudio, o bordão dura 2,5 s e fica mudo.</span>}
-      <input ref={audioInput} type="file" accept="audio/*" hidden onChange={e => {
-        onFile(e.target.files?.[0])
-        e.target.value = ''
-      }} />
+      <AudioField c={c} input={audioInput} onFile={onFile} onChange={onChange} disabled={disabled} />
 
       <span className="label bdo-section">Texto na tela</span>
       <input
@@ -297,6 +308,12 @@ function MountedFields({
         onChange={e => onChange(c, { text: e.target.value }, false)}
         onBlur={e => onChange(c, { text: e.target.value })}
       />
+      {c.text && (
+        <>
+          <Segmented value={c.textAnim ?? 'pulo'} options={TEXT_ANIMS} onChange={textAnim => onChange(c, { textAnim })} disabled={disabled} />
+          <Segmented value={c.textPosition ?? 'baixo'} options={TEXT_POSITIONS} onChange={textPosition => onChange(c, { textPosition })} disabled={disabled} />
+        </>
+      )}
 
       <span className="label bdo-section">Fundo</span>
       <div className="bdo-bg">
@@ -343,8 +360,54 @@ function SubscribeFields({
   disabled: boolean
 }) {
   const photoInput = useRef<HTMLInputElement>(null)
+  const audioInput = useRef<HTMLInputElement>(null)
+  const shown = (part: SubscribePart) => c.show?.[part] !== false
+  const style: ButtonStyle = c.buttonStyle ?? 'youtube'
   return (
     <>
+      <span className="label bdo-section">Modelo do botão</span>
+      <div className="bdo-presets">
+        {(Object.keys(BUTTON_PRESETS) as ButtonStyle[]).map(key => (
+          <button
+            key={key}
+            className={`bdo-preset ${key} ${style === key ? 'on' : ''}`}
+            disabled={disabled}
+            onClick={() => onChange(c, { buttonStyle: key, button: BUTTON_PRESETS[key].button, afterButton: BUTTON_PRESETS[key].afterButton })}
+          >
+            {BUTTON_PRESETS[key].label}
+          </button>
+        ))}
+      </div>
+      <div className="bdo-two">
+        <label>
+          <span className="label">Texto do botão</span>
+          <input className="field" value={c.button ?? ''} placeholder="INSCREVA-SE" maxLength={24}
+            onChange={e => onChange(c, { button: e.target.value }, false)} onBlur={e => onChange(c, { button: e.target.value })} />
+        </label>
+        <label>
+          <span className="label">Depois do clique</span>
+          <input className="field" value={c.afterButton ?? ''} placeholder={afterButtonText(c.button || 'INSCREVA-SE')} maxLength={24}
+            onChange={e => onChange(c, { afterButton: e.target.value }, false)} onBlur={e => onChange(c, { afterButton: e.target.value })} />
+        </label>
+      </div>
+      {!c.afterButton && <span className="meta">Vazio, o app escreve “{afterButtonText(c.button || 'INSCREVA-SE')}”.</span>}
+
+      <span className="label bdo-section">O que aparece</span>
+      <div className="bdo-parts">
+        {(Object.keys(PARTS) as SubscribePart[]).map(part => (
+          <label key={part} className="bdo-check">
+            <input type="checkbox" checked={shown(part)} disabled={disabled} onChange={e => onChange(c, { show: { ...c.show, [part]: e.target.checked } })} />
+            {PARTS[part]}
+          </label>
+        ))}
+      </div>
+
+      <span className="label bdo-section">Entrada</span>
+      <Segmented value={c.entrance ?? 'pulo'} options={ENTRANCES} onChange={entrance => onChange(c, { entrance })} disabled={disabled} />
+      <span className="label bdo-section">Clique</span>
+      <Segmented value={c.click ?? 'cursor'} options={CLICKS} onChange={click => onChange(c, { click })} disabled={disabled || !shown('botao')} />
+      {!shown('botao') && <span className="meta">Sem o botão, não há clique.</span>}
+
       <span className="label bdo-section">Foto</span>
       <div className="act-row">
         <button className="act" onClick={() => photoInput.current?.click()} disabled={disabled}>⭱ Enviar foto</button>
@@ -361,9 +424,70 @@ function SubscribeFields({
       <label className="label bdo-section" htmlFor="bdo-text">Frase</label>
       <input id="bdo-text" className="field" value={c.text ?? ''} placeholder="Se inscreve pra mais!" maxLength={80}
         onChange={e => onChange(c, { text: e.target.value }, false)} onBlur={e => onChange(c, { text: e.target.value })} />
-      <label className="label bdo-section" htmlFor="bdo-button">Texto do botão</label>
-      <input id="bdo-button" className="field" value={c.button ?? ''} placeholder="INSCREVA-SE" maxLength={24}
-        onChange={e => onChange(c, { button: e.target.value }, false)} onBlur={e => onChange(c, { button: e.target.value })} />
+
+      <span className="label bdo-section">Sua fala</span>
+      <AudioField c={c} input={audioInput} onFile={onFile} onChange={onChange} disabled={disabled} />
+    </>
+  )
+}
+
+/** O áudio do montado e do "se inscreve": enviar, ouvir, trocar ou tirar. Com áudio, o bordão dura o tempo dele. */
+function AudioField({
+  c,
+  input,
+  onFile,
+  onChange,
+  disabled,
+}: {
+  c: Catchphrase
+  input: RefObject<HTMLInputElement>
+  onFile: (f?: File) => void
+  onChange: OnChange
+  disabled: boolean
+}) {
+  return (
+    <>
+      {c.file && <audio controls src={catchphraseFileUrl(c.file)} className="bdo-audio" />}
+      <div className="act-row">
+        <button className="act" onClick={() => input.current?.click()} disabled={disabled}>
+          ⭱ {c.file ? 'Trocar o áudio' : 'Enviar o áudio'}
+        </button>
+        {c.file && (
+          <button className="act" onClick={() => onChange(c, { file: '' })} disabled={disabled}>
+            Tirar o áudio
+          </button>
+        )}
+      </div>
+      {!c.file && <span className="meta">Sem áudio, o bordão fica mudo e dura o tempo escolhido embaixo.</span>}
+      <input ref={input} type="file" accept="audio/*" hidden onChange={e => {
+        onFile(e.target.files?.[0])
+        e.target.value = ''
+      }} />
+    </>
+  )
+}
+
+/** Tempo e som, em todos os bordões: a duração (sem áudio) e a música do vídeo por baixo (ADR 0032). */
+function TimingFields({ c, onChange, disabled }: { c: Catchphrase; onChange: OnChange; disabled: boolean }) {
+  const music = c.music ?? !catchphraseHasSound(c)
+  return (
+    <>
+      {c.kind !== 'clipe' && !c.file && (
+        <>
+          <span className="label bdo-section">Duração</span>
+          <Segmented
+            value={(c.duration.toFixed(1) in DURATIONS ? c.duration.toFixed(1) : '2.5') as keyof typeof DURATIONS}
+            options={DURATIONS}
+            onChange={v => onChange(c, { duration: Number(v) })}
+            disabled={disabled}
+          />
+        </>
+      )}
+      <label className="bdo-check bdo-section">
+        <input type="checkbox" checked={music} disabled={disabled} onChange={e => onChange(c, { music: e.target.checked })} />
+        Música do vídeo continua por baixo
+      </label>
+      {music && catchphraseHasSound(c) && <span className="meta">Ela fica baixinha, para não brigar com o som do bordão.</span>}
     </>
   )
 }

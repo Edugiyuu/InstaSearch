@@ -14,7 +14,7 @@ import { logger } from '../../utils/logger.js'
 import { instagramGraphService } from '../instagramGraphService.js'
 import { AUDIO_EXTENSIONS } from './sounds.js'
 import { mediaDuration, saveClip } from './videoScenes.js'
-import type { Catchphrase, CatchphraseKind } from './types.js'
+import type { ButtonStyle, Catchphrase, CatchphraseKind, ClickStyle, Entrance, SubscribePart, TextAnim, TextPosition } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = path.join(__dirname, '../../../data')
@@ -22,8 +22,21 @@ export const CATCHPHRASE_FILES_DIR = path.join(DATA_DIR, 'bordoes/files')
 
 const storage = new FileStorage<Catchphrase>('bordoes')
 
-/** Duração do "se inscreve" e do montado sem áudio. */
+/** Duração do "se inscreve" e do montado sem áudio, se o usuário não escolher outra (de 2 a 6 s, ADR 0032). */
 const FIXED_SECONDS = 2.5
+const MIN_SECONDS = 2
+const MAX_SECONDS = 6
+
+// As opções de personalização (ADR 0032): o que chegar fora destas listas é ignorado.
+const BUTTON_STYLES: ButtonStyle[] = ['youtube', 'instagram', 'tiktok', 'canal']
+const ENTRANCES: Entrance[] = ['pulo', 'deslizar', 'zoom', 'tremida']
+const CLICKS: ClickStyle[] = ['cursor', 'dedo', 'pulsar', 'nenhum']
+const PARTS: SubscribePart[] = ['foto', 'nome', 'frase', 'botao']
+const TEXT_ANIMS: TextAnim[] = ['pulo', 'digitando', 'tremer']
+const TEXT_POSITIONS: TextPosition[] = ['cima', 'meio', 'baixo']
+
+/** O valor, se ele estiver na lista; senão, o que já estava. */
+const oneOf = <T extends string>(list: readonly T[], value: unknown, current?: T) => (list.includes(value as T) ? (value as T) : current)
 
 /** Id do bordão criado a partir do antigo "Seu canal"; projetos com `outro: true` apontam para ele. */
 export const CHANNEL_CATCHPHRASE_ID = 'bordao_canal'
@@ -126,11 +139,35 @@ export async function updateCatchphrase(id: string, changes: Partial<Catchphrase
   const item = await getCatchphrase(id)
   if (typeof changes.name === 'string') item.name = changes.name.trim().slice(0, 40) || item.name
   if (typeof changes.text === 'string') item.text = changes.text.trim().slice(0, 80)
+  if (typeof changes.music === 'boolean') item.music = changes.music
+  // sem áudio, a duração é a que o usuário escolher; com áudio, é a dele
+  if (item.kind !== 'clipe' && !item.file && typeof changes.duration === 'number' && Number.isFinite(changes.duration)) {
+    item.duration = Math.round(Math.min(MAX_SECONDS, Math.max(MIN_SECONDS, changes.duration)) * 2) / 2
+  }
+  // file: '' tira o áudio (o arquivo é apagado) e volta à duração escolhida
+  if (item.kind !== 'clipe' && changes.file === '' && item.file) {
+    await fs.unlink(path.join(CATCHPHRASE_FILES_DIR, item.file)).catch(() => undefined)
+    item.file = undefined
+    item.duration = FIXED_SECONDS
+  }
   if (item.kind === 'inscreva') {
     if (typeof changes.channelName === 'string') item.channelName = changes.channelName.trim().slice(0, 40)
     if (typeof changes.button === 'string') item.button = changes.button.trim().slice(0, 24) || 'INSCREVA-SE'
+    if (typeof changes.afterButton === 'string') item.afterButton = changes.afterButton.trim().slice(0, 24) || undefined
+    item.buttonStyle = oneOf(BUTTON_STYLES, changes.buttonStyle, item.buttonStyle)
+    item.entrance = oneOf(ENTRANCES, changes.entrance, item.entrance)
+    item.click = oneOf(CLICKS, changes.click, item.click)
+    if (changes.show && typeof changes.show === 'object') {
+      const show = { ...item.show }
+      for (const part of PARTS) if (typeof changes.show[part] === 'boolean') show[part] = changes.show[part]
+      item.show = show
+    }
   }
-  if (item.kind === 'montado' && changes.imageId !== undefined) item.imageId = changes.imageId || undefined
+  if (item.kind === 'montado') {
+    if (changes.imageId !== undefined) item.imageId = changes.imageId || undefined
+    item.textAnim = oneOf(TEXT_ANIMS, changes.textAnim, item.textAnim)
+    item.textPosition = oneOf(TEXT_POSITIONS, changes.textPosition, item.textPosition)
+  }
   // só um padrão por ponta: marcar este desmarca o anterior
   for (const key of ['defaultIntro', 'defaultOutro'] as const) {
     if (typeof changes[key] !== 'boolean') continue
@@ -144,7 +181,10 @@ export async function updateCatchphrase(id: string, changes: Partial<Catchphrase
   return storage.save(item)
 }
 
-/** O arquivo do bordão: o vídeo (clipe), o áudio (montado) ou a foto (inscreva). Nome novo a cada troca, por causa do cache. */
+/**
+ * O arquivo do bordão: o vídeo (clipe), o áudio (montado) ou, no "se inscreve", a foto ou o áudio (pela
+ * extensão). Nome novo a cada troca, por causa do cache.
+ */
 export async function replaceFile(id: string, upload: Upload) {
   const item = await getCatchphrase(id).catch(async error => {
     await discard(upload)
@@ -156,18 +196,22 @@ export async function replaceFile(id: string, upload: Upload) {
 async function setFile(item: Catchphrase, upload: Upload) {
   const ext = path.extname(upload.originalname).toLowerCase()
   const base = `${item.id}_${Date.now()}`
-  const previous = item.kind === 'inscreva' ? item.photoFile : item.file
+  // no "se inscreve", um áudio vai para `file` e uma imagem para `photoFile`
+  const audio = item.kind === 'montado' || (item.kind === 'inscreva' && (AUDIO_EXTENSIONS.includes(ext) || (upload.mimetype ?? '').startsWith('audio/')))
+  const previous = item.kind === 'inscreva' && !audio ? item.photoFile : item.file
   await fs.mkdir(CATCHPHRASE_FILES_DIR, { recursive: true })
   try {
     if (item.kind === 'clipe') {
       const clip = await saveClip(upload.path, upload.originalname, CATCHPHRASE_FILES_DIR, base)
       item.file = clip.file
       item.duration = clip.duration || FIXED_SECONDS
-    } else if (item.kind === 'montado') {
+    } else if (audio) {
       if (!AUDIO_EXTENSIONS.includes(ext)) throw new AppError('Envie um áudio (mp3, wav, m4a, ogg)', 400, 'INVALID_FILE')
       item.file = `${base}${ext}`
       await fs.copyFile(upload.path, path.join(CATCHPHRASE_FILES_DIR, item.file))
-      item.duration = (await mediaDuration(path.join(CATCHPHRASE_FILES_DIR, item.file)).catch(() => 0)) || FIXED_SECONDS
+      const seconds = (await mediaDuration(path.join(CATCHPHRASE_FILES_DIR, item.file)).catch(() => 0)) || FIXED_SECONDS
+      // o "se inscreve" precisa de tempo para a animação do clique, mesmo com um áudio curto
+      item.duration = item.kind === 'inscreva' ? Math.max(MIN_SECONDS, seconds) : seconds
     } else {
       const photoExt = PHOTO_EXT[(upload.mimetype ?? '').split(';')[0]] ?? (Object.values(PHOTO_EXT).includes(ext) ? ext : undefined)
       if (!photoExt) throw new AppError('Envie a foto em JPG, PNG, WEBP ou GIF', 400, 'INVALID_FILE')

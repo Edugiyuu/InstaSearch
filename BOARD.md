@@ -42,6 +42,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-14 · Bordões personalizáveis: texto depois do clique e modelos (YouTube, Instagram, TikTok, Canal), áudio no "se inscreve", música do vídeo por baixo, animação de entrada e de clique, duração, texto do montado (animação e posição) e liga/desliga de foto, nome, frase e botão (ADR 0032)
 - [x] 2026-10-14 · Apagar um projeto limpa a tela Ideias: a ideia dele sai de "Viraram vídeo" e vira descartada ("o vídeo foi apagado"), para a IA não sugerir o mesmo tema; o debate perde o "Abrir o vídeo" e a fila do "Criar sozinho" esquece o job. Ao subir, o servidor confere as que ficaram de antes (eram 14)
 - [x] 2026-10-14 · Tons só com "Editar": os 4 que vêm com o app viram arquivos em `data/tones/` (mesmos ids) e são editados no lugar, sem cópia; continuam sem poder ser apagados ([ADR 0031](docs/decisions/0031-tons-editados-no-lugar.md))
 - [x] 2026-10-14 · Temas com "tchan" no debate: opinião forte e polêmica, pelo menos metade com fanservice (de preferência personagens mulheres, só adultas), nada com cara de notícia; e o "🔥 em alta" vale para o tema, não para a obra (adendo ao [ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md))

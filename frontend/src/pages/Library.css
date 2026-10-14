@@ -790,3 +790,48 @@
   border-style: dashed;
   color: var(--text);
 }
+
+/* Bordões personalizáveis (ADR 0032): os modelos do botão com as cores de cada plataforma */
+.bdo-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.bdo-preset {
+  padding: 8px 4px;
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.bdo-preset.youtube { background: #e52222; }
+.bdo-preset.instagram { background: linear-gradient(45deg, #f58529, #dd2a7b 55%, #8134af); }
+.bdo-preset.tiktok { background: #fe2c55; }
+.bdo-preset.canal { background: var(--accent); color: var(--accent-ink); }
+
+.bdo-preset.on {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.bdo-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.bdo-two label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bdo-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}

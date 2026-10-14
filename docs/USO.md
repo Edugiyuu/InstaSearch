@@ -109,7 +109,7 @@ O modal gera a **legenda do post** com hashtags e já começa o **render do MP4*
 | **Configurações** (`/configuracoes`) | Contas conectadas (Instagram, YouTube), estado de cada IA (com a hora em que a cota do Gemini volta), o download do Whisper e **Imagens sugestivas**: desligada por padrão; ligada, as sugestões da web trazem fanservice e pose ousada (Bing moderado, Danbooru "sensível"), e a IA que escolhe as imagens prefere a versão mais ousada de uma personagem, mas nunca nudez. O Bing não deixa desligar o filtro de vez num pedido pela internet |
 | Ferramentas antigas | As telas da primeira versão do projeto (publicar clipes prontos, gerador de prompts, perfis). Ficam no rodapé do menu; a maioria é *stub* |
 
-**Bordões** são o que abre ou fecha o vídeo, em três tipos: **clipe pronto** (um vídeo seu com som), **montado** (imagem + um áudio seu + texto) e **se inscreve** (foto, @, frase e o botão sendo clicado).
+**Bordões** são o que abre ou fecha o vídeo, em três tipos: **clipe pronto** (um vídeo seu com som), **montado** (imagem + um áudio seu + texto) e **se inscreve** (foto, @, frase e o botão sendo clicado). No **se inscreve**, um modelo pronto (YouTube, Instagram, TikTok ou Canal) preenche o botão e as cores, e o texto depois do clique é seu ("SIGA-ME" → "SEGUINDO"; vazio, o app adivinha). Dá para esconder a foto, o nome, a frase ou o botão, escolher a entrada (pulo, deslizar, zoom, tremida) e o clique (cursor, dedo, pulsar, sem clique) e pôr um áudio seu. No **montado**, o texto pode pular, ser digitado ou tremer, em cima, no meio ou embaixo. Sem áudio, o bordão dura de 2 a 6 s, e em todos dá para deixar a música do vídeo tocando por baixo ([ADR 0032](decisions/0032-bordoes-personalizaveis.md)).
 
 ## Glossário
 

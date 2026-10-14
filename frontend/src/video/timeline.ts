@@ -1,5 +1,5 @@
-import type { Beat, Catchphrase, LibraryImage, ProjectSettings, Region, ShortProject, SoundItem } from '../api/shorts'
-import { audioUrl, catchphraseFileUrl, imageUrl, mediaUrl, soundUrl } from '../api/shorts'
+import type { Beat, ButtonStyle, Catchphrase, ClickStyle, Entrance, LibraryImage, ProjectSettings, Region, ShortProject, SoundItem, SubscribePart, TextAnim, TextPosition } from '../api/shorts'
+import { afterButtonText, audioUrl, catchphraseFileUrl, catchphraseHasSound, imageUrl, mediaUrl, soundUrl } from '../api/shorts'
 import { alignWords, type WordTime } from './align'
 
 export const FPS = 30
@@ -40,10 +40,24 @@ export interface TimedBeat {
 }
 
 /** Abertura ou final (ADR 0016): o que a composição precisa de um bordão. */
-export type CatchphraseProps =
-  | { kind: 'clipe'; frames: number; src: string }
-  | { kind: 'montado'; frames: number; audioSrc?: string; image?: MediaProps; text?: string }
-  | { kind: 'inscreva'; frames: number; photoSrc?: string; name: string; text: string; button: string }
+/** `music`: a música do vídeo continua por baixo do bordão (ADR 0032). */
+export type CatchphraseProps = { frames: number; music: boolean } & (
+  | { kind: 'clipe'; src: string }
+  | { kind: 'montado'; audioSrc?: string; image?: MediaProps; text?: string; textAnim: TextAnim; textPosition: TextPosition }
+  | {
+      kind: 'inscreva'
+      audioSrc?: string
+      photoSrc?: string
+      name: string
+      text: string
+      button: string
+      afterButton: string
+      buttonStyle: ButtonStyle
+      entrance: Entrance
+      click: ClickStyle
+      show: Record<SubscribePart, boolean>
+    }
+)
 
 export interface ShortVideoProps extends Record<string, unknown> {
   beats: TimedBeat[]
@@ -154,15 +168,42 @@ export function buildTimeline(project: ShortProject, images: Map<string, Library
 /** Bordão → props da composição. Sem o arquivo que ele precisa (clipe sem vídeo), não entra. */
 export function catchphraseProps(c: Catchphrase, images: Map<string, LibraryImage>): CatchphraseProps | undefined {
   const frames = Math.max(1, Math.round(c.duration * FPS))
+  const music = c.music ?? !catchphraseHasSound(c)
   switch (c.kind) {
     case 'clipe':
-      return c.file ? { kind: 'clipe', frames, src: catchphraseFileUrl(c.file)! } : undefined
+      return c.file ? { kind: 'clipe', frames, music, src: catchphraseFileUrl(c.file)! } : undefined
     case 'montado': {
       const img = c.imageId ? images.get(c.imageId) : undefined
-      return { kind: 'montado', frames, audioSrc: catchphraseFileUrl(c.file), image: img ? libraryMedia(img) : undefined, text: c.text || undefined }
+      return {
+        kind: 'montado',
+        frames,
+        music,
+        audioSrc: catchphraseFileUrl(c.file),
+        image: img ? libraryMedia(img) : undefined,
+        text: c.text || undefined,
+        textAnim: c.textAnim ?? 'pulo',
+        textPosition: c.textPosition ?? 'baixo',
+      }
     }
-    case 'inscreva':
-      return { kind: 'inscreva', frames, photoSrc: catchphraseFileUrl(c.photoFile), name: c.channelName ?? '', text: c.text ?? '', button: c.button || 'INSCREVA-SE' }
+    case 'inscreva': {
+      const button = c.button || 'INSCREVA-SE'
+      const shown = (part: SubscribePart) => c.show?.[part] !== false
+      return {
+        kind: 'inscreva',
+        frames,
+        music,
+        audioSrc: catchphraseFileUrl(c.file),
+        photoSrc: catchphraseFileUrl(c.photoFile),
+        name: c.channelName ?? '',
+        text: c.text ?? '',
+        button,
+        afterButton: afterButtonText(button, c.afterButton),
+        buttonStyle: c.buttonStyle ?? 'youtube',
+        entrance: c.entrance ?? 'pulo',
+        click: c.click ?? 'cursor',
+        show: { foto: shown('foto'), nome: shown('nome'), frase: shown('frase'), botao: shown('botao') },
+      }
+    }
   }
 }
 

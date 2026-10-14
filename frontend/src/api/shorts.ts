@@ -516,21 +516,40 @@ export const videoDownloadUrl = (projectId: string, key: string) => `/api/shorts
 /** clipe = vídeo pronto com o som; montado = imagem/cena + áudio + texto; inscreva = foto, nome, frase e botão (ADR 0016). */
 export type CatchphraseKind = 'clipe' | 'montado' | 'inscreva'
 
+// Personalização dos bordões (ADR 0032)
+export type ButtonStyle = 'youtube' | 'instagram' | 'tiktok' | 'canal'
+export type Entrance = 'pulo' | 'deslizar' | 'zoom' | 'tremida'
+export type ClickStyle = 'cursor' | 'dedo' | 'pulsar' | 'nenhum'
+export type SubscribePart = 'foto' | 'nome' | 'frase' | 'botao'
+export type TextAnim = 'pulo' | 'digitando' | 'tremer'
+export type TextPosition = 'cima' | 'meio' | 'baixo'
+
 /** Bordão: o que abre ou fecha o vídeo. */
 export interface Catchphrase {
   id: string
   name: string
   kind: CatchphraseKind
-  /** clipe: o vídeo; montado: o áudio */
+  /** clipe: o vídeo; montado e inscreva: o áudio */
   file?: string
-  /** em segundos */
+  /** em segundos: do vídeo, do áudio, ou escolhida (2 a 6 s) sem áudio */
   duration: number
+  /** a música do vídeo continua por baixo; sem o campo, só quando o bordão não tem som próprio */
+  music?: boolean
   /** montado: imagem ou cena da biblioteca no fundo */
   imageId?: string
   /** montado: texto na tela; inscreva: a frase */
   text?: string
   channelName?: string
   button?: string
+  /** o texto depois do clique; vazio, o app adivinha (afterButtonText) */
+  afterButton?: string
+  buttonStyle?: ButtonStyle
+  entrance?: Entrance
+  click?: ClickStyle
+  /** uma parte com false fica escondida */
+  show?: Partial<Record<SubscribePart, boolean>>
+  textAnim?: TextAnim
+  textPosition?: TextPosition
   photoFile?: string
   defaultIntro?: boolean
   defaultOutro?: boolean
@@ -538,6 +557,28 @@ export interface Catchphrase {
 }
 
 export const CATCHPHRASE_KIND_LABEL: Record<CatchphraseKind, string> = { clipe: 'Clipe pronto', montado: 'Montado', inscreva: 'Se inscreve' }
+
+/** O bordão tem som próprio (o clipe sempre; o montado e o "se inscreve" quando têm áudio). */
+export const catchphraseHasSound = (c: Pick<Catchphrase, 'kind' | 'file'>) => c.kind === 'clipe' || !!c.file
+
+/** Os modelos do botão (ADR 0032): um clique preenche o texto, o depois do clique e as cores. */
+export const BUTTON_PRESETS: Record<ButtonStyle, { label: string; button: string; afterButton: string }> = {
+  youtube: { label: 'YouTube', button: 'INSCREVA-SE', afterButton: 'INSCRITO' },
+  instagram: { label: 'Instagram', button: 'SEGUIR', afterButton: 'SEGUINDO' },
+  tiktok: { label: 'TikTok', button: 'SEGUIR', afterButton: 'SEGUINDO' },
+  canal: { label: 'Canal', button: 'SE INSCREVE', afterButton: 'VALEU!' },
+}
+
+/** O texto do botão depois do clique: o escolhido, ou um palpite pelo texto do botão ("SIGA-ME" → "SEGUINDO"). */
+export function afterButtonText(button: string, after?: string) {
+  if (after?.trim()) return after.trim()
+  const b = button.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  if (/inscrev/.test(b)) return 'INSCRITO'
+  if (/segu|sig[ao]|follow/.test(b)) return 'SEGUINDO'
+  if (/curt|like/.test(b)) return 'CURTIDO'
+  if (/ativ|sino|notific/.test(b)) return 'ATIVADO'
+  return 'FEITO ✓'
+}
 
 export const catchphraseFileUrl = (file?: string) => (file ? `/api/catchphrases/files/${file}` : undefined)
 

@@ -331,14 +331,24 @@ export interface SoundItem {
  */
 export type CatchphraseKind = 'clipe' | 'montado' | 'inscreva'
 
+// Personalização dos bordões (ADR 0032)
+export type ButtonStyle = 'youtube' | 'instagram' | 'tiktok' | 'canal'
+export type Entrance = 'pulo' | 'deslizar' | 'zoom' | 'tremida'
+export type ClickStyle = 'cursor' | 'dedo' | 'pulsar' | 'nenhum'
+export type SubscribePart = 'foto' | 'nome' | 'frase' | 'botao'
+export type TextAnim = 'pulo' | 'digitando' | 'tremer'
+export type TextPosition = 'cima' | 'meio' | 'baixo'
+
 export interface Catchphrase {
   id: string
   name: string
   kind: CatchphraseKind
-  /** clipe: o vídeo; montado: o áudio. */
+  /** clipe: o vídeo; montado e inscreva: o áudio (ADR 0032). */
   file?: string
-  /** Em segundos: do vídeo (clipe), do áudio (montado) ou fixa (inscreva e montado sem áudio). */
+  /** Em segundos: do vídeo (clipe), do áudio, ou escolhida de 2 a 6 s quando não há áudio (ADR 0032). */
   duration: number
+  /** A música do vídeo continua baixinho durante o bordão; sem o campo, só quando o bordão não tem som próprio. */
+  music?: boolean
   /** montado: imagem ou cena da biblioteca no fundo. */
   imageId?: string
   /** montado: texto na tela; inscreva: a frase ("Se inscreve pra mais!"). */
@@ -347,6 +357,19 @@ export interface Catchphrase {
   channelName?: string
   /** inscreva: texto do botão. */
   button?: string
+  /** inscreva: texto do botão depois do clique ("SEGUINDO"); vazio, o app adivinha pelo do botão. */
+  afterButton?: string
+  /** inscreva: as cores do botão, vindas do modelo escolhido (sem o campo, o vermelho do YouTube). */
+  buttonStyle?: ButtonStyle
+  /** inscreva: como foto, nome, frase e botão aparecem. */
+  entrance?: Entrance
+  /** inscreva: como o botão é clicado. */
+  click?: ClickStyle
+  /** inscreva: o que aparece na tela; uma parte com false fica escondida. */
+  show?: Partial<Record<SubscribePart, boolean>>
+  /** montado: como o texto entra e onde fica. */
+  textAnim?: TextAnim
+  textPosition?: TextPosition
   /** inscreva: foto do perfil. */
   photoFile?: string
   /** Vídeos novos já começam com este bordão na abertura / no final. */

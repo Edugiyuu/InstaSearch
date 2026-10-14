@@ -14,8 +14,16 @@ export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro }
   const last = beats[beats.length - 1]
   const start = intro?.frames ?? 0
   const end = last ? last.from + last.frames : start
-  // a música para quando entra um final com som próprio, para não brigar com ele
-  const outroHasSound = outro?.kind === 'clipe' || (outro?.kind === 'montado' && !!outro.audioSrc)
+  // a música entra na abertura e segue no final só se o bordão pedir (ADR 0032); sem som próprio, ele pede por padrão
+  const musicFrom = intro?.music ? 0 : start
+  const musicEnd = outro && !outro.music ? end : undefined
+  const musicVolume = (f: number) => {
+    const at = f + musicFrom
+    const bordao = at < start ? intro : at >= end ? outro : undefined
+    // baixinha por baixo de um bordão com som ou da narração, para não brigar com eles
+    if (bordao) return hasSound(bordao) ? 0.1 : 0.35
+    return audioSrc ? 0.12 : 0.35
+  }
   return (
     <AbsoluteFill style={{ background: '#000', fontFamily: 'Inter, sans-serif' }}>
       {intro && (
@@ -34,16 +42,15 @@ export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro }
           <CatchphraseScene c={outro} background={last?.image?.poster ?? last?.image?.src} />
         </Sequence>
       )}
-      {/* a narração e a música começam depois da abertura, que toca com o som dela */}
+      {/* a narração começa depois da abertura, que toca com o som dela */}
       {audioSrc && (
         <Sequence from={start} layout="none" name="Narração">
           <Audio src={audioSrc} />
         </Sequence>
       )}
       {musicSrc && (
-        <Sequence from={start} durationInFrames={outroHasSound ? end - start : undefined} layout="none" name="Música">
-          {/* música baixa quando tem voz, para não brigar com a narração */}
-          <Audio src={musicSrc} loop volume={audioSrc ? 0.12 : 0.35} />
+        <Sequence from={musicFrom} durationInFrames={musicEnd !== undefined ? musicEnd - musicFrom : undefined} layout="none" name="Música">
+          <Audio src={musicSrc} loop volume={musicVolume} />
         </Sequence>
       )}
     </AbsoluteFill>
@@ -360,6 +367,9 @@ function Sticker({ timed }: { timed: TimedBeat }) {
 
 // ── Bordões (abertura e final) ───────────────────────────
 
+/** O bordão tem som próprio: o clipe sempre; o montado e o "se inscreve", quando têm áudio. */
+const hasSound = (c: CatchphraseProps) => c.kind === 'clipe' || !!c.audioSrc
+
 /** Um bordão sozinho; background é a imagem da cena vizinha, para o fundo desfocado. */
 export function CatchphraseScene({ c, background }: { c: CatchphraseProps; background?: string }) {
   switch (c.kind) {
@@ -385,11 +395,14 @@ export function CatchphrasePreview({ c }: { c: CatchphraseProps } & Record<strin
   )
 }
 
-/** Imagem ou cena da biblioteca com um zoom lento, o áudio do bordão e o texto grande no meio. */
-function MountedCatchphrase({ c, background }: { c: Extract<CatchphraseProps, { kind: 'montado' }>; background?: string }) {
+const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const
+
+type Mounted = Extract<CatchphraseProps, { kind: 'montado' }>
+type SubscribeProps = Extract<CatchphraseProps, { kind: 'inscreva' }>
+
+/** Imagem ou cena da biblioteca com um zoom lento, o áudio do bordão e o texto grande (ADR 0032: animação e posição). */
+function MountedCatchphrase({ c, background }: { c: Mounted; background?: string }) {
   const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
-  const textIn = spring({ frame: frame - 3, fps, config: { damping: 11, stiffness: 220 } })
   const style: CSSProperties = {
     width: '100%',
     height: '100%',
@@ -397,6 +410,9 @@ function MountedCatchphrase({ c, background }: { c: Extract<CatchphraseProps, { 
     transform: `scale(${interpolate(frame, [0, c.frames], [1.04, 1.16])})`,
   }
   const media: MediaProps | undefined = c.image
+  // onde o texto fica: em cima, no meio ou embaixo (o de antes)
+  const place: CSSProperties =
+    c.textPosition === 'meio' ? { justifyContent: 'center' } : { justifyContent: 'flex-start', paddingTop: c.textPosition === 'cima' ? 260 : 1180 }
   return (
     <AbsoluteFill style={{ background: '#0b0b0d' }}>
       {media?.clip ? (
@@ -408,47 +424,105 @@ function MountedCatchphrase({ c, background }: { c: Extract<CatchphraseProps, { 
       )}
       <AbsoluteFill style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.5) 100%)' }} />
       {c.text && (
-        <div
-          style={{
-            position: 'absolute',
-            left: 60,
-            right: 60,
-            top: 1180,
-            textAlign: 'center',
-            color: YELLOW,
-            fontSize: c.text.length <= 18 ? 120 : c.text.length <= 40 ? 92 : 70,
-            fontWeight: 900,
-            lineHeight: 1.05,
-            letterSpacing: -1,
-            WebkitTextStroke: '14px #000',
-            paintOrder: 'stroke fill',
-            textShadow: '0 8px 0 #000',
-            transform: `rotate(-2deg) scale(${textIn})`,
-          }}
-        >
-          {c.text.toUpperCase()}
-        </div>
+        <AbsoluteFill style={{ alignItems: 'center', padding: '0 60px', ...place }}>
+          <MountedText text={c.text.toUpperCase()} anim={c.textAnim} frames={c.frames} />
+        </AbsoluteFill>
       )}
       {c.audioSrc && <Audio src={c.audioSrc} />}
     </AbsoluteFill>
   )
 }
 
-/** Foto do perfil, nome, frase e o botão de inscrever sendo clicado. */
-function Subscribe({ c: outro, background }: { c: Extract<CatchphraseProps, { kind: 'inscreva' }>; background?: string }) {
+/** O texto do montado: pula (o de antes), é digitado letra a letra ou fica tremendo. */
+function MountedText({ text, anim, frames }: { text: string; anim: Mounted['textAnim']; frames: number }) {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
-  const photoPop = spring({ frame, fps, config: { damping: 12, stiffness: 180 } })
-  const textIn = spring({ frame: frame - 8, fps, config: { damping: 14, stiffness: 200 } })
-  const buttonIn = spring({ frame: frame - 16, fps, config: { damping: 10, stiffness: 240 } })
-  // o cursor chega no botão e clica: o botão afunda e vira "inscrito"
-  const CLICK = 44
-  const cursor = interpolate(frame, [22, CLICK - 4], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-  const press = interpolate(frame, [CLICK - 3, CLICK, CLICK + 4], [1, 0.9, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-  const clicked = frame >= CLICK
-  const fadeOut = interpolate(frame, [outro.frames - 6, outro.frames], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-  const initial = (outro.name.replace(/^@/, '')[0] ?? '?').toUpperCase()
-  const buttonY = 1270
+  const pop = spring({ frame: frame - 3, fps, config: { damping: 11, stiffness: 220 } })
+  let shown = text
+  let transform = `rotate(-2deg) scale(${pop})`
+  if (anim === 'digitando') {
+    // termina de digitar em até 60% do bordão, para dar tempo de ler
+    const done = Math.max(4, Math.min(frames * 0.6, 3 + text.length * 2))
+    shown = text.slice(0, Math.ceil(interpolate(frame, [3, done], [0, text.length], clamp)))
+    transform = 'rotate(-2deg)'
+  } else if (anim === 'tremer') {
+    transform = `translate(${Math.sin(frame * 1.9) * 7}px, ${Math.cos(frame * 2.3) * 6}px) rotate(${-2 + Math.sin(frame * 1.3) * 1.5}deg) scale(${pop})`
+  }
+  const typing = anim === 'digitando' && shown.length < text.length
+  return (
+    <div
+      style={{
+        textAlign: 'center',
+        color: YELLOW,
+        fontSize: text.length <= 18 ? 120 : text.length <= 40 ? 92 : 70,
+        fontWeight: 900,
+        lineHeight: 1.05,
+        letterSpacing: -1,
+        WebkitTextStroke: '14px #000',
+        paintOrder: 'stroke fill',
+        textShadow: '0 8px 0 #000',
+        transform,
+      }}
+    >
+      {shown}
+      {typing && <span style={{ opacity: Math.floor(frame / 4) % 2 ? 0 : 1 }}>|</span>}
+    </div>
+  )
+}
+
+/** As cores do botão em cada modelo (ADR 0032): antes do clique, a da plataforma; depois, cinza, como nas redes. */
+const BUTTON_LOOK: Record<SubscribeProps['buttonStyle'], { background: string; color: string }> = {
+  youtube: { background: RED, color: '#fff' },
+  instagram: { background: 'linear-gradient(45deg, #F58529, #DD2A7B 55%, #8134AF)', color: '#fff' },
+  tiktok: { background: '#FE2C55', color: '#fff' },
+  canal: { background: YELLOW, color: '#111' },
+}
+const BUTTON_DONE = { background: '#3a3a3f', color: '#fff' }
+
+/** Como uma parte entra: opacidade e transform a partir do atraso, em quadros (ADR 0032). */
+function entering(style: SubscribeProps['entrance'], frame: number, fps: number, delay: number): CSSProperties {
+  const f = frame - delay
+  switch (style) {
+    case 'deslizar': {
+      const p = spring({ frame: f, fps, config: { damping: 16, stiffness: 160 } })
+      return { opacity: Math.min(1, p * 1.5), transform: `translateY(${(1 - p) * 260}px)` }
+    }
+    case 'zoom': {
+      const p = spring({ frame: f, fps, config: { damping: 18, stiffness: 120 } })
+      return { opacity: interpolate(f, [0, 6], [0, 1], clamp), transform: `scale(${interpolate(p, [0, 1], [2.6, 1])})` }
+    }
+    case 'tremida': {
+      const p = spring({ frame: f, fps, config: { damping: 9, stiffness: 260 } })
+      const shake = f >= 0 && f < 14 ? Math.sin(f * 2.7) * 18 * (1 - f / 14) : 0
+      return { opacity: f >= 0 ? 1 : 0, transform: `translate(${shake}px, ${-shake / 2}px) rotate(${shake / 6}deg) scale(${p})` }
+    }
+    default: {
+      const p = spring({ frame: f, fps, config: { damping: 12, stiffness: 180 } })
+      return { opacity: f >= 0 ? 1 : 0, transform: `scale(${p})` }
+    }
+  }
+}
+
+/**
+ * Foto do perfil, nome, frase e o botão sendo clicado. Cada parte pode ficar escondida, e as que
+ * sobram ficam centralizadas; a entrada, o clique e o texto depois dele vêm do bordão (ADR 0032).
+ */
+function Subscribe({ c, background }: { c: SubscribeProps; background?: string }) {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+  const parts = (['foto', 'nome', 'frase', 'botao'] as const).filter(p => c.show[p] && (p !== 'nome' || c.name) && (p !== 'frase' || c.text))
+  // as partes entram uma depois da outra, a cada 8 quadros
+  const enter = (part: (typeof parts)[number]) => entering(c.entrance, frame, fps, parts.indexOf(part) * 8)
+
+  // o clique: perto de 1,5 s, ou antes num bordão curto
+  const CLICK = Math.min(44, Math.round(c.frames * 0.6))
+  const clicks = c.show.botao && c.click !== 'nenhum'
+  const clicked = clicks && frame >= CLICK
+  const press = clicks ? interpolate(frame, [CLICK - 3, CLICK, CLICK + 4], [1, 0.9, 1], clamp) : 1
+  const pulse = c.click === 'pulsar' && !clicked ? 1 + Math.max(0, Math.sin((frame - 16) / 3.2)) * 0.07 : 1
+  const fadeOut = interpolate(frame, [c.frames - 6, c.frames], [1, 0], clamp)
+  const initial = (c.name.replace(/^@/, '')[0] ?? '?').toUpperCase()
+  const look = clicked ? BUTTON_DONE : BUTTON_LOOK[c.buttonStyle]
 
   return (
     <AbsoluteFill style={{ background: '#0b0b0d', opacity: fadeOut }}>
@@ -462,116 +536,151 @@ function Subscribe({ c: outro, background }: { c: Extract<CatchphraseProps, { ki
             height: HEIGHT + 160,
             objectFit: 'cover',
             filter: 'blur(36px) brightness(0.45)',
-            transform: `scale(${interpolate(frame, [0, outro.frames], [1.05, 1.15])})`,
+            transform: `scale(${interpolate(frame, [0, c.frames], [1.05, 1.15])})`,
           }}
         />
       )}
       <AbsoluteFill style={{ background: 'radial-gradient(circle at 50% 38%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 70%)' }} />
 
-      {/* foto */}
-      <div
-        style={{
-          position: 'absolute',
-          left: WIDTH / 2 - 210,
-          top: 380,
-          width: 420,
-          height: 420,
-          borderRadius: '50%',
-          border: `14px solid ${YELLOW}`,
-          overflow: 'hidden',
-          background: '#222',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
-          transform: `scale(${photoPop})`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {outro.photoSrc ? (
-          <Img src={outro.photoSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <span style={{ color: '#fff', fontSize: 200, fontWeight: 900 }}>{initial}</span>
-        )}
-      </div>
-
-      {/* nome e bordão */}
-      <div
-        style={{
-          position: 'absolute',
-          left: 60,
-          right: 60,
-          top: 850,
-          textAlign: 'center',
-          opacity: textIn,
-          transform: `translateY(${(1 - textIn) * 40}px)`,
-        }}
-      >
-        {outro.name && <div style={{ color: '#fff', fontSize: 62, fontWeight: 800, textShadow: '0 4px 18px rgba(0,0,0,0.8)' }}>{outro.name}</div>}
-        {outro.text && (
+      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', gap: 56, padding: '0 60px 140px' }}>
+        {parts.includes('foto') && (
           <div
             style={{
-              marginTop: 34,
-              color: YELLOW,
-              fontSize: outro.text.length <= 22 ? 104 : outro.text.length <= 40 ? 84 : 68,
-              fontWeight: 900,
-              lineHeight: 1.05,
-              letterSpacing: -1,
-              WebkitTextStroke: '14px #000',
-              paintOrder: 'stroke fill',
-              textShadow: '0 8px 0 #000',
-              transform: 'rotate(-2deg)',
+              width: 420,
+              height: 420,
+              flexShrink: 0,
+              borderRadius: '50%',
+              border: `14px solid ${YELLOW}`,
+              overflow: 'hidden',
+              background: '#222',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...enter('foto'),
             }}
           >
-            {outro.text.toUpperCase()}
+            {c.photoSrc ? (
+              <Img src={c.photoSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <span style={{ color: '#fff', fontSize: 200, fontWeight: 900 }}>{initial}</span>
+            )}
           </div>
         )}
-      </div>
 
-      {/* botão */}
+        {(parts.includes('nome') || parts.includes('frase')) && (
+          <div style={{ textAlign: 'center' }}>
+            {parts.includes('nome') && (
+              <div style={{ color: '#fff', fontSize: 62, fontWeight: 800, textShadow: '0 4px 18px rgba(0,0,0,0.8)', ...enter('nome') }}>{c.name}</div>
+            )}
+            {parts.includes('frase') && (
+              <div style={enter('frase')}>
+                <div
+                  style={{
+                    marginTop: parts.includes('nome') ? 34 : 0,
+                    color: YELLOW,
+                    fontSize: c.text.length <= 22 ? 104 : c.text.length <= 40 ? 84 : 68,
+                    fontWeight: 900,
+                    lineHeight: 1.05,
+                    letterSpacing: -1,
+                    WebkitTextStroke: '14px #000',
+                    paintOrder: 'stroke fill',
+                    textShadow: '0 8px 0 #000',
+                    transform: 'rotate(-2deg)',
+                  }}
+                >
+                  {c.text.toUpperCase()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {parts.includes('botao') && (
+          <div style={{ position: 'relative', ...enter('botao') }}>
+            <div
+              style={{
+                padding: '34px 76px',
+                borderRadius: 999,
+                ...look,
+                fontSize: 64,
+                fontWeight: 900,
+                letterSpacing: 1,
+                boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+                transform: `scale(${press * pulse})`,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {clicked ? c.afterButton.toUpperCase() : c.button.toUpperCase()}
+            </div>
+            {c.click === 'cursor' && <ClickCursor frame={frame} click={CLICK} />}
+            {c.click === 'dedo' && <ClickTouch frame={frame} click={CLICK} />}
+          </div>
+        )}
+      </AbsoluteFill>
+      {c.audioSrc && <Audio src={c.audioSrc} />}
+    </AbsoluteFill>
+  )
+}
+
+/** A seta do mouse que vem de baixo e clica no botão (o clique de antes), com a posição relativa ao botão. */
+function ClickCursor({ frame, click }: { frame: number; click: number }) {
+  const t = interpolate(frame, [click - 22, click - 4], [0, 1], clamp)
+  return (
+    <svg
+      width="110"
+      height="110"
+      viewBox="0 0 24 24"
+      style={{
+        position: 'absolute',
+        left: `calc(50% + ${interpolate(t, [0, 1], [360, 40])}px)`,
+        top: interpolate(t, [0, 1], [520, 70]),
+        opacity: interpolate(frame, [click - 24, click - 20], [0, 1], clamp),
+        transform: `scale(${frame >= click && frame < click + 4 ? 0.85 : 1})`,
+        filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))',
+      }}
+    >
+      <path d="M4 2 L4 19 L8.5 15 L11.5 22 L14.5 20.7 L11.6 14 L18 14 Z" fill="#fff" stroke="#000" strokeWidth="1.4" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/** O toque de celular: o dedo (um círculo claro) sobe, aperta, e uma onda sai do botão. */
+function ClickTouch({ frame, click }: { frame: number; click: number }) {
+  const t = interpolate(frame, [click - 18, click - 3], [0, 1], clamp)
+  const ring = interpolate(frame, [click, click + 14], [0, 1], clamp)
+  return (
+    <>
       <div
         style={{
           position: 'absolute',
-          left: 0,
-          right: 0,
-          top: buttonY,
-          display: 'flex',
-          justifyContent: 'center',
-          transform: `scale(${buttonIn * press})`,
+          left: '50%',
+          top: '50%',
+          width: 120,
+          height: 120,
+          marginLeft: -60,
+          marginTop: -60,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.55)',
+          border: '4px solid rgba(255,255,255,0.9)',
+          boxShadow: '0 6px 18px rgba(0,0,0,0.45)',
+          opacity: interpolate(frame, [click - 18, click - 14, click + 6, click + 10], [0, 1, 1, 0], clamp),
+          transform: `translate(${interpolate(t, [0, 1], [120, 30])}px, ${interpolate(t, [0, 1], [520, 20])}px) scale(${frame >= click && frame < click + 5 ? 0.8 : 1})`,
         }}
-      >
+      />
+      {frame >= click && (
         <div
           style={{
-            padding: '34px 76px',
+            position: 'absolute',
+            inset: 0,
             borderRadius: 999,
-            background: clicked ? '#3a3a3f' : RED,
-            color: '#fff',
-            fontSize: 64,
-            fontWeight: 900,
-            letterSpacing: 1,
-            boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+            border: '8px solid rgba(255,255,255,0.8)',
+            opacity: 1 - ring,
+            transform: `scale(${1 + ring * 0.35})`,
           }}
-        >
-          {clicked ? 'INSCRITO' : outro.button.toUpperCase()}
-        </div>
-      </div>
-
-      {/* cursor */}
-      <svg
-        width="110"
-        height="110"
-        viewBox="0 0 24 24"
-        style={{
-          position: 'absolute',
-          left: interpolate(cursor, [0, 1], [900, WIDTH / 2 + 40]),
-          top: interpolate(cursor, [0, 1], [1780, buttonY + 70]),
-          opacity: interpolate(frame, [20, 24], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
-          transform: `scale(${clicked && frame < CLICK + 4 ? 0.85 : 1})`,
-          filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))',
-        }}
-      >
-        <path d="M4 2 L4 19 L8.5 15 L11.5 22 L14.5 20.7 L11.6 14 L18 14 Z" fill="#fff" stroke="#000" strokeWidth="1.4" strokeLinejoin="round" />
-      </svg>
-    </AbsoluteFill>
+        />
+      )}
+    </>
   )
 }
 
