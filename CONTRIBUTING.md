@@ -23,6 +23,7 @@ Os princípios, o estado do projeto e o jeito de trabalhar. O código em si est�
 | Criar sozinho: ideia → roteiro → montagem → imagens, parando na voz | ✅ Funciona ([ADR 0026](docs/decisions/0026-criacao-autonoma-de-videos.md)) |
 | Debate das IAs antes de criar (Estrategista × Roteirista, chat ao vivo) | ✅ Funciona ([ADR 0027](docs/decisions/0027-debate-das-ias-antes-de-criar.md)) |
 | Variedade nos temas do debate (obra e personagem conferidas, em alta × atemporal, aposta do nicho) | ✅ Funciona ([ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md)) |
+| Debate em rodadas (até 3, com temas novos), 5 s para vetar o tema aceito e "Parar debate" | ✅ Funciona ([ADR 0030](docs/decisions/0030-debate-em-rodadas-com-veto.md)) |
 | Imagens só da web, sem a aba Imagens | ✅ Funciona ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
 | Ferramentas antigas (perfis, análises, gerador de prompts) | ⚠️ Legado, quase tudo *stub* |
 

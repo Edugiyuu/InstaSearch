@@ -129,7 +129,7 @@ backend/src/
 │   │   ├── render.ts · publish.ts   MP4, Instagram e YouTube
 │   │   └── types.ts           ShortProject, Beat… (o modelo de dados)
 │   ├── insights/              coleta e comparação das métricas
-│   ├── ideas/                 brainstorm, banco de ideias, o debate das IAs (debate.ts, ADR 0027) e a variedade dos temas (variety.ts, ADR 0028)
+│   ├── ideas/                 brainstorm, banco de ideias, o debate das IAs (debate.ts, ADR 0027; rodadas e veto, ADR 0030) e a variedade dos temas (variety.ts, ADR 0028)
 │   └── storage/               FileStorage: um JSON por item
 └── middleware/errorHandler.ts AppError + asyncHandler
 

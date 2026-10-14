@@ -240,3 +240,94 @@
   margin: 6px 0 0;
   padding-left: 18px;
 }
+
+/* Rodadas e veto (ADR 0030): as rodadas sem vídeo fechadas em cima, o tema vetado riscado e a barra dos 5 s */
+.dc-stop {
+  margin-left: auto;
+}
+
+.dc-status.aguardando {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.dc-status.parado {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.dc-past {
+  padding: 8px 10px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.dc-past summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.dc-past summary .meta {
+  font-weight: 400;
+}
+
+.dc-past > .dc-topics,
+.dc-past > .dc-chat {
+  margin-top: 10px;
+}
+
+.dc-topics li.vetoed {
+  opacity: 0.55;
+}
+
+.dc-topics li.vetoed .dc-topic {
+  text-decoration: line-through;
+}
+
+.dc-voter.vetoed {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.dc-veto-note {
+  align-self: center;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dc-veto-bar {
+  position: relative;
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+}
+
+.dc-veto-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.dc-veto-row .btn-g {
+  margin-left: auto;
+}
+
+/* o tempo que falta, encolhendo junto com a contagem */
+.dc-veto-time {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.1s linear;
+}

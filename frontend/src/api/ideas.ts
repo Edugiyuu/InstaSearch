@@ -44,9 +44,11 @@ export interface Idea {
 // ── Debate das IAs (ADR 0027) ──
 
 export type Speaker = 'estrategista' | 'roteirista'
+/** As duas IAs, ou o criador quando veta o tema aceito (ADR 0030). */
+export type Author = Speaker | 'criador'
 
 export interface DebateMessage {
-  speaker: Speaker
+  speaker: Author
   text: string
   /** O tema (1, 2, 3…) que ela aceita agora; null = ainda nenhum. */
   vote: number | null
@@ -54,16 +56,35 @@ export interface DebateMessage {
   at: string
 }
 
-export type DebateStatus = 'brainstorm' | 'debatendo' | 'resumindo' | 'acordo' | 'sem-acordo' | 'erro'
+export type DebateStatus = 'brainstorm' | 'debatendo' | 'aguardando' | 'resumindo' | 'acordo' | 'sem-acordo' | 'parado' | 'erro'
+
+/** Por que uma rodada acabou sem vídeo (ADR 0030). */
+export type RoundEnd = 'recusados' | 'falas' | 'vetados'
+
+/** Uma rodada anterior, que acabou sem vídeo. */
+export interface DebateRound {
+  ideas: Idea[]
+  rejected?: { theme: string; reason: string }[]
+  messages: DebateMessage[]
+  vetoed?: number[]
+  end: RoundEnd
+}
 
 export interface Debate {
   id: string
   status: DebateStatus
-  /** Os temas em debate, na ordem em que as IAs os citam (1, 2, 3…). */
+  /** A rodada atual; sem o campo, 1 (debates de antes do ADR 0030). */
+  round?: number
+  past?: DebateRound[]
+  /** Os temas da rodada atual, na ordem em que as IAs os citam (1, 2, 3…). */
   ideas: Idea[]
   /** As ideias do brainstorm que o filtro de variedade tirou, com o motivo (ADR 0028). */
   rejected?: { theme: string; reason: string }[]
   messages: DebateMessage[]
+  /** Os temas da rodada atual que o criador vetou. */
+  vetoed?: number[]
+  /** Em "aguardando": até quando dá para vetar o tema aceito. */
+  vetoUntil?: string
   thinking?: Speaker
   chosen?: number
   why?: string
@@ -80,9 +101,14 @@ export const SPEAKER_FOCUS: Record<Speaker, string> = {
   estrategista: 'números e público do canal',
   roteirista: 'gancho, argumento e imagens',
 }
-/** No máximo 6 falas (ADR 0027, 2A); igual ao MAX_TURNS do backend. */
+/** No máximo 6 falas por rodada (ADR 0027, 2A) e 3 rodadas (ADR 0030); iguais aos do backend. */
 export const MAX_TURNS = 6
-export const debateActive = (d: Debate) => d.status === 'brainstorm' || d.status === 'debatendo' || d.status === 'resumindo'
+export const MAX_ROUNDS = 3
+/** Os segundos para vetar o tema aceito (ADR 0030); igual ao do backend. */
+export const VETO_SECONDS = 5
+export const debateActive = (d: Debate) => ['brainstorm', 'debatendo', 'aguardando', 'resumindo'].includes(d.status)
+/** Ainda dá para parar: depois do acordo (resumindo), o vídeo já está a caminho. */
+export const debateStoppable = (d: Debate) => ['brainstorm', 'debatendo', 'aguardando'].includes(d.status)
 
 const data = <T,>(p: Promise<{ data: { data: T } }>) => p.then(r => r.data.data)
 
@@ -94,6 +120,9 @@ export const ideasApi = {
   remove: (id: string) => api.delete(`/ideas/${id}`),
   debates: () => data<Debate[]>(api.get('/ideas/debates')),
   debate: (id: string) => data<Debate>(api.get(`/ideas/debates/${id}`)),
+  /** Nos 5 s depois do acordo: o criador não gostou do tema (ADR 0030). */
+  vetoDebate: (id: string) => api.post(`/ideas/debates/${id}/veto`),
+  stopDebate: (id: string) => api.post(`/ideas/debates/${id}/stop`),
 }
 
 /** O Novo vídeo já preenchido com a ideia (tema, estilo, tom e duração). */

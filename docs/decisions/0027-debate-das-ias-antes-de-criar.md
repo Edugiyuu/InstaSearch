@@ -1,6 +1,6 @@
 # 0027 — Duas IAs debatem os temas antes de criar o vídeo
 
-**Status:** Aceita · **Data:** 2026-10-11 · Muda como o botão geral do [0026](0026-criacao-autonoma-de-videos.md) escolhe o tema (o resto do 0026 continua)
+**Status:** Substituída em parte por [0030](0030-debate-em-rodadas-com-veto.md) (a escolha 2A: sem acordo, vêm temas novos, até 3 rodadas, e o criador tem 5 s para vetar o tema aceito) · **Data:** 2026-10-11 · Muda como o botão geral do [0026](0026-criacao-autonoma-de-videos.md) escolhe o tema (o resto do 0026 continua)
 
 ## Contexto
 

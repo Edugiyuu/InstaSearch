@@ -14,9 +14,10 @@ import type { Autopilot } from './types.js'
 
 /**
  * fila → ideia (a do cartão) ou debate (as IAs escolhem, ADR 0027) → roteiro → montagem → imagens → pronto.
- * Termina em erro, ou em sem-acordo quando o debate acaba sem as duas aceitarem um tema (nenhum vídeo).
+ * Termina em erro, em sem-acordo quando o debate acaba sem as duas aceitarem um tema, ou em parado quando o
+ * criador para o debate (nos dois, nenhum vídeo).
  */
-export type JobStage = 'fila' | 'ideia' | 'debate' | 'roteiro' | 'montagem' | 'imagens' | 'pronto' | 'erro' | 'sem-acordo'
+export type JobStage = 'fila' | 'ideia' | 'debate' | 'roteiro' | 'montagem' | 'imagens' | 'pronto' | 'erro' | 'sem-acordo' | 'parado'
 
 /** Um vídeo sendo criado; a tela Ideias acompanha por aqui. */
 export interface AutopilotJob {
@@ -104,8 +105,8 @@ async function run(job: AutopilotJob) {
         const debate = await createDebate()
         job.debateId = debate.id
         const won = await runDebate(debate)
-        // sem acordo, nenhum vídeo (ADR 0027, 2A): o chat mostra por quê
-        if (!won) return step(job, 'sem-acordo')
+        // sem acordo nas 3 rodadas, ou parado pelo criador: nenhum vídeo (ADR 0030); o chat mostra por quê
+        if (!won) return step(job, debate.status === 'parado' ? 'parado' : 'sem-acordo')
         idea = won
       }
       job.ideaId = idea.id

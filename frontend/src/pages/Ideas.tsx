@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Idea, IdeaEvidence, IdeaStatus, MAX_TURNS, newVideoLink } from '../api/ideas'
+import { Idea, IdeaEvidence, IdeaStatus, MAX_ROUNDS, MAX_TURNS, newVideoLink, VETO_SECONDS } from '../api/ideas'
 import { formatCount, Platform, PLATFORM_LABEL, PlatformState, sharesPerThousand, VideoMetrics, watchedPercent } from '../api/insights'
 import { JOB_STAGE_LABEL, jobActive } from '../api/shorts'
 import { AiBadge, SearchList, Segmented, Spinner } from '../components/flow'
@@ -336,7 +336,7 @@ function IdeaCard({
 
 /**
  * Criar sozinho (ADR 0026) com o debate das IAs (ADR 0027): o botão faz duas IAs debaterem 4 temas de um
- * brainstorm próprio e, com acordo, criar o vídeo. O chat mostra o debate escolhido (?debate=) ou o mais
+ * brainstorm próprio (até 3 rodadas, com 5 s para o veto depois do acordo; ADR 0030) e, com acordo, criar o vídeo. O chat mostra o debate escolhido (?debate=) ou o mais
  * recente da fila; a lista embaixo mostra a etapa real de cada vídeo. Nunca publica.
  */
 function AutoCreate({ autopilot }: { autopilot: ReturnType<typeof useAutopilot> }) {
@@ -345,7 +345,7 @@ function AutoCreate({ autopilot }: { autopilot: ReturnType<typeof useAutopilot> 
   const shown = params.get('debate') ?? jobs.find(j => j.debateId)?.debateId
   // o vídeo do debate mostrado: cada etapa nova na fila busca o debate de novo (chega o link do projeto)
   const debateJob = jobs.find(j => j.debateId === shown)
-  const { debate, error: debateError } = useDebate(shown ?? undefined, debateJob?.stage)
+  const { debate, error: debateError, stopping, veto, stop } = useDebate(shown ?? undefined, debateJob?.stage)
   const showDebate = (id: string) => setParams(p => ({ ...Object.fromEntries(p), debate: id }), { replace: true })
 
   return (
@@ -356,8 +356,9 @@ function AutoCreate({ autopilot }: { autopilot: ReturnType<typeof useAutopilot> 
           <p className="meta">
             Duas IAs (a Estrategista, que olha os números do canal, e a Roteirista, que olha o gancho e o argumento) debatem 4 temas de um
             brainstorm delas, nas obras que o seu canal já fala, e criticam uma à outra até aceitarem o mesmo, em no máximo {MAX_TURNS}{' '}
-            falas. Com acordo, elas escrevem o roteiro, montam e procuram as imagens, e explicam por que o tema é bom. Para em “falta gravar
-            a voz”: a voz é sua. Nunca publica.
+            falas. Se nenhum dos 4 servir, vêm 4 novos, até {MAX_ROUNDS} rodadas. Quando as duas concordam, você tem {VETO_SECONDS} s para
+            vetar o tema; elas seguem debatendo os outros. Com acordo, elas escrevem o roteiro, montam e procuram as imagens, e explicam por
+            que o tema é bom. Para em “falta gravar a voz”: a voz é sua. Nunca publica.
           </p>
         </div>
         <button className="btn-y" onClick={() => start()}>🗣️ Debater e criar um vídeo</button>
@@ -365,14 +366,14 @@ function AutoCreate({ autopilot }: { autopilot: ReturnType<typeof useAutopilot> 
       {error && <p className="form-error">{error}</p>}
 
       {debateError && <p className="form-error">{debateError}</p>}
-      {debate && <DebateChat debate={debate} creating={!!debateJob && jobActive(debateJob)} />}
+      {debate && <DebateChat debate={debate} creating={!!debateJob && jobActive(debateJob)} stopping={stopping} onVeto={veto} onStop={stop} />}
 
       {jobs.length > 0 && (
         <ul className="id-jobs">
           {jobs.map(job => (
             <li key={job.id} className={`id-job ${job.stage}`}>
               <span className="id-job-title">{job.title ?? (job.debateId ? 'Tema do debate' : 'Ideia')}</span>
-              <span className={job.stage === 'erro' || job.stage === 'sem-acordo' ? 'c-danger' : job.stage === 'pronto' ? 'c-success' : 'c-muted'}>
+              <span className={job.stage === 'erro' || job.stage === 'sem-acordo' || job.stage === 'parado' ? 'c-danger' : job.stage === 'pronto' ? 'c-success' : 'c-muted'}>
                 {jobActive(job) && <Spinner />} {JOB_STAGE_LABEL[job.stage]}
                 {job.error && `: ${job.error}`}
               </span>
@@ -380,7 +381,7 @@ function AutoCreate({ autopilot }: { autopilot: ReturnType<typeof useAutopilot> 
               {job.debateId && job.debateId !== shown && (
                 <button className="act" onClick={() => showDebate(job.debateId!)}>Ver o debate</button>
               )}
-              {job.stage === 'sem-acordo' && <button className="act" onClick={() => start()}>Debater de novo</button>}
+              {(job.stage === 'sem-acordo' || job.stage === 'parado') && <button className="act" onClick={() => start()}>Debater de novo</button>}
               {job.stage === 'erro' &&
                 (job.projectId ? (
                   <button className="act" onClick={() => resume(job.projectId!)}>Continuar</button>

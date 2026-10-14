@@ -59,9 +59,11 @@ export interface Idea {
 
 /** As duas IAs do debate, com olhares diferentes. */
 export type Speaker = 'estrategista' | 'roteirista'
+/** Quem aparece no chat: as duas IAs, ou o criador quando veta o tema aceito (ADR 0030). */
+export type Author = Speaker | 'criador'
 
 export interface DebateMessage {
-  speaker: Speaker
+  speaker: Author
   /** A fala, como numa conversa. */
   text: string
   /** O tema (1, 2, 3…) que ela aceita para virar vídeo agora; null = ainda nenhum. */
@@ -71,18 +73,42 @@ export interface DebateMessage {
 }
 
 /**
- * brainstorm → debatendo → resumindo → acordo (vira vídeo) ou sem-acordo (nenhum vídeo); erro em qualquer etapa.
+ * brainstorm → debatendo → aguardando (5 s para o veto) → resumindo → acordo (vira vídeo); sem-acordo depois
+ * da última rodada, parado pelo botão (nenhum vídeo nos dois); erro em qualquer etapa.
  */
-export type DebateStatus = 'brainstorm' | 'debatendo' | 'resumindo' | 'acordo' | 'sem-acordo' | 'erro'
+export type DebateStatus = 'brainstorm' | 'debatendo' | 'aguardando' | 'resumindo' | 'acordo' | 'sem-acordo' | 'parado' | 'erro'
+
+/**
+ * Como uma rodada terminou sem vídeo (ADR 0030): as duas recusaram os temas, as falas acabaram sem
+ * acordo, ou o criador vetou todos.
+ */
+export type RoundEnd = 'recusados' | 'falas' | 'vetados'
+
+/** Uma rodada que acabou sem vídeo: os temas, as falas e por que acabou. */
+export interface DebateRound {
+  ideas: Idea[]
+  rejected?: { theme: string; reason: string }[]
+  messages: DebateMessage[]
+  vetoed?: number[]
+  end: RoundEnd
+}
 
 export interface Debate {
   id: string
   status: DebateStatus
-  /** Os temas em debate, na ordem em que as IAs os citam (1, 2, 3…). Não estão no banco de ideias. */
+  /** A rodada atual (1, 2, 3); sem o campo, 1 (os debates de antes do ADR 0030). */
+  round?: number
+  /** As rodadas anteriores, que acabaram sem vídeo. */
+  past?: DebateRound[]
+  /** Os temas da rodada atual, na ordem em que as IAs os citam (1, 2, 3…). Não estão no banco de ideias. */
   ideas: Idea[]
   /** As ideias do brainstorm que ficaram fora do debate, com o motivo (ADR 0028). */
   rejected?: { theme: string; reason: string }[]
   messages: DebateMessage[]
+  /** Os temas da rodada atual que o criador vetou nos 5 s depois do acordo. */
+  vetoed?: number[]
+  /** Em "aguardando": até quando dá para vetar o tema aceito. */
+  vetoUntil?: string
   /** Quem está escrevendo agora, para a tela mostrar "pensando…". */
   thinking?: Speaker
   /** O número do tema aceito pelas duas. */

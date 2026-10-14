@@ -190,7 +190,7 @@ export interface Autopilot {
 /** Um vídeo sendo criado sozinho (ADR 0026). */
 export interface AutopilotJob {
   id: string
-  stage: 'fila' | 'ideia' | 'debate' | 'roteiro' | 'montagem' | 'imagens' | 'pronto' | 'erro' | 'sem-acordo'
+  stage: 'fila' | 'ideia' | 'debate' | 'roteiro' | 'montagem' | 'imagens' | 'pronto' | 'erro' | 'sem-acordo' | 'parado'
   ideaId?: string
   /** O debate das IAs que escolhe a ideia, quando o vídeo não veio de um cartão (ADR 0027). */
   debateId?: string
@@ -212,9 +212,10 @@ export const JOB_STAGE_LABEL: Record<AutopilotJob['stage'], string> = {
   pronto: 'pronto · falta gravar a voz',
   erro: 'parou',
   'sem-acordo': 'as IAs não chegaram a um acordo; nenhum vídeo foi criado',
+  parado: 'você parou o debate; nenhum vídeo foi criado',
 }
 
-export const jobActive = (job: AutopilotJob) => job.stage !== 'pronto' && job.stage !== 'erro' && job.stage !== 'sem-acordo'
+export const jobActive = (job: AutopilotJob) => job.stage !== 'pronto' && job.stage !== 'erro' && job.stage !== 'sem-acordo' && job.stage !== 'parado'
 
 /** Uma palavra ouvida pelo Whisper; tempos em segundos desde o começo do áudio. */
 export interface TranscriptWord {

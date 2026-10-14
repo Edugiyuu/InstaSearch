@@ -89,7 +89,7 @@ const RESEARCH_DEBATE = `${RESEARCH} Pesquise também o que está viralizando AG
  * - `channel`: os títulos dos vídeos que o criador fez à mão: dizem as obras e o nicho do canal;
  * - `done`: todos os títulos já feitos (à mão e sozinho), para não repetir o assunto;
  * - `recent`: os mais recentes, com obra e "em alta", para variar;
- * - `avoid`: as ideias que o filtro tirou numa tentativa anterior, com o motivo.
+ * - `avoid`: as ideias que o filtro tirou numa tentativa anterior ou que caíram numa rodada anterior do debate, com o motivo.
  */
 export async function brainstormCandidates(
   input: { channel: string[]; done: string[]; recent: string; avoid?: { theme: string; reason: string }[] },
@@ -102,7 +102,7 @@ export async function brainstormCandidates(
     input.done.length ? `Assuntos que já viraram vídeo (não repita o assunto, mesmo com outro título):\n${list(input.done)}` : '',
     input.recent ? `Os últimos vídeos, do mais novo para o mais velho:\n${input.recent}` : '',
     input.avoid?.length
-      ? `Numa tentativa anterior, estas ideias foram recusadas pela regra de variedade (não traga parecidas):\n${input.avoid.map(a => `- ${a.theme} (${a.reason})`).join('\n')}`
+      ? `Estas ideias já foram recusadas, pela regra de variedade, pelas IAs do debate ou pelo criador (não traga nenhuma delas nem parecidas):\n${input.avoid.map(a => `- ${a.theme} (${a.reason})`).join('\n')}`
       : '',
     `Regras de variedade (o app confere e descarta o que não cumprir):
 - Cada ideia é de uma obra diferente.

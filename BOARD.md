@@ -7,8 +7,10 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 ## Fazendo
 
 
+
 ## A fazer
 
+- [ ] Temas mais apelativos no debate: opinião forte e polêmica, com fanservice (de preferência personagens mulheres), em vez de temas com cara de notícia ("o episódio X dividiu os fãs"); e o "🔥 em alta" só para o que está acontecendo agora (o passado do Gaara, coisa antiga, veio marcado "em alta")
 - [ ] Clipes do YouTube nos momentos marcantes: o roteiro marca 1 ou 2 cenas, a montagem busca, baixa e escolhe o trecho com visão (ADR 0029)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
@@ -41,6 +43,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-13 · Debate em rodadas: se as duas recusam os 4 temas (ou as 6 falas acabam sem acordo), vêm 4 novos, até 3 rodadas; depois do acordo, 5 s para você vetar o tema (elas seguem debatendo os outros) e "■ Parar debate" ([ADR 0030](docs/decisions/0030-debate-em-rodadas-com-veto.md))
 - [x] 2026-10-13 · Mais fanart nas imagens: a IA de visão vê 6 sugestões por cena (3 da web e 3 fanarts do Danbooru) e prefere arte bem desenhada e chamativa (e ousada, com "Imagens sugestivas" ligada) ; a tela Trocar imagem alterna web e fanart (adendo ao [ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))
 - [x] 2026-10-13 · Opção "Imagens sugestivas" em Configurações (desligada por padrão: Bing rígido e Danbooru só "geral"; ligada: Bing moderado e Danbooru "sensível"), no lugar do `BING_SAFESEARCH` do `.env`
 - [x] 2026-10-13 · Danbooru traz imagens "gerais" e "sensíveis" (só "gerais" com `BING_SAFESEARCH=strict`; questionável e explícito nunca), e a documentação diz que o Bing não aceita `off` pela internet (fica no moderado)

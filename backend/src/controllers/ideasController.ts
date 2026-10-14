@@ -43,3 +43,16 @@ export const listDebates = asyncHandler(async (_req: Request, res: Response) => 
 export const getDebate = asyncHandler(async (req: Request, res: Response) => {
   res.json({ success: true, data: await debates.getDebate(req.params.id) })
 })
+
+// POST /api/ideas/debates/:id/veto — nos 5 s depois do acordo: o criador não gostou do tema (ADR 0030)
+export const vetoDebate = asyncHandler(async (req: Request, res: Response) => {
+  await debates.getDebate(req.params.id)
+  debates.vetoDebate(req.params.id)
+  res.json({ success: true })
+})
+
+// POST /api/ideas/debates/:id/stop — para o debate depois da fala em andamento, sem vídeo (ADR 0030)
+export const stopDebate = asyncHandler(async (req: Request, res: Response) => {
+  await debates.stopDebate(req.params.id)
+  res.json({ success: true })
+})

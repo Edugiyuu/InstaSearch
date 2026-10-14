@@ -69,6 +69,8 @@ router.get('/ideas', ideasController.listIdeas)
 router.post('/ideas/brainstorm', ideasController.brainstorm)
 router.get('/ideas/debates', ideasController.listDebates)
 router.get('/ideas/debates/:id', ideasController.getDebate)
+router.post('/ideas/debates/:id/veto', ideasController.vetoDebate)
+router.post('/ideas/debates/:id/stop', ideasController.stopDebate)
 router.put('/ideas/:id', ideasController.updateIdea)
 router.delete('/ideas/:id', ideasController.deleteIdea)
 

@@ -9,8 +9,11 @@ flowchart TD
     BANK -- "Criar vídeo" --> NEW["Novo vídeo<br/>já preenchido"]
     NEW --> PUB
     CMP --> OWN["🗣️ Debate das IAs:<br/>4 temas de obras diferentes<br/>(filtro de variedade + 1 aposta do nicho),<br/>Estrategista × Roteirista"]
-    OWN -- "as duas aceitam<br/>o mesmo tema" --> AUTO["Roteiro, montagem<br/>e imagens sozinho"]
-    OWN -- "sem acordo<br/>em 6 falas" --> NONE["Nenhum vídeo"]
+    OWN -- "as duas aceitam<br/>o mesmo tema" --> VETO{"5 s para<br/>você vetar"}
+    VETO -- "passou o tempo" --> AUTO["Roteiro, montagem<br/>e imagens sozinho"]
+    VETO -- "✋ vetou: o tema sai" --> OWN
+    OWN -- "recusam os 4 ou acabam<br/>as 6 falas: 4 temas novos<br/>(até 3 rodadas)" --> OWN
+    OWN -- "sem acordo na 3ª rodada<br/>ou ■ Parar debate" --> NONE["Nenhum vídeo"]
     BANK -- "🤖 Criar sozinho" --> AUTO
     ID -- "🤖 Criar sozinho" --> AUTO
     AUTO --> VOZ["🎙 Você grava a voz<br/>e revisa"]
