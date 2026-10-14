@@ -64,7 +64,6 @@ function ToneEditor({ tone, onSaved, onClose }: Props) {
       <div className="modal tone-editor" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
         <button className="modal-close" onClick={onClose} aria-label="Fechar">✕</button>
         <h2 className="te-title">{tone ? `Editar “${tone.name}”` : 'Novo tom'}</h2>
-        {tone?.builtIn && <p className="meta">Este tom vem com o app: salvar cria uma cópia sua, e o original continua igual.</p>}
 
         <section className="te-ai">
           <span className="label">✨ Descreva para a IA</span>

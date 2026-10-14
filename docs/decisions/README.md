@@ -48,7 +48,7 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0016](0016-bordoes-de-abertura-e-final.md) | Bordões de abertura e de final na biblioteca | Aceita |
 | [0017](0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md) | Troca de imagem rápida e chat que acerta a cena | Aceita |
 | [0018](0018-legenda-sincronizada-com-a-voz.md) | Legenda sincronizada com a voz | Aceita |
-| [0019](0019-roteiro-com-argumento-e-tons-proprios.md) | Roteiro com argumento e tons próprios | Aceita |
+| [0019](0019-roteiro-com-argumento-e-tons-proprios.md) | Roteiro com argumento e tons próprios | Substituída em parte por 0031 |
 | [0020](0020-imagens-especificas-memes-e-zoom.md) | Imagens específicas, memes e zoom na medida | Aceita |
 | [0021](0021-ideias-a-partir-do-desempenho.md) | Ideias de vídeo a partir do que funcionou no Instagram e no YouTube | Aceita |
 | [0022](0022-imagens-da-web-e-controles-da-cena.md) | Imagens só da web, sem biblioteca de imagens, e controles à mão na cena | Aceita |
@@ -59,3 +59,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0027](0027-debate-das-ias-antes-de-criar.md) | Duas IAs debatem os temas antes de criar o vídeo | Substituída em parte por 0030 |
 | [0028](0028-variedade-nos-temas-do-debate.md) | Variedade nos temas do debate: obra, personagem, hype e uma aposta do nicho | Aceita |
 | [0030](0030-debate-em-rodadas-com-veto.md) | Debate em rodadas de temas, com 5 s para o criador vetar | Aceita |
+| [0031](0031-tons-editados-no-lugar.md) | Tons editados no lugar, sem "duplicar e editar" | Aceita |

@@ -10,7 +10,6 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## A fazer
 
-- [ ] Tons: só "Editar", sem "Duplicar e editar" nos tons que vêm com o app (contraria o 3A do [ADR 0019](docs/decisions/0019-roteiro-com-argumento-e-tons-proprios.md); decidir como antes)
 - [ ] Clipes do YouTube nos momentos marcantes: o roteiro marca 1 ou 2 cenas, a montagem busca, baixa e escolhe o trecho com visão (ADR 0029)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
@@ -43,6 +42,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-14 · Tons só com "Editar": os 4 que vêm com o app viram arquivos em `data/tones/` (mesmos ids) e são editados no lugar, sem cópia; continuam sem poder ser apagados ([ADR 0031](docs/decisions/0031-tons-editados-no-lugar.md))
 - [x] 2026-10-14 · Temas com "tchan" no debate: opinião forte e polêmica, pelo menos metade com fanservice (de preferência personagens mulheres, só adultas), nada com cara de notícia; e o "🔥 em alta" vale para o tema, não para a obra (adendo ao [ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md))
 - [x] 2026-10-13 · Debate em rodadas: se as duas recusam os 4 temas (ou as 6 falas acabam sem acordo), vêm 4 novos, até 3 rodadas; depois do acordo, 5 s para você vetar o tema (elas seguem debatendo os outros) e "■ Parar debate" ([ADR 0030](docs/decisions/0030-debate-em-rodadas-com-veto.md))
 - [x] 2026-10-13 · Mais fanart nas imagens: a IA de visão vê 6 sugestões por cena (3 da web e 3 fanarts do Danbooru) e prefere arte bem desenhada e chamativa (e ousada, com "Imagens sugestivas" ligada) ; a tela Trocar imagem alterna web e fanart (adendo ao [ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))

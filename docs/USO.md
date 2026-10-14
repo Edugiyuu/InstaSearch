@@ -23,7 +23,7 @@ O caminho de um vídeo, tela por tela, as outras telas do app e um glossário do
 ### 1. Novo vídeo
 
 - **Tema** ("Por que o Luffy nunca mata ninguém?"), **estilo** (Comentário de anime, Explicativo, Curiosidades, História, Ranking, Edit, POV ou um seu), **duração** (15 a 40 s) e **tom**.
-- **Tons** são o jeito de falar do roteiro: vêm *Polêmico*, *Curioso*, *Mistério* e *Papo reto*, e você cria os seus (à mão ou descrevendo para a IA) em **Biblioteca → Tons** ([ADR 0019](decisions/0019-roteiro-com-argumento-e-tons-proprios.md)).
+- **Tons** são o jeito de falar do roteiro: vêm *Polêmico*, *Curioso*, *Mistério* e *Papo reto*, e você cria os seus (à mão ou descrevendo para a IA) em **Biblioteca → Tons** ([ADR 0019](decisions/0019-roteiro-com-argumento-e-tons-proprios.md)). Todos se editam ali mesmo, sem cópia, inclusive os 4 que vêm com o app, que só não podem ser apagados ([ADR 0031](decisions/0031-tons-editados-no-lugar.md)).
 - Já tem o texto? Marque **"Já tenho o texto da narração"**: a IA só divide em cenas, sem mudar nada.
 - **Gerar roteiro**: a IA faz até **4 buscas na web** atrás de provas e escreve na estrutura *gancho → tese → provas concretas → conclusão → chamada para comentar*. A tela mostra o que ela buscou e **qual IA escreveu** (selo azul = Gemini, laranja = Claude).
 

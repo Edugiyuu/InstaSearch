@@ -1,6 +1,6 @@
 # 0019 — Roteiro com argumento e tons próprios
 
-**Status:** Aceita · **Data:** 2026-10-06
+**Status:** Substituída em parte por [0031](0031-tons-editados-no-lugar.md) (os tons que vêm com o app passam a ser editados no lugar, sem "duplicar e editar") · **Data:** 2026-10-06
 
 ## Contexto
 

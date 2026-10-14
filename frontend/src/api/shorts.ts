@@ -442,7 +442,7 @@ export const shortsApi = {
   listTones: () => data<Tone[]>(api.get('/shorts/tones')),
   /** Tom embutido ou sem id: cria um novo (mudar um embutido gera uma cópia). */
   saveTone: (tone: Partial<Tone>) =>
-    data<Tone>(tone.builtIn || !tone.id ? api.post('/shorts/tones', tone) : api.put(`/shorts/tones/${tone.id}`, tone)),
+    data<Tone>(!tone.id ? api.post('/shorts/tones', tone) : api.put(`/shorts/tones/${tone.id}`, tone)),
   deleteTone: (id: string) => api.delete(`/shorts/tones/${id}`),
   /** A IA sugere nome, resumo e instrução a partir da descrição; nada é salvo. */
   suggestTone: (description: string, example?: string) =>

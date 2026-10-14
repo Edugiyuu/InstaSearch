@@ -4,11 +4,12 @@ import { Spinner, useToast } from '../components/flow'
 import ToneEditor from '../components/ToneEditor'
 import { useTones } from '../hooks/useShorts'
 
-const origin = (t: Tone) => (t.builtIn ? 'vem com o app' : t.createdBy === 'ia' ? 'sugerido pela IA' : 'escrito por você')
+const origin = (t: Tone) =>
+  t.builtIn ? (t.updatedAt ? 'vem com o app, editado por você' : 'vem com o app') : t.createdBy === 'ia' ? 'sugerido pela IA' : 'escrito por você'
 
 /**
- * Tons do roteiro (ADR 0019): como a narração fala e argumenta. Os embutidos não mudam
- * (editar cria uma cópia); os seus podem ser editados e apagados.
+ * Tons do roteiro (ADR 0019): como a narração fala e argumenta. Todos são editados no lugar, sem cópia
+ * (ADR 0031); só os que vêm com o app não podem ser apagados, porque o app usa alguns como padrão.
  */
 function ToneLibrary() {
   const { tones, setTones, loaded, error } = useTones()
@@ -51,7 +52,7 @@ function ToneLibrary() {
             <p className="tone-summary">{t.summary}</p>
             <p className="tone-guide">{t.guide}</p>
             <div className="act-row">
-              <button className="act" onClick={() => setEditing(t)}>{t.builtIn ? 'Duplicar e editar' : 'Editar'}</button>
+              <button className="act" onClick={() => setEditing(t)}>Editar</button>
               {!t.builtIn && <button className="act" onClick={() => remove(t)}>Apagar</button>}
             </div>
           </article>
