@@ -46,8 +46,12 @@ resumeTranscriptions().catch(error => logger.warn(`⚠️ Não consegui retomar 
 // ...e o que a criação autônoma deixou pela metade vira "Continuar" (ADR 0026)
 const { markInterrupted } = await import('./services/shorts/autopilot.js')
 markInterrupted().catch(error => logger.warn(`⚠️ Não consegui marcar a criação automática interrompida: ${error.message}`))
-const { markInterruptedDebates } = await import('./services/ideas/debate.js')
+const { markInterruptedDebates, unlinkDeletedProjects } = await import('./services/ideas/debate.js')
 markInterruptedDebates().catch(error => logger.warn(`⚠️ Não consegui marcar os debates interrompidos: ${error.message}`))
+// ...e o que ainda aponta para projetos apagados some da tela Ideias
+const { discardIdeasWithoutProject } = await import('./services/ideas/ideas.js')
+discardIdeasWithoutProject().catch(error => logger.warn(`⚠️ Não consegui tirar as ideias de projetos apagados: ${error.message}`))
+unlinkDeletedProjects().catch(error => logger.warn(`⚠️ Não consegui tirar os links de projetos apagados dos debates: ${error.message}`))
 
 // Root route
 app.get('/', (req: Request, res: Response) => {

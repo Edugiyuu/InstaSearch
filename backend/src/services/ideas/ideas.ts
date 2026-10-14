@@ -65,6 +65,20 @@ export async function deleteIdea(id: string) {
   await storage.delete(id)
 }
 
+/**
+ * A ideia cujo projeto foi apagado sai de "Viraram vídeo" e vira descartada: some da tela, mas a IA
+ * continua lendo o tema (com o motivo) e não sugere o mesmo de novo. Confere todas: roda depois de
+ * apagar um projeto e ao subir o servidor (pega as que ficaram de antes).
+ */
+export async function discardIdeasWithoutProject() {
+  const alive = new Set((await listProjects()).map(p => p.id))
+  const orphans = (await storage.findAll()).filter(i => i.status === 'feita' && i.projectId && !alive.has(i.projectId))
+  const now = new Date().toISOString()
+  for (const idea of orphans) {
+    await storage.save({ ...idea, status: 'descartada', discardReason: 'o vídeo foi apagado', projectId: undefined, updatedAt: now })
+  }
+}
+
 function section(title: string, lines: string[], empty?: string) {
   if (!lines.length) return empty ? `## ${title}\n${empty}` : ''
   return `## ${title}\n${lines.join('\n')}`

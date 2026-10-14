@@ -64,6 +64,11 @@ export async function continueJob(projectId: string) {
   return enqueue({ projectId, ideaId: project.autopilot.ideaId, title: project.title })
 }
 
+/** O projeto foi apagado: a fila esquece os jobs terminados dele (o que está rodando termina em erro sozinho). */
+export function forgetProjectJobs(projectId: string) {
+  for (const job of jobs.filter(j => j.projectId === projectId && !ACTIVE.includes(j.stage))) jobs.splice(jobs.indexOf(job), 1)
+}
+
 function enqueue(fields: Partial<AutopilotJob>) {
   const now = new Date().toISOString()
   const job: AutopilotJob = { id: `job_${nanoid(8)}`, stage: 'fila', startedAt: now, updatedAt: now, ...fields }

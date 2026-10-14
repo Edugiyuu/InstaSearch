@@ -384,6 +384,14 @@ export async function linkProject(id: string, projectId: string) {
   return update(debate, { projectId })
 }
 
+/** Tira o link "Abrir o vídeo" dos debates cujo projeto foi apagado (depois de apagar e ao subir o servidor). */
+export async function unlinkDeletedProjects() {
+  const alive = new Set((await listProjects()).map(p => p.id))
+  for (const d of await storage.findAll()) {
+    if (d.projectId && !alive.has(d.projectId)) await update(d, { projectId: undefined })
+  }
+}
+
 /** Ao subir o servidor: um debate que estava rodando parou junto (a fila é em memória). */
 export async function markInterruptedDebates() {
   for (const d of await storage.findAll()) {

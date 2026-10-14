@@ -21,6 +21,9 @@ import * as catchphrases from '../services/shorts/catchphrases.js'
 import { fetchThumb, searchWebImages } from '../services/shorts/imageSearch.js'
 import { ensureWhisper, whisperStatus } from '../services/shorts/transcription.js'
 import * as tones from '../services/shorts/tones.js'
+import { forgetProjectJobs } from '../services/shorts/autopilot.js'
+import { discardIdeasWithoutProject } from '../services/ideas/ideas.js'
+import { unlinkDeletedProjects } from '../services/ideas/debate.js'
 import { suggestTone } from '../services/shorts/shortsAI.js'
 import { FRAMING_CHOICES, type FramingChoice } from '../services/shorts/types.js'
 
@@ -90,6 +93,9 @@ export const updateProject = asyncHandler(async (req: Request, res: Response) =>
 
 export const deleteProject = asyncHandler(async (req: Request, res: Response) => {
   await projects.deleteProject(req.params.id)
+  // a tela Ideias não pode continuar apontando para o projeto apagado
+  forgetProjectJobs(req.params.id)
+  await Promise.all([discardIdeasWithoutProject(), unlinkDeletedProjects()])
   res.json({ success: true })
 })
 
