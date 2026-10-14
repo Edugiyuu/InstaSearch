@@ -41,7 +41,7 @@ const ROLES: Record<Speaker, { name: string; focus: string }> = {
   roteirista: {
     name: 'Roteirista',
     focus:
-      'o vídeo em si: se o gancho prende nos 2 primeiros segundos, se o tema rende o vídeo inteiro com provas concretas, se dá polêmica para as pessoas comentarem e se dá para achar imagens boas',
+      'o vídeo em si: se o tema tem "tchan" (uma opinião forte que dá vontade de discordar, ou fanservice, de preferência com uma personagem mulher; tema com cara de notícia ou de resenha é fraco), se o gancho prende nos 2 primeiros segundos, se o tema rende o vídeo inteiro com provas concretas e se dá para achar imagens chamativas',
   },
 }
 const other = (s: Speaker): Speaker => (s === 'estrategista' ? 'roteirista' : 'estrategista')
@@ -320,6 +320,8 @@ ${debate.messages.length ? transcript(debate.messages) : '(ninguém falou ainda)
       : 'Abra o debate: diga qual tema você defende e por quê, e o ponto fraco dos outros.'
   }
 - Critique de verdade: um tema só passa se for bom o bastante para gerar comentários, compartilhamentos e retenção neste canal, com este público. Use os números e os comentários acima.
+- O criador quer temas com "tchan": opinião forte e polêmica, de preferência com fanservice de uma personagem mulher. Um tema com cara de notícia ou de resenha ("o episódio X dividiu os fãs") é fraco: recusem, ou ajustem para uma opinião forte sobre o mesmo assunto.
+- Desconfiem do "em alta": ele vale para o tema, não para a obra. Um tema que funcionaria igual há um ano não ganha pontos por ser do momento.
 - Pese a variedade: o canal não deve repetir a obra dos últimos vídeos nem viver só de hype. Um tema marcado como APOSTA é de uma obra que o canal nunca tratou: aceite-o só se o assunto está mesmo bombando e combina com quem segue o canal.
 - Fale como numa conversa, em 2 a 4 frases, sem listas e sem markdown. Cite os temas pelo número. Pode sugerir um ajuste num tema (outro gancho, outro recorte), desde que continue sendo o mesmo assunto.
 - "vote": o número do tema que você aceita como bom o suficiente para virar vídeo agora, ou null se nenhum destes temas serve. O vídeo só é criado quando as duas votam no mesmo tema. Se as duas votarem null uma depois da outra, ${

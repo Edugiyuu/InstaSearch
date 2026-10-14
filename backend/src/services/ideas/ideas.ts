@@ -80,7 +80,7 @@ export async function brainstorm(input: { seed?: string; request?: string }) {
 }
 
 /** A pesquisa do debate (ADR 0028): o que acontece nas obras do canal e o que está viralizando no nicho. */
-const RESEARCH_DEBATE = `${RESEARCH} Pesquise também o que está viralizando AGORA no nicho do canal (o mesmo tipo de conteúdo dos vídeos dele, por exemplo anime, desenho, games e cultura geek), mesmo fora das obras que o canal já tratou: trends de fãs, memes, versões alternativas de personagens (como a "Malfoid", a versão mulher do Draco Malfoy), polêmicas e estreias de que o público está falando.`
+const RESEARCH_DEBATE = `${RESEARCH} Pesquise também o que está viralizando AGORA no nicho do canal (o mesmo tipo de conteúdo dos vídeos dele, por exemplo anime, desenho, games e cultura geek), mesmo fora das obras que o canal já tratou: trends de fãs, memes, versões alternativas de personagens (como a "Malfoid", a versão mulher do Draco Malfoy), polêmicas e estreias de que o público está falando. E o que os fãs estão discutindo sobre personagens mulheres: disputas de quem é a mais bonita ou a melhor, enquetes de popularidade, designs novos, cosplays e fanarts que viralizaram.`
 
 /**
  * As candidatas do debate das IAs (ADR 0027 e 0028): um brainstorm próprio, sem tema, que não grava nada
@@ -108,7 +108,12 @@ export async function brainstormCandidates(
 - Cada ideia é de uma obra diferente.
 - Não use a personagem principal de nenhum dos 3 últimos vídeos, nem uma obra que já tem 2 dos 4 últimos.
 - A maioria das ideias é do que está em alta agora, mas pelo menos 2 são atemporais: uma análise, comparação ou curiosidade que não depende da notícia da semana.
+- "Em alta" é o TEMA, não a obra: só marque "alta" se o tema fala de algo que aconteceu nas últimas semanas (um episódio, capítulo, anúncio, design ou trend novo) e a pesquisa confirmou. Teste: se o tema funcionaria igual há um ano, ele é "atemporal", mesmo que a obra esteja em evidência (o passado do Gaara é atemporal, mesmo com Naruto voltando).
 - Fora isso, fique nas obras que o canal já fala. A exceção é UMA ideia de aposta ("bet": true): algo que está bombando agora no mesmo nicho do canal, mesmo numa obra que ele nunca tratou (uma trend de fãs, um meme, uma versão alternativa de personagem). Só se a pesquisa confirmou que está bombando, e nunca de outro nicho (nada de culinária num canal de anime).`,
+    `Regras de apelo (os temas de antes saíam com cara de notícia, e o criador quer temas com "tchan"):
+- Cada tema é uma OPINIÃO FORTE que toma um lado e divide o público, do tipo que dá vontade de comentar para discordar: "A Hinata é a personagem mais desperdiçada de Naruto", "A Nami pós-time-skip é o melhor design de One Piece, e não é por acaso". Nada com cara de notícia ou de resenha: "o episódio X dividiu os fãs", "a recepção de Y no Japão", "a adaptação de Z está boa?". Uma novidade pode ser o gatilho, mas o tema é a opinião sobre ela, não a notícia.
+- Pelo menos metade das ideias tem fanservice, de preferência com uma personagem mulher em destaque: beleza, design, visual novo, cenas marcantes dela, disputa de quem é a mais bonita ou a melhor, ship, versão alternativa. Sempre junto de uma opinião forte, nunca só "olha como ela é bonita". Só personagens adultas; nada sexual explícito.
+- O "hook" provoca: abre com a opinião ou com uma pergunta que a pessoa quer responder, nunca com o resumo de um fato.`,
   ]
     .filter(Boolean)
     .join('\n\n')

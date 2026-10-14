@@ -52,3 +52,20 @@ O usuário escolheu A, B e D da proposta, com duas condições dele.
   - A personagem é comparada pelo nome: um apelido que não aparece no título ("Senhorita Tornado") passa pelo filtro.
   - A aposta pode cair numa obra que o usuário não conhece, o mesmo risco do "Firefly Wedding", agora limitado a uma vaga marcada.
 - **Revisar quando:** os vídeos de aposta forem bem abaixo da mediana (tirar a vaga ou deixá-la mais rara); o filtro deixar o debate sem temas com frequência (afrouxar para 2 vídeos); ou o canal sentir falta de repetir um sucesso logo depois (abrir uma exceção para "parte 2").
+
+## Adendo (2026-10-13): temas com "tchan" e o "em alta" do tema
+
+Os temas saíam com cara de notícia ("o episódio 4 da 3ª temporada de Jujutsu Kaisen foi odiado no Japão", "o arco de Elbaf está fazendo justiça ao mangá?"). E o "em alta" marcava a **obra**, não o tema: "o passado do Gaara justifica o que ele fez?" veio "em alta" porque "Naruto vai ter episódios novos em 2026". O usuário: "quero um tchan nos temas", escolhendo **opinião forte e polêmica, com fanservice (de preferência com mulheres)**.
+
+- **No brainstorm do debate** (`brainstormCandidates`), as regras de apelo:
+  - cada tema é uma opinião forte que toma um lado ("A Hinata é a personagem mais desperdiçada de Naruto"), nunca notícia ou resenha;
+  - pelo menos metade tem fanservice, de preferência com uma personagem mulher em destaque (beleza, design, cenas, quem é a mais bonita, ship, versão alternativa), sempre junto de uma opinião. **Só personagens adultas e nada sexual explícito**, a mesma linha do Danbooru (nunca "questionável" nem "explícito");
+  - o gancho abre com a opinião, não com um fato.
+
+  A pesquisa também procura o que os fãs discutem sobre personagens mulheres: enquetes, designs, cosplays e fanarts virais.
+- **"Em alta" é o tema:** só vale se o tema fala de algo das últimas semanas que a pesquisa confirmou. O teste: se o tema funcionaria igual há um ano, é atemporal.
+- **No debate**, a Roteirista cobra o tchan, e as duas recusam (ou ajustam) temas com cara de notícia e desconfiam do "em alta".
+- **Ficou só no debate:** o brainstorm da tela Ideias, que o usuário pede à mão, continua como estava.
+- **Ficou de fora:** conferir o "em alta" no código, com a IA dizendo qual foi o acontecimento recente. Ela poderia escrever "Naruto volta em 2026" e passar do mesmo jeito; o teste do "há um ano" no pedido ataca a confusão direto.
+- **Imagens:** com "Imagens sugestivas" desligada (o padrão), um tema de fanservice ganha imagens mais comportadas.
+- **Revisar quando:** os vídeos de fanservice forem abaixo da mediana, ou os temas virarem todos "a mais bonita" (aí, limitar a metade no código).
