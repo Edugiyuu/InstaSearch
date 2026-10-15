@@ -201,7 +201,7 @@
   }
 }
 
-/* Marcas do tema (ADR 0028): a obra, em alta × atemporal e a aposta */
+/* Marcas do tema (ADR 0028): a obra, em alta × atemporal, a aposta e a volta (ADR 0033) */
 .dc-tags {
   display: flex;
   flex-wrap: wrap;
@@ -225,6 +225,11 @@
 .dc-tag.bet {
   background: var(--success-soft);
   color: var(--success);
+}
+
+.dc-tag.revisit {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .dc-rejected {

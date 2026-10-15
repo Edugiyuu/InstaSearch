@@ -47,6 +47,11 @@ function Topics({ ideas, messages, chosen, vetoed = [] }: { ideas: Idea[]; messa
                     🎲 aposta
                   </span>
                 )}
+                {idea.revisit && (
+                  <span className="dc-tag revisit" title={`${idea.character ?? 'A personagem'} já deu views no canal; agora com um assunto novo`}>
+                    🔁 volta
+                  </span>
+                )}
               </span>
             </span>
             {out ? (

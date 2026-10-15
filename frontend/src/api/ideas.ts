@@ -28,6 +28,8 @@ export interface Idea {
   trend?: 'alta' | 'atemporal'
   /** Aposta: algo bombando no nicho, numa obra que o canal nunca tratou. */
   bet?: boolean
+  /** Volta: uma personagem de um vídeo acima da mediana, com um assunto novo (ADR 0033). */
+  revisit?: boolean
   status: IdeaStatus
   discardReason?: string
   projectId?: string

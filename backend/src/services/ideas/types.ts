@@ -38,6 +38,8 @@ export interface Idea {
   trend?: Trend
   /** Aposta: algo bombando no nicho do canal, mesmo numa obra que o canal nunca tratou (ADR 0028). */
   bet?: boolean
+  /** Volta: uma personagem de um vídeo acima da mediana, com um assunto novo (ADR 0033). */
+  revisit?: boolean
   status: IdeaStatus
   /** Por que o usuário descartou ("já fiz", "não curto"); entra nos próximos brainstorms. */
   discardReason?: string

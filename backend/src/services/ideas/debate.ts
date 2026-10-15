@@ -17,7 +17,7 @@ import type { ShortProject } from '../shorts/types.js'
 import { buildRefs, commentLine, videoLine } from './clean.js'
 import { brainstormCandidates, listIdeas, storeIdea } from './ideas.js'
 import type { Debate, DebateMessage, DebateRound, Idea, RoundEnd, Speaker } from './types.js'
-import { pickCandidates, varietyLines, type RecentVideo } from './variety.js'
+import { aboveMedian, pickCandidates, varietyLines, type RecentVideo } from './variety.js'
 
 /** No máximo 6 falas por rodada, 3 de cada (ADR 0027, 2A). */
 export const MAX_TURNS = 6
@@ -36,7 +36,7 @@ const ROLES: Record<Speaker, { name: string; focus: string }> = {
   estrategista: {
     name: 'Estrategista',
     focus:
-      'os números e o público do canal: o que ficou acima ou abaixo da mediana, o que os comentários pedem, se o assunto já foi feito, se o tema fala com quem já segue o canal e a variedade (repetir a obra ou a personagem dos últimos vídeos cansa o público, mesmo que tenha ido bem, e o canal precisa equilibrar temas em alta com atemporais)',
+      'os números e o público do canal: o que ficou acima ou abaixo da mediana, o que os comentários pedem, se o assunto já foi feito, se o tema fala com quem já segue o canal e a variedade (voltar de vez em quando a uma personagem que deu views, com um ângulo novo, é bom; repetir o mesmo ângulo, ou a mesma personagem toda hora, cansa o público, e o canal precisa equilibrar temas em alta com atemporais)',
   },
   roteirista: {
     name: 'Roteirista',
@@ -214,14 +214,19 @@ function refusedThemes(debate: Debate) {
   )
 }
 
-/** Os vídeos feitos, do mais novo para o mais velho, com a obra e (nos criados sozinhos) o "em alta" da ideia. */
+/**
+ * Os vídeos feitos, do mais novo para o mais velho, com a obra, (nos criados sozinhos) o "em alta" da ideia
+ * e, nos já medidos, se ficaram acima da mediana de visualizações (ADR 0033).
+ */
 async function recentVideos(projects: ShortProject[]): Promise<RecentVideo[]> {
-  const ideas = new Map((await listIdeas()).map(i => [i.id, i]))
+  const [ideaList, metrics] = await Promise.all([listIdeas(), listMetrics()])
+  const ideas = new Map(ideaList.map(i => [i.id, i]))
+  const above = aboveMedian(metrics.videos)
   return [...projects]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map(p => {
       const idea = p.autopilot?.ideaId ? ideas.get(p.autopilot.ideaId) : undefined
-      return { title: p.title, theme: p.theme, work: p.subject || idea?.work, trend: idea?.trend }
+      return { title: p.title, theme: p.theme, work: p.subject || idea?.work, trend: idea?.trend, above: above.get(p.id) }
     })
 }
 
@@ -236,6 +241,8 @@ async function candidates(projects: ShortProject[], recent: RecentVideo[], refus
     channel: projects.filter(p => !p.autopilot).map(p => p.title),
     done: projects.map(p => p.title),
     recent: varietyLines(recent),
+    // as personagens destes vídeos podem voltar, com assunto novo (ADR 0033)
+    champions: recent.filter(v => v.above).map(v => v.title),
     avoid: refused,
   }
   let picked = pickCandidates(await brainstormCandidates(input, BRAINSTORM), recent, CANDIDATES)
@@ -270,9 +277,14 @@ async function channelContext(projects: ShortProject[], recent: RecentVideo[]) {
     .join('\n\n')
 }
 
-/** As marcas do tema para as IAs: obra, em alta ou atemporal, aposta. */
+/** As marcas do tema para as IAs: obra, em alta ou atemporal, aposta, volta. */
 const tags = (i: Idea) => {
-  const t = [i.work, i.trend === 'alta' ? 'em alta' : i.trend === 'atemporal' ? 'atemporal' : '', i.bet ? 'APOSTA: fora das obras do canal, mas do mesmo nicho e bombando agora' : '']
+  const t = [
+    i.work,
+    i.trend === 'alta' ? 'em alta' : i.trend === 'atemporal' ? 'atemporal' : '',
+    i.bet ? 'APOSTA: fora das obras do canal, mas do mesmo nicho e bombando agora' : '',
+    i.revisit ? `VOLTA: ${i.character ?? 'a personagem'} já deu views no canal, agora com um assunto novo` : '',
+  ]
   const text = t.filter(Boolean).join(' · ')
   return text ? ` [${text}]` : ''
 }
@@ -322,7 +334,7 @@ ${debate.messages.length ? transcript(debate.messages) : '(ninguém falou ainda)
 - Critique de verdade: um tema só passa se for bom o bastante para gerar comentários, compartilhamentos e retenção neste canal, com este público. Use os números e os comentários acima.
 - O criador quer temas com "tchan": opinião forte e polêmica, de preferência com fanservice de uma personagem mulher. Um tema com cara de notícia ou de resenha ("o episódio X dividiu os fãs") é fraco: recusem, ou ajustem para uma opinião forte sobre o mesmo assunto.
 - Desconfiem do "em alta": ele vale para o tema, não para a obra. Um tema que funcionaria igual há um ano não ganha pontos por ser do momento.
-- Pese a variedade: o canal não deve repetir a obra dos últimos vídeos nem viver só de hype. Um tema marcado como APOSTA é de uma obra que o canal nunca tratou: aceite-o só se o assunto está mesmo bombando e combina com quem segue o canal.
+- Pese a variedade: o canal não deve repetir a obra dos últimos vídeos nem viver só de hype. Um tema marcado como APOSTA é de uma obra que o canal nunca tratou: aceite-o só se o assunto está mesmo bombando e combina com quem segue o canal. Um tema marcado como VOLTA traz de novo uma personagem que deu views no canal (o app já conferiu que ela não está cansada): aceite-o só se o assunto é mesmo novo, com outra pergunta ou outro recorte, e não um vídeo que o canal já fez com outro título.
 - Fale como numa conversa, em 2 a 4 frases, sem listas e sem markdown. Cite os temas pelo número. Pode sugerir um ajuste num tema (outro gancho, outro recorte), desde que continue sendo o mesmo assunto.
 - "vote": o número do tema que você aceita como bom o suficiente para virar vídeo agora, ou null se nenhum destes temas serve. O vídeo só é criado quando as duas votam no mesmo tema. Se as duas votarem null uma depois da outra, ${
     finalRound ? 'o debate acaba sem vídeo (esta é a última rodada)' : `estes temas são trocados por ${CANDIDATES} novos`

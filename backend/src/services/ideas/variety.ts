@@ -2,9 +2,12 @@
  * Variedade nos temas do debate (ADR 0028), sem rede nem disco (testado em variety.test.ts).
  *
  * A IA pode ignorar um "varie a obra"; aqui o código confere: tira as ideias cuja personagem acabou de
- * aparecer ou cuja obra já tem vídeos demais, fica com uma ideia por obra e sorteia a ordem.
+ * aparecer ou cuja obra já tem vídeos demais, fica com uma ideia por obra e sorteia a ordem. Uma das
+ * ideias pode ser a volta de uma personagem que deu views, com as regras dela (ADR 0033).
  */
 
+import { median } from '../insights/compare.js'
+import type { VideoMetrics } from '../insights/types.js'
 import type { Idea, Trend } from './types.js'
 
 /** A personagem não volta enquanto estiver num destes últimos vídeos. */
@@ -12,6 +15,9 @@ export const CHARACTER_WINDOW = 3
 /** A obra descansa quando já tem `WORK_LIMIT` dos últimos `WORK_WINDOW` vídeos. */
 export const WORK_WINDOW = 4
 export const WORK_LIMIT = 2
+/** Não sugar (ADR 0033): a personagem que já tem `REST_LIMIT` dos últimos `REST_WINDOW` vídeos descansa. */
+export const REST_WINDOW = 8
+export const REST_LIMIT = 3
 
 /** Um vídeo já feito, do mais novo para o mais velho. */
 export interface RecentVideo {
@@ -20,6 +26,8 @@ export interface RecentVideo {
   /** A obra (o `subject` do projeto, ADR 0024); os projetos antigos não têm. */
   work?: string
   trend?: Trend
+  /** Visualizações acima (true) ou abaixo (false) da mediana; sem valor = ainda não medido (ADR 0033). */
+  above?: boolean
 }
 
 export interface Rejected {
@@ -54,13 +62,58 @@ export function mentions(text: string, character?: string) {
     .some(w => words.has(w))
 }
 
+const isAbout = (v: RecentVideo, character?: string) => mentions(`${v.title} ${v.theme ?? ''}`, character)
+
+/** A personagem já apareceu demais: descansa, mesmo sendo campeã (ADR 0033, "não sugar"). */
+function restReason(character: string | undefined, recent: RecentVideo[]) {
+  const count = recent.slice(0, REST_WINDOW).filter(v => isAbout(v, character)).length
+  return count >= REST_LIMIT ? `${character} descansa: já tem ${count} dos ${REST_WINDOW} últimos vídeos` : null
+}
+
 /** Por que a ideia não pode entrar agora, ou null se pode. */
 export function blockReason(idea: Pick<Idea, 'work' | 'character'>, recent: RecentVideo[]) {
-  const byCharacter = recent.slice(0, CHARACTER_WINDOW).find(v => mentions(`${v.title} ${v.theme ?? ''}`, idea.character))
+  const byCharacter = recent.slice(0, CHARACTER_WINDOW).find(v => isAbout(v, idea.character))
   if (byCharacter) return `${idea.character} está num dos ${CHARACTER_WINDOW} últimos vídeos ("${byCharacter.title}")`
+  const rest = restReason(idea.character, recent)
+  if (rest) return rest
   const sameWorkCount = recent.slice(0, WORK_WINDOW).filter(v => sameWork(v.work, idea.work)).length
   if (sameWorkCount >= WORK_LIMIT) return `${idea.work} já tem ${sameWorkCount} dos ${WORK_WINDOW} últimos vídeos`
   return null
+}
+
+/**
+ * Por que a volta (ADR 0033) não pode entrar, ou null se pode. Fica livre da janela de 3 vídeos e das
+ * regras da obra, mas a personagem precisa ter um vídeo acima da mediana, não pode ser a do último vídeo
+ * e descansa se já apareceu demais ou se o vídeo mais recente dela (dos medidos) ficou abaixo da mediana.
+ */
+export function revisitReason(idea: Pick<Idea, 'character'>, recent: RecentVideo[]) {
+  const c = idea.character
+  if (!c) return 'a volta precisa de uma personagem'
+  if (recent[0] && isAbout(recent[0], c)) return `${c} é a do último vídeo ("${recent[0].title}")`
+  const rest = restReason(c, recent)
+  if (rest) return rest
+  const measured = recent.filter(v => v.above !== undefined && isAbout(v, c))
+  if (!measured.some(v => v.above)) return `${c} não tem vídeo acima da mediana de visualizações`
+  if (!measured[0].above) return `${c} descansa: o vídeo mais recente dela ("${measured[0].title}") ficou abaixo da mediana`
+  return null
+}
+
+/**
+ * Quais projetos ficaram acima da mediana de visualizações (ADR 0033): a mediana é a dos vídeos da mesma
+ * plataforma com pelo menos uma foto fixa (o de hoje ainda não teve tempo) e sem os privados. Com Instagram
+ * e YouTube, basta ir bem num. Os vídeos sem projeto (feitos fora do app) ficam de fora.
+ */
+export function aboveMedian(videos: Pick<VideoMetrics, 'platform' | 'projectId' | 'privacy' | 'snapshots' | 'current'>[]) {
+  const measured = videos.filter(v => v.projectId && v.privacy !== 'private' && v.snapshots.length > 0)
+  const mid = new Map(
+    (['instagram', 'youtube'] as const).map(p => [p, median(measured.filter(v => v.platform === p).map(v => v.current.views))]),
+  )
+  const result = new Map<string, boolean>()
+  for (const v of measured) {
+    const above = v.current.views > (mid.get(v.platform) ?? Infinity)
+    result.set(v.projectId!, result.get(v.projectId!) || above)
+  }
+  return result
 }
 
 /** Embaralha (Fisher–Yates). `random` é trocável para o teste. */
@@ -75,12 +128,13 @@ export function shuffle<T>(items: T[], random = Math.random) {
 
 /**
  * Escolhe as `count` candidatas do debate entre as que o brainstorm trouxe (na ordem dele):
- * 1. tira as bloqueadas pela personagem ou pela obra;
- * 2. fica com uma por obra, e no máximo uma aposta;
- * 3. se todas as escolhidas forem "em alta" e sobrar uma atemporal, ela entra no lugar da última;
- * 4. sorteia a ordem (contra o viés de posição).
+ * 1. tira as bloqueadas pela personagem ou pela obra; a volta (`revisit`) segue as regras dela;
+ * 2. fica com uma por obra, no máximo uma aposta e no máximo uma volta (que não conta na obra);
+ * 3. a volta, se passou, sempre entra: é a vaga dela;
+ * 4. se todas as escolhidas forem "em alta" e sobrar uma atemporal, ela entra no lugar da última;
+ * 5. sorteia a ordem (contra o viés de posição).
  */
-export function pickCandidates<T extends Pick<Idea, 'theme' | 'work' | 'character' | 'trend' | 'bet'>>(
+export function pickCandidates<T extends Pick<Idea, 'theme' | 'work' | 'character' | 'trend' | 'bet' | 'revisit'>>(
   ideas: T[],
   recent: RecentVideo[],
   count: number,
@@ -89,13 +143,16 @@ export function pickCandidates<T extends Pick<Idea, 'theme' | 'work' | 'characte
   const rejected: Rejected[] = []
   const allowed: T[] = []
   for (const idea of ideas) {
-    const reason =
-      blockReason(idea, recent) ??
-      (allowed.some(a => sameWork(a.work, idea.work)) ? `outra ideia já é de ${idea.work}` : null) ??
-      (idea.bet && allowed.some(a => a.bet) ? 'já há uma aposta' : null)
+    const reason = idea.revisit
+      ? (revisitReason(idea, recent) ?? (allowed.some(a => a.revisit) ? 'já há uma volta' : null))
+      : (blockReason(idea, recent) ??
+        (allowed.some(a => !a.revisit && sameWork(a.work, idea.work)) ? `outra ideia já é de ${idea.work}` : null) ??
+        (idea.bet && allowed.some(a => a.bet) ? 'já há uma aposta' : null))
     if (reason) rejected.push({ theme: idea.theme, reason })
     else allowed.push(idea)
   }
+  // a volta vai na frente: não sobra nem é trocada pela atemporal (a ordem final é sorteada)
+  allowed.sort((a, b) => Number(!!b.revisit) - Number(!!a.revisit))
 
   const chosen = allowed.slice(0, count)
   const timeless = allowed.slice(count).find(i => i.trend === 'atemporal')
@@ -106,11 +163,13 @@ export function pickCandidates<T extends Pick<Idea, 'theme' | 'work' | 'characte
   return { chosen: shuffle(chosen, random), rejected }
 }
 
-/** A variedade dos últimos vídeos, para as duas IAs do debate pesarem (ADR 0028, D). */
-export function varietyLines(recent: RecentVideo[], size = 6) {
+const aboveText = (v: RecentVideo) => (v.above === undefined ? '' : v.above ? ' · acima da mediana' : ' · abaixo da mediana')
+
+/** A variedade dos últimos vídeos, para as duas IAs do debate pesarem (ADR 0028, D; e 0033, a mediana). */
+export function varietyLines(recent: RecentVideo[], size = REST_WINDOW) {
   const last = recent.slice(0, size)
   if (!last.length) return ''
-  const lines = last.map(v => `- ${v.title}${v.work ? ` · ${v.work}` : ''}${v.trend ? ` · ${v.trend === 'alta' ? 'em alta' : 'atemporal'}` : ''}`)
+  const lines = last.map(v => `- ${v.title}${v.work ? ` · ${v.work}` : ''}${v.trend ? ` · ${v.trend === 'alta' ? 'em alta' : 'atemporal'}` : ''}${aboveText(v)}`)
   const counts = new Map<string, number>()
   for (const v of last) if (v.work) counts.set(v.work, (counts.get(v.work) ?? 0) + 1)
   const repeated = [...counts].filter(([, n]) => n > 1).map(([w, n]) => `${n}× ${w}`)

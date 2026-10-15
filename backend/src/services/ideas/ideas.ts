@@ -103,10 +103,11 @@ const RESEARCH_DEBATE = `${RESEARCH} Pesquise também o que está viralizando AG
  * - `channel`: os títulos dos vídeos que o criador fez à mão: dizem as obras e o nicho do canal;
  * - `done`: todos os títulos já feitos (à mão e sozinho), para não repetir o assunto;
  * - `recent`: os mais recentes, com obra e "em alta", para variar;
+ * - `champions`: os títulos dos vídeos acima da mediana de visualizações, para a ideia de volta (ADR 0033);
  * - `avoid`: as ideias que o filtro tirou numa tentativa anterior ou que caíram numa rodada anterior do debate, com o motivo.
  */
 export async function brainstormCandidates(
-  input: { channel: string[]; done: string[]; recent: string; avoid?: { theme: string; reason: string }[] },
+  input: { channel: string[]; done: string[]; recent: string; champions?: string[]; avoid?: { theme: string; reason: string }[] },
   count: number,
 ) {
   const list = (titles: string[]) => titles.map(t => `- ${t}`).join('\n')
@@ -115,15 +116,17 @@ export async function brainstormCandidates(
     input.channel.length ? `Os vídeos que o criador fez (dizem as obras e o nicho do canal; o público veio por eles):\n${list(input.channel)}` : '',
     input.done.length ? `Assuntos que já viraram vídeo (não repita o assunto, mesmo com outro título):\n${list(input.done)}` : '',
     input.recent ? `Os últimos vídeos, do mais novo para o mais velho:\n${input.recent}` : '',
+    input.champions?.length ? `Os vídeos que ficaram acima da mediana de visualizações (a personagem deles pode ser a ideia de volta):\n${list(input.champions)}` : '',
     input.avoid?.length
       ? `Estas ideias já foram recusadas, pela regra de variedade, pelas IAs do debate ou pelo criador (não traga nenhuma delas nem parecidas):\n${input.avoid.map(a => `- ${a.theme} (${a.reason})`).join('\n')}`
       : '',
     `Regras de variedade (o app confere e descarta o que não cumprir):
 - Cada ideia é de uma obra diferente.
-- Não use a personagem principal de nenhum dos 3 últimos vídeos, nem uma obra que já tem 2 dos 4 últimos.
+- Não use a personagem principal de nenhum dos 3 últimos vídeos, nem uma obra que já tem 2 dos 4 últimos (a ideia de volta, abaixo, é a exceção).
 - A maioria das ideias é do que está em alta agora, mas pelo menos 2 são atemporais: uma análise, comparação ou curiosidade que não depende da notícia da semana.
 - "Em alta" é o TEMA, não a obra: só marque "alta" se o tema fala de algo que aconteceu nas últimas semanas (um episódio, capítulo, anúncio, design ou trend novo) e a pesquisa confirmou. Teste: se o tema funcionaria igual há um ano, ele é "atemporal", mesmo que a obra esteja em evidência (o passado do Gaara é atemporal, mesmo com Naruto voltando).
-- Fora isso, fique nas obras que o canal já fala. A exceção é UMA ideia de aposta ("bet": true): algo que está bombando agora no mesmo nicho do canal, mesmo numa obra que ele nunca tratou (uma trend de fãs, um meme, uma versão alternativa de personagem). Só se a pesquisa confirmou que está bombando, e nunca de outro nicho (nada de culinária num canal de anime).`,
+- Fora isso, fique nas obras que o canal já fala. A exceção é UMA ideia de aposta ("bet": true): algo que está bombando agora no mesmo nicho do canal, mesmo numa obra que ele nunca tratou (uma trend de fãs, um meme, uma versão alternativa de personagem). Só se a pesquisa confirmou que está bombando, e nunca de outro nicho (nada de culinária num canal de anime).
+- Até UMA ideia de volta ("revisit": true): uma personagem de um vídeo do canal que ficou acima da mediana de visualizações, com um assunto NOVO (outra pergunta, outro recorte, nunca o mesmo vídeo com outro título). Nessa ideia, a obra e a janela de 3 vídeos não contam, mas a personagem não pode ser a do último vídeo, nem uma que já tem 3 dos últimos 8 vídeos, nem uma cujo vídeo mais recente ficou abaixo da mediana: ela descansa. Voltar é bom de vez em quando; sugar a personagem até a última gota, não.`,
     `Regras de apelo (os temas de antes saíam com cara de notícia, e o criador quer temas com "tchan"):
 - Cada tema é uma OPINIÃO FORTE que toma um lado e divide o público, do tipo que dá vontade de comentar para discordar: "A Hinata é a personagem mais desperdiçada de Naruto", "A Nami pós-time-skip é o melhor design de One Piece, e não é por acaso". Nada com cara de notícia ou de resenha: "o episódio X dividiu os fãs", "a recepção de Y no Japão", "a adaptação de Z está boa?". Uma novidade pode ser o gatilho, mas o tema é a opinião sobre ela, não a notícia.
 - Pelo menos metade das ideias tem fanservice, de preferência com uma personagem mulher em destaque: beleza, design, visual novo, cenas marcantes dela, disputa de quem é a mais bonita ou a melhor, ship, versão alternativa. Sempre junto de uma opinião forte, nunca só "olha como ela é bonita". Só personagens adultas; nada sexual explícito.
@@ -193,7 +196,7 @@ Sugira ${count === 1 ? 'a melhor ideia de vídeo (uma só)' : `${count} ideias d
 - Cada ideia tem um porquê concreto ligado aos dados: cite em "videos" as etiquetas dos vídeos cujo desempenho a sustenta, em "comments" as dos comentários que a pedem, e em "web" o que a pesquisa encontrou. Só cite o que sustenta a ideia de verdade. Se a ideia vem só da pesquisa, diga isso no "why".
 ${
   opts.variety
-    ? '- Aprenda com o que foi acima da mediana, mas repita o FORMATO que deu certo (o tipo de pergunta, o tom, o recorte) com outra obra ou personagem, nunca o mesmo assunto. Pelo menos uma ideia atende um pedido dos comentários, se houver.'
+    ? '- Aprenda com o que foi acima da mediana: repita o FORMATO que deu certo (o tipo de pergunta, o tom, o recorte) com outra obra ou personagem, ou volte a uma personagem que deu views com um assunto novo (a ideia de volta). Nunca repita o mesmo assunto. Pelo menos uma ideia atende um pedido dos comentários, se houver.'
     : count === 1
     ? '- Prefira o que os números, os comentários ou a pesquisa sustentam, respeitando o que foi pedido acima sobre o assunto.'
     : '- Misture: ideias que repetem o que foi acima da mediana (mesmo assunto, personagem ou formato), pelo menos uma que atende um pedido dos comentários (se houver) e pelo menos uma atual, do que está acontecendo agora.'
@@ -202,11 +205,11 @@ ${
 - "theme" é escrito como o criador escreveria no campo "Sobre o que é o vídeo?": uma pergunta ou afirmação específica (ex.: "Por que o Luffy nunca mata ninguém em One Piece?"). Nada genérico.
 - "hook" é a primeira frase falada do vídeo, com até 15 palavras.
 - "duration": 15, 20, 30 ou 40 (segundos).
-- "work": o nome oficial completo da obra (ex.: "One-Punch Man", nunca "OPM"); "character": a personagem principal do tema (nome e sobrenome, se tiver), ou vazio se não houver uma; "trend": "alta" se o tema depende do que está acontecendo agora, ou "atemporal".${opts.variety ? '\n- "bet": true só na ideia de aposta; nas outras, false.' : ''}
+- "work": o nome oficial completo da obra (ex.: "One-Punch Man", nunca "OPM"); "character": a personagem principal do tema (nome e sobrenome, se tiver), ou vazio se não houver uma; "trend": "alta" se o tema depende do que está acontecendo agora, ou "atemporal".${opts.variety ? '\n- "bet": true só na ideia de aposta; "revisit": true só na ideia de volta; nas outras, false.' : ''}
 - "why": 2 ou 3 frases, citando os números quando houver ("o vídeo do Gojo foi 2,4× a mediana"). No "why", chame os vídeos pelo título e os comentários pelo texto: o criador não vê as etiquetas [V1] e [C1], que servem só para "videos" e "comments".
 
 Responda só com JSON:
-{ "ideas": [ { "theme": "...", "hook": "...", "styleId": "...", "toneId": "...", "duration": 30, "why": "...", "videos": ["V1"], "comments": ["C2"], "web": "o que a pesquisa encontrou, ou vazio", "work": "...", "character": "...", "trend": "alta"${opts.variety ? ', "bet": false' : ''} } ] }`
+{ "ideas": [ { "theme": "...", "hook": "...", "styleId": "...", "toneId": "...", "duration": 30, "why": "...", "videos": ["V1"], "comments": ["C2"], "web": "o que a pesquisa encontrou, ou vazio", "work": "...", "character": "...", "trend": "alta"${opts.variety ? ', "bet": false, "revisit": false' : ''} } ] }`
 
   const { data, ai } = await askJsonMeta<{ ideas?: RawIdea[] }>(prompt, { research: true, researchNote: opts.variety ? RESEARCH_DEBATE : RESEARCH })
   const cleaned = cleanIdeas(Array.isArray(data.ideas) ? data.ideas : [], refs, {

@@ -10,7 +10,6 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## A fazer
 
-- [ ] Volta de personagens que deram views no debate: uma vaga por debate para uma personagem de vídeo acima da mediana, com assunto novo; não pode ser a do último vídeo e descansa com 3 dos últimos 8 ou se o último vídeo dela ficou abaixo da mediana; as duas IAs passam a aceitar a volta ([ADR 0033](docs/decisions/0033-volta-de-personagens-que-deram-views.md))
 - [ ] Clipes do YouTube nos momentos marcantes: o roteiro marca 1 ou 2 cenas, a montagem busca, baixa e escolhe o trecho com visão (ADR 0029)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
@@ -18,6 +17,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Backlog
 
+- [ ] Revisão do roteiro no "Debater e criar um vídeo": depois do acordo, uma IA escreve o roteiro e a outra confere se é coeso, se faz sentido e se cumpre o tema debatido, antes da montagem (precisa de ADR como Proposta: quem escreve, quantas voltas, se confere os fatos na web, o que fazer sem aprovação)
 - [ ] "↻ Buscar de novo na web" troca todas as imagens sem desfazer (a montagem não entra no `undo` do projeto) e não pede confirmação; num projeto com todas as cenas travadas, não faz nada e não avisa
 - [ ] Uns 12 projetos antigos têm todas as imagens travadas pelo "Preencher automático" de antes do [ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), e não dá para separar das que o usuário escolheu
 - [ ] Personagem pelo apelido acha o errado no AniList: "Mob" vira "Mob no Haha" (a mãe dele), porque o nome procurado bate palavra por palavra; aí o Danbooru não traz nenhuma fanart do Mob (o nome completo, "Shigeo Kageyama", funciona)
@@ -43,6 +43,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-15 · Volta de personagens que deram views no debate: uma vaga (🔁 volta) para uma personagem de vídeo acima da mediana, com assunto novo, livre da janela de 3 vídeos e da regra da obra; não pode ser a do último vídeo e descansa se o vídeo mais recente dela ficou abaixo da mediana; qualquer personagem descansa com 3 dos últimos 8 vídeos ([ADR 0033](docs/decisions/0033-volta-de-personagens-que-deram-views.md))
 - [x] 2026-10-14 · Bordões personalizáveis: texto depois do clique e modelos (YouTube, Instagram, TikTok, Canal), áudio no "se inscreve", música do vídeo por baixo, animação de entrada e de clique, duração, texto do montado (animação e posição) e liga/desliga de foto, nome, frase e botão (ADR 0032)
 - [x] 2026-10-14 · Apagar um projeto limpa a tela Ideias: a ideia dele sai de "Viraram vídeo" e vira descartada ("o vídeo foi apagado"), para a IA não sugerir o mesmo tema; o debate perde o "Abrir o vídeo" e a fila do "Criar sozinho" esquece o job. Ao subir, o servidor confere as que ficaram de antes (eram 14)
 - [x] 2026-10-14 · Tons só com "Editar": os 4 que vêm com o app viram arquivos em `data/tones/` (mesmos ids) e são editados no lugar, sem cópia; continuam sem poder ser apagados ([ADR 0031](docs/decisions/0031-tons-editados-no-lugar.md))

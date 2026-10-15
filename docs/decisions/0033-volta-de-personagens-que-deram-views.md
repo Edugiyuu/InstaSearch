@@ -40,3 +40,11 @@ Com os vídeos de hoje: a Tatsumaki descansa (3 dos últimos 8), e Yuki Tsukumo,
   - A personagem continua comparada pelo nome no título e no tema (o mesmo limite do 0028: apelidos passam).
   - Os vídeos feitos à mão não têm a obra gravada (`subject`), então a regra da obra conta só pelos criados sozinhos; a personagem funciona em todos, porque é pelo título.
 - **Revisar quando:** as voltas ficarem abaixo da mediana (tirar a vaga ou apertar o limite), o debate escolher a volta quase sempre (deixar só a cada N vídeos), ou o canal tiver vídeos medidos suficientes para usar a razão com a mediana em vez das visualizações brutas.
+
+## Adendo (2026-10-15): detalhes da implementação
+
+- **A mediana usa só os vídeos com 1 dia ou mais** (os que têm a foto fixa de 1, 7 ou 28 dias), públicos, da mesma plataforma. Um vídeo de poucas horas ainda está juntando visualizações: contá-lo puxaria a mediana para baixo e marcaria a personagem dele como "abaixo" antes da hora. Com isso, hoje a mediana do Instagram é 1.350, e o Todo (1.343) fica logo abaixo: não volta, ao contrário do exemplo acima, que contou também os vídeos do dia.
+- **O "3 dos últimos 8" vale para qualquer tema**, não só para a volta: senão a personagem cansada entraria como tema comum, assim que saísse da janela de 3 vídeos.
+- **O "vídeo mais recente abaixo da mediana" vale só para a volta** (escolha do usuário): no tema comum, travaria para sempre uma personagem com um único vídeo fraco.
+- **O brainstorm recebe a lista dos vídeos acima da mediana**, porque as campeãs costumam ser mais antigas que os 8 últimos vídeos que ele vê.
+- **A volta sempre entra entre os 4 temas**, se passou nas regras (é a vaga dela); a ordem final continua sorteada.

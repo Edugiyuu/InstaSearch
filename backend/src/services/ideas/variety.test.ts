@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
-import { blockReason, mentions, pickCandidates, sameWork, shuffle, varietyLines, type RecentVideo } from './variety.js'
+import { aboveMedian, blockReason, mentions, pickCandidates, revisitReason, sameWork, shuffle, varietyLines, type RecentVideo } from './variety.js'
 import type { Trend } from './types.js'
 
 // os últimos vídeos de verdade em 13/10 (ADR 0028): três da Tatsumaki em seis
@@ -10,7 +10,7 @@ const recent: RecentVideo[] = [
   { title: 'Megumi vs Sukuna: E o Yuji?', work: 'Jujutsu Kaisen', trend: 'alta' },
 ]
 
-const idea = (theme: string, work: string, character?: string, trend: Trend = 'alta', bet = false) => ({ theme, work, character, trend, bet })
+const idea = (theme: string, work: string, character?: string, trend: Trend = 'alta', bet = false, revisit = false) => ({ theme, work, character, trend, bet, revisit })
 const noShuffle = () => 0.999 // com 0,999 o Fisher–Yates troca cada item com ele mesmo
 
 describe('variedade nos temas do debate (ADR 0028)', () => {
@@ -80,5 +80,98 @@ describe('variedade nos temas do debate (ADR 0028)', () => {
     const text = varietyLines(recent)
     expect(text).toContain('Obras repetidas nos últimos 4: 3× One-Punch Man')
     expect(text).toContain('2 de 4 (dos que têm a marca) foram de tema em alta.')
+  })
+})
+
+// os últimos vídeos de verdade em 14/10 (ADR 0033), com o "acima da mediana" dos já medidos
+const recent14: RecentVideo[] = [
+  { title: 'Em defesa da Yoruichi', work: 'Bleach' },
+  { title: 'Momo Ayase: mais que visual', work: 'Dandadan' },
+  { title: 'Tsunade, a Hokage mais forte', work: 'Naruto' },
+  { title: 'Aizen nunca foi bonzinho', work: 'Bleach' },
+  { title: 'Jujutsu Kaisen: Crítica Dividida?', work: 'Jujutsu Kaisen' },
+  { title: 'MAKIMA: MANIPULADORA OU VILÃ GENIAL?', work: 'Chainsaw Man' },
+  { title: 'Tatsumaki: Trauma ou Tirania?', work: 'One-Punch Man' },
+  { title: 'O passado de Tatsumaki', work: 'One-Punch Man', above: false },
+  { title: 'OPM S3: PIOR que a S2?', work: 'One-Punch Man', above: false },
+  { title: 'Tatsumaki: Heroína Odiada?', work: 'One-Punch Man', above: true },
+  { title: 'Edgerunners 2 muda tudo?' },
+  { title: 'Yuki Tsukumo: A Feiticeira Mais Ousada?', above: true },
+  { title: 'Todo e a vida em dois segundos', above: false },
+  { title: 'Kenjaku vs Yuki e Choso: Roteiro Salvou?', above: true },
+  { title: 'Quem mata o Gojo em 2v1', above: false },
+]
+
+describe('volta de personagens que deram views (ADR 0033)', () => {
+  it('a volta precisa de um vídeo acima da mediana', () => {
+    expect(revisitReason({ character: 'Yuki Tsukumo' }, recent14)).toBeNull()
+    expect(revisitReason({ character: 'Kenjaku' }, recent14)).toBeNull()
+    expect(revisitReason({ character: 'Aoi Todo' }, recent14)).toMatch(/não tem vídeo acima da mediana/)
+    expect(revisitReason({ character: 'Satoru Gojo' }, recent14)).toMatch(/não tem vídeo acima da mediana/)
+    expect(revisitReason({}, recent14)).toMatch(/precisa de uma personagem/)
+  })
+
+  it('nunca é a personagem do último vídeo, mas fica livre da janela de 3', () => {
+    expect(revisitReason({ character: 'Tsunade' }, [{ title: 'Tsunade, a Hokage mais forte', above: true }])).toMatch(/último vídeo/)
+    // a Makima está no 3º vídeo: como ideia comum, não entraria
+    const withMakima = [recent14[0], recent14[1], { ...recent14[5], above: true }]
+    expect(blockReason({ work: 'Chainsaw Man', character: 'Makima' }, withMakima)).toMatch(/3 últimos/)
+    expect(revisitReason({ character: 'Makima' }, withMakima)).toBeNull()
+  })
+
+  it('não suga: descansa com o último vídeo abaixo da mediana ou com 3 dos últimos 8', () => {
+    // "Heroína Odiada?" foi a campeã, mas "O passado de Tatsumaki" (o mais recente medido) ficou abaixo
+    expect(revisitReason({ character: 'Tatsumaki' }, recent14)).toMatch(/O passado de Tatsumaki.*abaixo da mediana/)
+    const three = [recent14[0], ...recent14.slice(6, 10)] // 3 da Tatsumaki nos últimos 8 (sem os 3 vídeos de hoje)
+    expect(revisitReason({ character: 'Tatsumaki' }, three)).toMatch(/3 dos 8 últimos/)
+    // e vale também para a ideia comum, fora da janela de 3
+    expect(blockReason({ work: 'Outra', character: 'Tatsumaki' }, [recent14[0], recent14[1], recent14[2], ...three.slice(1)])).toMatch(/descansa/)
+  })
+
+  it('uma volta só, que não conta na regra da obra e sempre entra', () => {
+    const jjk = [{ title: 'Megumi vs Sukuna', work: 'Jujutsu Kaisen' }, { title: 'O final de JJK', work: 'Jujutsu Kaisen' }, ...recent14]
+    const { chosen, rejected } = pickCandidates(
+      [
+        idea('Tema 1', 'Naruto', 'Kakashi Hatake'),
+        idea('Tema 2', 'Dandadan', 'Momo Ayase'),
+        idea('Tema 3', 'Jujutsu Kaisen', 'Maki Zenin'),
+        idea('Tema 4', 'JoJo', 'Jotaro Kujo'),
+        idea('Tema 5', 'Spy x Family', 'Yor Forger'),
+        idea('A Yuki é a feiticeira mais livre de JJK', 'Jujutsu Kaisen', 'Yuki Tsukumo', 'atemporal', false, true),
+        idea('Outra volta', 'Jujutsu Kaisen', 'Kenjaku', 'alta', false, true),
+      ],
+      jjk,
+      4,
+      noShuffle,
+    )
+    expect(chosen.map(i => i.theme)).toEqual(['A Yuki é a feiticeira mais livre de JJK', 'Tema 1', 'Tema 2', 'Tema 4'])
+    expect(rejected.find(r => r.theme === 'Tema 3')?.reason).toMatch(/Jujutsu Kaisen já tem 2/)
+    expect(rejected.find(r => r.theme === 'Outra volta')?.reason).toBe('já há uma volta')
+  })
+
+  it('acima da mediana pela plataforma, só com vídeos medidos e públicos', () => {
+    const v = (projectId: string, views: number, platform: 'instagram' | 'youtube' = 'instagram', snapshots = 1, privacy?: string) => ({
+      projectId,
+      platform,
+      privacy,
+      current: { at: '', ageDays: 2, views },
+      snapshots: Array.from({ length: snapshots }, () => ({ at: '', ageDays: 1, views })),
+    })
+    const above = aboveMedian([
+      v('a', 1718), v('b', 1382), v('c', 1350), v('d', 167),
+      v('hoje', 9999, 'instagram', 0), // sem foto fixa: fora da mediana e sem resultado
+      v('d', 50, 'youtube'), v('e', 10, 'youtube'), v('f', 5, 'youtube'),
+      v('g', 999, 'youtube', 1, 'private'),
+    ])
+    // mediana do Instagram (167, 1350, 1382, 1718) = 1366; a do YouTube (5, 10, 50) = 10
+    expect(above.get('a')).toBe(true)
+    expect(above.get('c')).toBe(false)
+    expect(above.get('d')).toBe(true) // ruim no Instagram, bom no YouTube
+    expect(above.has('hoje')).toBe(false)
+    expect(above.has('g')).toBe(false)
+  })
+
+  it('mostra às IAs quem ficou acima ou abaixo da mediana', () => {
+    expect(varietyLines(recent14)).toContain('- O passado de Tatsumaki · One-Punch Man · abaixo da mediana')
   })
 })

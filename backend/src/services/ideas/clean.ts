@@ -93,9 +93,10 @@ export interface RawIdea {
   character?: unknown
   trend?: unknown
   bet?: unknown
+  revisit?: unknown
 }
 
-export type CleanIdea = Pick<Idea, 'theme' | 'hook' | 'styleId' | 'toneId' | 'duration' | 'why' | 'evidence' | 'work' | 'character' | 'trend' | 'bet'>
+export type CleanIdea = Pick<Idea, 'theme' | 'hook' | 'styleId' | 'toneId' | 'duration' | 'why' | 'evidence' | 'work' | 'character' | 'trend' | 'bet' | 'revisit'>
 
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '')
 const list = (v: unknown) => (Array.isArray(v) ? v.map(x => String(x).replace(/[[\]\s]/g, '').toUpperCase()) : [])
@@ -148,6 +149,7 @@ export function cleanIdeas(
       character: text(r.character, 80) || undefined,
       trend: r.trend === 'alta' || r.trend === 'atemporal' ? r.trend : undefined,
       bet: r.bet === true || undefined,
+      revisit: r.revisit === true || undefined,
     })
     if (out.length >= MAX_IDEAS) break
   }
