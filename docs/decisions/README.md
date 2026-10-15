@@ -62,3 +62,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0031](0031-tons-editados-no-lugar.md) | Tons editados no lugar, sem "duplicar e editar" | Aceita |
 | [0032](0032-bordoes-personalizaveis.md) | Bordões personalizáveis: botão, áudio, animações e o que aparece | Aceita |
 | [0033](0033-volta-de-personagens-que-deram-views.md) | Volta de personagens que deram views, sem sugar até a última gota | Aceita |
+| [0034](0034-revisao-do-roteiro-pelas-ias.md) | Revisão do roteiro pelas IAs antes da montagem | Aceita |

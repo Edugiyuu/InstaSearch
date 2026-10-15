@@ -10,6 +10,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## A fazer
 
+- [ ] Revisão do roteiro pelas IAs: depois do acordo, a Roteirista (o gerador de roteiro, agora com o gancho e o porquê do debate) escreve e a Estrategista revisa coesão, sentido, estrutura, duração, o tema combinado e os fatos (até 4 buscas), com até 2 reescritas; sem aprovação, segue e os problemas aparecem na Revisão; vale também no "Criar sozinho", aparece no chat do debate, e o "Por que este tema" fica com 1 ou 2 frases ([ADR 0034](docs/decisions/0034-revisao-do-roteiro-pelas-ias.md))
 - [ ] Clipes do YouTube nos momentos marcantes: o roteiro marca 1 ou 2 cenas, a montagem busca, baixa e escolhe o trecho com visão (ADR 0029)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
@@ -17,7 +18,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Backlog
 
-- [ ] Revisão do roteiro no "Debater e criar um vídeo": depois do acordo, uma IA escreve o roteiro e a outra confere se é coeso, se faz sentido e se cumpre o tema debatido, antes da montagem (precisa de ADR como Proposta: quem escreve, quantas voltas, se confere os fatos na web, o que fazer sem aprovação)
+- [ ] Mostrar o gasto real de tokens: o log do Claude Code conta só a entrada fora do cache ("4 tokens de entrada"); somar o cache (lido e criado) e mostrar o total por debate e por vídeo, para saber quanto cada etapa gasta do plano
 - [ ] "↻ Buscar de novo na web" troca todas as imagens sem desfazer (a montagem não entra no `undo` do projeto) e não pede confirmação; num projeto com todas as cenas travadas, não faz nada e não avisa
 - [ ] Uns 12 projetos antigos têm todas as imagens travadas pelo "Preencher automático" de antes do [ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), e não dá para separar das que o usuário escolheu
 - [ ] Personagem pelo apelido acha o errado no AniList: "Mob" vira "Mob no Haha" (a mãe dele), porque o nome procurado bate palavra por palavra; aí o Danbooru não traz nenhuma fanart do Mob (o nome completo, "Shigeo Kageyama", funciona)
