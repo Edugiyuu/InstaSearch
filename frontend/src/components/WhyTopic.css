@@ -9,3 +9,15 @@
   font-size: 13px;
   line-height: 1.5;
 }
+
+/* Revisão do roteiro pelas IAs (ADR 0034) */
+.script-review ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.script-review.warn .label {
+  color: var(--accent);
+}

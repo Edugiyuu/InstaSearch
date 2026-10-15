@@ -27,6 +27,7 @@ import { DEFAULT_SFX_VOLUME, sfxVolume, voiceTiming } from '../video/timeline'
 import { ScenePick, ScenePickOption } from '../components/ScenePick'
 import { BackdropPick } from '../components/BackdropPick'
 import { WhyTopic } from '../components/WhyTopic'
+import { ScriptReviewNote } from '../components/ScriptReviewNote'
 import { StickerChoice, StickerPick } from '../components/StickerPick'
 import './Review.css'
 
@@ -568,6 +569,12 @@ function Review() {
           {project.autopilot?.why && (
             <div className="panel rv-card">
               <WhyTopic autopilot={project.autopilot} />
+            </div>
+          )}
+
+          {project.autopilot?.review && (
+            <div className="panel rv-card">
+              <ScriptReviewNote autopilot={project.autopilot} />
             </div>
           )}
 

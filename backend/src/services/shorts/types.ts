@@ -218,7 +218,29 @@ export interface Autopilot {
   /** O debate das IAs que escolheu o tema (ADR 0027) e por que elas o acharam bom. */
   debateId?: string
   why?: string
+  /** A revisão do roteiro pelas IAs (ADR 0034): se aprovou, em quantas versões e o que sobrou. */
+  review?: { approved: boolean; versions: number; problems: string[] }
   startedAt: string
+}
+
+/** Um passo da revisão do roteiro (ADR 0034): uma versão da Roteirista ou a revisão da Estrategista. */
+export interface ReviewStep {
+  kind: 'roteiro' | 'revisao'
+  version: number
+  /** A narração (roteiro) ou a fala da revisora (revisão). */
+  text: string
+  /** Só na revisão: se aprovou e o que pediu para mudar. */
+  approved?: boolean
+  problems?: string[]
+  ai?: AiCredit
+  at: string
+}
+
+export interface ScriptReview {
+  status: 'revisando' | 'aprovado' | 'reprovado' | 'erro'
+  steps: ReviewStep[]
+  /** O que está sendo feito agora, para a tela mostrar "escrevendo…" ou "revisando…". */
+  thinking?: 'roteiro' | 'revisao'
 }
 
 /** Uma palavra ouvida pelo Whisper; tempos em segundos desde o começo do áudio. */

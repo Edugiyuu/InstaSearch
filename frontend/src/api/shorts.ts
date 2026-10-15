@@ -184,13 +184,32 @@ export interface Autopilot {
   /** O debate das IAs que escolheu o tema (ADR 0027) e por que elas o acharam bom. */
   debateId?: string
   why?: string
+  /** A revisão do roteiro pelas IAs (ADR 0034): se aprovou, em quantas versões e o que sobrou. */
+  review?: { approved: boolean; versions: number; problems: string[] }
   startedAt: string
+}
+
+/** Um passo da revisão do roteiro (ADR 0034): uma versão da Roteirista ou a revisão da Estrategista. */
+export interface ReviewStep {
+  kind: 'roteiro' | 'revisao'
+  version: number
+  text: string
+  approved?: boolean
+  problems?: string[]
+  ai?: AiCredit
+  at: string
+}
+
+export interface ScriptReview {
+  status: 'revisando' | 'aprovado' | 'reprovado' | 'erro'
+  steps: ReviewStep[]
+  thinking?: 'roteiro' | 'revisao'
 }
 
 /** Um vídeo sendo criado sozinho (ADR 0026). */
 export interface AutopilotJob {
   id: string
-  stage: 'fila' | 'ideia' | 'debate' | 'roteiro' | 'montagem' | 'imagens' | 'pronto' | 'erro' | 'sem-acordo' | 'parado'
+  stage: 'fila' | 'ideia' | 'debate' | 'roteiro' | 'revisao' | 'montagem' | 'imagens' | 'pronto' | 'erro' | 'sem-acordo' | 'parado'
   ideaId?: string
   /** O debate das IAs que escolhe a ideia, quando o vídeo não veio de um cartão (ADR 0027). */
   debateId?: string
@@ -207,6 +226,7 @@ export const JOB_STAGE_LABEL: Record<AutopilotJob['stage'], string> = {
   ideia: 'lendo a ideia',
   debate: 'as IAs estão debatendo o tema',
   roteiro: 'escrevendo o roteiro (com pesquisa)',
+  revisao: 'a Estrategista está revisando o roteiro (com pesquisa)',
   montagem: 'montando as cenas',
   imagens: 'procurando as imagens que faltam',
   pronto: 'pronto · falta gravar a voz',

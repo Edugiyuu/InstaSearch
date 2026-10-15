@@ -13,7 +13,7 @@ import { askJsonMeta } from '../shorts/llm.js'
 import { listProjects } from '../shorts/projects.js'
 import { listStyles } from '../shorts/styles.js'
 import { listTones } from '../shorts/tones.js'
-import type { ShortProject } from '../shorts/types.js'
+import type { ScriptReview, ShortProject } from '../shorts/types.js'
 import { buildRefs, commentLine, videoLine } from './clean.js'
 import { brainstormCandidates, listIdeas, storeIdea } from './ideas.js'
 import type { Debate, DebateMessage, DebateRound, Idea, RoundEnd, Speaker } from './types.js'
@@ -376,7 +376,7 @@ ${transcript(debate.messages)}
 Escreva o resultado para o criador do canal:
 - "theme": o tema ${chosen}, com os ajustes que as duas aceitaram no debate (se houver), escrito como uma pergunta ou afirmação específica. Continua sendo o mesmo assunto.
 - "hook": a primeira frase falada do vídeo, com até 15 palavras (a do tema, ou a que elas combinaram).
-- "why": 3 ou 4 frases dizendo por que as duas acharam esse tema bom e por que ele deve gerar engajamento, com os argumentos do debate e os números do canal que elas citaram. Chame os vídeos pelo título. Sem markdown.
+- "why": 1 ou 2 frases curtas dizendo por que as duas acharam esse tema bom: o argumento principal do debate e o número do canal que mais pesou. Chame os vídeos pelo título. Sem markdown.
 
 Tema original: ${idea.theme}
 
@@ -386,8 +386,14 @@ Responda só com JSON:
   return {
     theme: String(data.theme ?? '').trim().slice(0, 200),
     hook: String(data.hook ?? '').trim().slice(0, 200),
-    why: String(data.why ?? '').trim().slice(0, 1200),
+    why: String(data.why ?? '').trim().slice(0, 400),
   }
+}
+
+/** A revisão do roteiro depois do acordo (ADR 0034): a criação grava cada passo, e o chat acompanha. */
+export async function saveReview(id: string, review: ScriptReview) {
+  const debate = await getDebate(id)
+  return update(debate, { review })
 }
 
 /** O vídeo criado a partir do debate (para a tela levar até ele). */
@@ -409,6 +415,8 @@ export async function markInterruptedDebates() {
   for (const d of await storage.findAll()) {
     if (d.status === 'brainstorm' || d.status === 'debatendo' || d.status === 'aguardando' || d.status === 'resumindo') {
       await update(d, { status: 'erro', thinking: undefined, vetoUntil: undefined, error: 'O servidor reiniciou no meio do debate.' })
+    } else if (d.review?.status === 'revisando') {
+      await update(d, { review: { ...d.review, status: 'erro', thinking: undefined } })
     }
   }
 }

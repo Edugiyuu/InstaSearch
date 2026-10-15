@@ -1,23 +1,27 @@
 // Criação autônoma (ADR 0026): ideia → roteiro → montagem → imagens, parando em "falta gravar a voz".
-// Sem ideia escolhida, a ideia sai do debate das IAs (ADR 0027).
+// Sem ideia escolhida, a ideia sai do debate das IAs (ADR 0027). O roteiro passa pela revisão das IAs
+// antes de virar projeto (ADR 0034).
 // Nunca publica. Um vídeo por vez, numa fila em memória (como a do Whisper): o roteiro com pesquisa e a
 // visão gastam cota de IA, e duas montagens juntas disputariam o limite.
 
 import { nanoid } from 'nanoid'
 import { AppError } from '../../middleware/errorHandler.js'
 import { logger } from '../../utils/logger.js'
-import { createDebate, linkProject, runDebate } from '../ideas/debate.js'
+import { createDebate, linkProject, runDebate, saveReview } from '../ideas/debate.js'
 import { getIdea, updateIdea } from '../ideas/ideas.js'
 import type { Idea } from '../ideas/types.js'
-import { assemble, autoFillImages, createProject, getProject, listProjects, setAutopilot } from './projects.js'
+import { assemble, autoFillImages, createProject, getProject, listProjects, scriptInputs, setAutopilot } from './projects.js'
+import { reviewLoop, reviewSummary } from './scriptReview.js'
+import { generateScript, maxWords, reviewScript } from './shortsAI.js'
 import type { Autopilot } from './types.js'
 
 /**
- * fila → ideia (a do cartão) ou debate (as IAs escolhem, ADR 0027) → roteiro → montagem → imagens → pronto.
+ * fila → ideia (a do cartão) ou debate (as IAs escolhem, ADR 0027) → roteiro ⇄ revisão (ADR 0034) → montagem →
+ * imagens → pronto.
  * Termina em erro, em sem-acordo quando o debate acaba sem as duas aceitarem um tema, ou em parado quando o
  * criador para o debate (nos dois, nenhum vídeo).
  */
-export type JobStage = 'fila' | 'ideia' | 'debate' | 'roteiro' | 'montagem' | 'imagens' | 'pronto' | 'erro' | 'sem-acordo' | 'parado'
+export type JobStage = 'fila' | 'ideia' | 'debate' | 'roteiro' | 'revisao' | 'montagem' | 'imagens' | 'pronto' | 'erro' | 'sem-acordo' | 'parado'
 
 /** Um vídeo sendo criado; a tela Ideias acompanha por aqui. */
 export interface AutopilotJob {
@@ -35,7 +39,7 @@ export interface AutopilotJob {
   updatedAt: string
 }
 
-const ACTIVE: JobStage[] = ['fila', 'ideia', 'debate', 'roteiro', 'montagem', 'imagens']
+const ACTIVE: JobStage[] = ['fila', 'ideia', 'debate', 'roteiro', 'revisao', 'montagem', 'imagens']
 /** Quantos jobs terminados a tela ainda mostra (o resto fica no próprio projeto). */
 const KEEP_DONE = 10
 
@@ -118,7 +122,8 @@ async function run(job: AutopilotJob) {
       job.title = idea.theme
 
       step(job, 'roteiro')
-      const project = await createProject({ theme: idea.theme, styleId: idea.styleId, toneId: idea.toneId, duration: idea.duration })
+      const { script, review } = await writeReviewed(job, idea)
+      const project = await createProject({ theme: idea.theme, styleId: idea.styleId, toneId: idea.toneId, duration: idea.duration, script })
       job.projectId = project.id
       job.title = project.title
       await setAutopilot(project.id, {
@@ -127,6 +132,7 @@ async function run(job: AutopilotJob) {
         startedAt: job.startedAt,
         // o porquê do debate fica no projeto ("Por que este tema")
         ...(job.debateId ? { debateId: job.debateId, why: idea.why } : {}),
+        review: reviewSummary(review),
       })
       if (job.debateId) await linkProject(job.debateId, project.id)
       // como no "Criar vídeo" à mão: a ideia vira "feita" e aponta para o projeto
@@ -162,6 +168,24 @@ async function run(job: AutopilotJob) {
       if (project?.autopilot) await setAutopilot(job.projectId, { ...project.autopilot, error: job.error }).catch(() => undefined)
     }
   }
+}
+
+/**
+ * O roteiro com a revisão das IAs (ADR 0034): a Roteirista (o gerador de roteiro) escreve com o gancho e o
+ * porquê da ideia, e a Estrategista revisa, com até 2 reescritas. Com debate, cada passo vai para o chat.
+ */
+async function writeReviewed(job: AutopilotJob, idea: Idea) {
+  const { theme, duration, style, tone } = await scriptInputs({ theme: idea.theme, styleId: idea.styleId, toneId: idea.toneId, duration: idea.duration })
+  const agreed = { theme: theme || idea.theme, hook: idea.hook || undefined, brief: idea.why || undefined }
+  return reviewLoop({
+    write: revision => generateScript({ ...agreed, toneGuide: tone.guide, duration, style, revision }),
+    review: (script, version) => reviewScript({ ...agreed, duration, narration: script.narration, version }),
+    maxWords: maxWords(duration),
+    onChange: review => {
+      step(job, review.thinking === 'revisao' ? 'revisao' : 'roteiro')
+      return job.debateId ? saveReview(job.debateId, review) : undefined
+    },
+  })
 }
 
 /** Ao subir o servidor: o que estava no meio parou junto, então vira "Continuar" no projeto. */

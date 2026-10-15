@@ -1,7 +1,7 @@
 // Banco de ideias de vídeo (ADR 0021, escolhas 4B e 5B). Dados em data/ideas/.
 
 import type { Platform } from '../insights/types.js'
-import type { AiCredit } from '../shorts/types.js'
+import type { AiCredit, ScriptReview } from '../shorts/types.js'
 
 /** nova = do último brainstorm, ainda sem decisão; feita = virou projeto. */
 export type IdeaStatus = 'nova' | 'guardada' | 'descartada' | 'feita'
@@ -119,6 +119,8 @@ export interface Debate {
   why?: string
   /** A vencedora, gravada no banco de ideias. */
   ideaId?: string
+  /** Depois do acordo: a Roteirista escreve o roteiro e a Estrategista revisa (ADR 0034). */
+  review?: ScriptReview
   projectId?: string
   error?: string
   createdAt: string

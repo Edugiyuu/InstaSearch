@@ -10,7 +10,6 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## A fazer
 
-- [ ] Revisão do roteiro pelas IAs: depois do acordo, a Roteirista (o gerador de roteiro, agora com o gancho e o porquê do debate) escreve e a Estrategista revisa coesão, sentido, estrutura, duração, o tema combinado e os fatos (até 4 buscas), com até 2 reescritas; sem aprovação, segue e os problemas aparecem na Revisão; vale também no "Criar sozinho", aparece no chat do debate, e o "Por que este tema" fica com 1 ou 2 frases ([ADR 0034](docs/decisions/0034-revisao-do-roteiro-pelas-ias.md))
 - [ ] Clipes do YouTube nos momentos marcantes: o roteiro marca 1 ou 2 cenas, a montagem busca, baixa e escolhe o trecho com visão (ADR 0029)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
@@ -45,6 +44,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-15 · Revisão do roteiro pelas IAs: depois do acordo (e no "Criar sozinho"), a Roteirista escreve com o gancho e o porquê combinados e a Estrategista revisa coesão, sentido, estrutura, o tema e os fatos (até 4 buscas), com até 2 reescritas; o código confere a aprovação e a contagem de palavras; sem aprovação, o vídeo segue e os pontos aparecem em "📝 Revisão do roteiro"; o "Por que este tema" ficou com 1 ou 2 frases ([ADR 0034](docs/decisions/0034-revisao-do-roteiro-pelas-ias.md))
 - [x] 2026-10-15 · Volta de personagens que deram views no debate: uma vaga (🔁 volta) para uma personagem de vídeo acima da mediana, com assunto novo, livre da janela de 3 vídeos e da regra da obra; não pode ser a do último vídeo e descansa se o vídeo mais recente dela ficou abaixo da mediana; qualquer personagem descansa com 3 dos últimos 8 vídeos ([ADR 0033](docs/decisions/0033-volta-de-personagens-que-deram-views.md))
 - [x] 2026-10-14 · Bordões personalizáveis: texto depois do clique e modelos (YouTube, Instagram, TikTok, Canal), áudio no "se inscreve", música do vídeo por baixo, animação de entrada e de clique, duração, texto do montado (animação e posição) e liga/desliga de foto, nome, frase e botão (ADR 0032)
 - [x] 2026-10-14 · Apagar um projeto limpa a tela Ideias: a ideia dele sai de "Viraram vídeo" e vira descartada ("o vídeo foi apagado"), para a IA não sugerir o mesmo tema; o debate perde o "Abrir o vídeo" e a fila do "Criar sozinho" esquece o job. Ao subir, o servidor confere as que ficaram de antes (eram 14)

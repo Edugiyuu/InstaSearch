@@ -119,9 +119,10 @@ backend/src/
 ├── services/
 │   ├── shorts/                o fluxo tema → Short
 │   │   ├── llm.ts             a fila de IAs (Gemini → Claude)
-│   │   ├── shortsAI.ts        os prompts: roteiro, ajuste, escolher imagens da web (visão) e catalogar
+│   │   ├── shortsAI.ts        os prompts: roteiro, revisão do roteiro, ajuste, escolher imagens da web (visão) e catalogar
 │   │   ├── projects.ts        criar, montar, ajustar, desfazer, transcrever
 │   │   ├── autopilot.ts       criar sozinho: a fila ideia → roteiro → montagem → imagens (ADR 0026)
+│   │   ├── scriptReview.ts    a revisão do roteiro pelas IAs: escreve, revisa e reescreve até 2 vezes (ADR 0034)
 │   │   ├── library.ts         arquivos baixados, figurinhas e sons de cada cena
 │   │   ├── imageSearch.ts     busca na web (Bing, Danbooru, AniList, Serper)
 │   │   ├── sceneEdits.ts      o chat só mexe nas cenas citadas

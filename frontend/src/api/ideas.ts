@@ -1,7 +1,7 @@
 // Banco de ideias (ADR 0021). Os tipos espelham backend/src/services/ideas/types.ts.
 import api from '../services/api'
 import type { Platform } from './insights'
-import type { AiCredit } from './shorts'
+import type { AiCredit, ScriptReview } from './shorts'
 
 export type IdeaStatus = 'nova' | 'guardada' | 'descartada' | 'feita'
 
@@ -91,6 +91,8 @@ export interface Debate {
   chosen?: number
   why?: string
   ideaId?: string
+  /** Depois do acordo: a Roteirista escreve o roteiro e a Estrategista revisa (ADR 0034). */
+  review?: ScriptReview
   projectId?: string
   error?: string
   createdAt: string
@@ -108,7 +110,7 @@ export const MAX_TURNS = 6
 export const MAX_ROUNDS = 3
 /** Os segundos para vetar o tema aceito (ADR 0030); igual ao do backend. */
 export const VETO_SECONDS = 5
-export const debateActive = (d: Debate) => ['brainstorm', 'debatendo', 'aguardando', 'resumindo'].includes(d.status)
+export const debateActive = (d: Debate) => ['brainstorm', 'debatendo', 'aguardando', 'resumindo'].includes(d.status) || d.review?.status === 'revisando'
 /** Ainda dá para parar: depois do acordo (resumindo), o vídeo já está a caminho. */
 export const debateStoppable = (d: Debate) => ['brainstorm', 'debatendo', 'aguardando'].includes(d.status)
 

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { audioUrl, Beat, errorMessage, shortsApi } from '../api/shorts'
 import { WhyTopic } from '../components/WhyTopic'
+import { ScriptReviewNote } from '../components/ScriptReviewNote'
 import { AiBadge, copyText, SearchList, Spinner, Stepper, useToast } from '../components/flow'
 import { useProject } from '../hooks/useShorts'
 import './Script.css'
@@ -149,6 +150,7 @@ function Script() {
             <p className="sc-auto">🤖 Criado sozinho: o roteiro, a montagem e as imagens estão prontos. Só falta a sua voz.</p>
           )}
           {project.autopilot?.why && <WhyTopic autopilot={project.autopilot} />}
+          {project.autopilot?.review && <ScriptReviewNote autopilot={project.autopilot} />}
           <p className="sc-voice-hint">Grave lendo o texto abaixo no celular ou no ElevenLabs e suba o áudio aqui.</p>
 
           <div className="sc-narration">{project.narration}</div>

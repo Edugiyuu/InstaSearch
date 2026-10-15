@@ -10,7 +10,7 @@ import { CHANNEL_CATCHPHRASE_ID, defaultCatchphrases } from './catchphrases.js'
 import { forgetProject, importImageFromUrl, listStickers, pickSfx, refreshStickers, syncUsage } from './library.js'
 import { getAppSettings } from './appSettings.js'
 import { fetchThumb, pickCandidates, searchWebImages, type WebImage } from './imageSearch.js'
-import { adjustBeats, generateScript, pickWebImagesWithAI } from './shortsAI.js'
+import { adjustBeats, generateScript, pickWebImagesWithAI, type Script } from './shortsAI.js'
 import { listSounds, syncSoundUsage } from './sounds.js'
 import { normalize } from './library.js'
 import { transcribeAudio, WHISPER_MODEL } from './transcription.js'
@@ -69,7 +69,7 @@ async function pickMusic(mood: string) {
   return pool.reduce((a, b) => (b.usedIn.length < a.usedIn.length ? b : a)).id
 }
 
-export async function createProject(input: {
+type ProjectInput = {
   theme: string
   styleId: string
   duration: number
@@ -78,7 +78,10 @@ export async function createProject(input: {
   /** Antes dos tons na biblioteca: o nome ("Polêmico"). */
   tone?: string
   narration?: string
-}) {
+}
+
+/** O estilo, o tom e a duração do projeto, como o gerador de roteiro precisa (também para a revisão, ADR 0034). */
+export async function scriptInputs(input: ProjectInput) {
   const theme = input.theme?.trim()
   if (!theme && !input.narration?.trim()) throw new AppError('Escreva um tema', 400, 'VALIDATION')
   const duration = Math.min(40, Math.max(15, Number(input.duration) || 30))
@@ -87,14 +90,22 @@ export async function createProject(input: {
     (input.toneId ? await getTone(input.toneId) : null) ??
     (input.tone ? await toneByName(input.tone) : null) ??
     BUILT_IN_TONES.find(t => t.id === 'curioso')!
+  return { theme, duration, style, tone }
+}
 
-  const script = await generateScript({
-    theme: theme || 'narração do usuário',
-    toneGuide: tone.guide,
-    duration,
-    style,
-    narration: input.narration?.trim() || undefined,
-  })
+/** `script`: um roteiro já escrito e revisado pelas IAs (ADR 0034); sem ele, o gerador escreve agora. */
+export async function createProject(input: ProjectInput & { script?: Script }) {
+  const { theme, duration, style, tone } = await scriptInputs(input)
+
+  const script =
+    input.script ??
+    (await generateScript({
+      theme: theme || 'narração do usuário',
+      toneGuide: tone.guide,
+      duration,
+      style,
+      narration: input.narration?.trim() || undefined,
+    }))
 
   const now = new Date().toISOString()
   const project: ShortProject = {

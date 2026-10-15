@@ -1,5 +1,5 @@
 import { AppError } from '../../middleware/errorHandler.js'
-import { askJson, askJsonMeta } from './llm.js'
+import { askJson, askJsonMeta, MAX_SEARCHES } from './llm.js'
 import { citedScenes, describeChanges, diffBeats, hasChanges, keepOnlyCited, scenesText } from './sceneEdits.js'
 import { STICKER_LEVELS, type AiCredit, type Beat, type Effect, type LibraryImage, type Motion, type ProjectSettings, type SceneKind, type ShortStyle } from './types.js'
 
@@ -139,6 +139,12 @@ const TWIST_RULE = `Memes e imagens diferentes: em cerca de 1 a cada 3 batidas, 
 - "variacao": o personagem da batida de um jeito inesperado, em fanart (chibi, versão mulher, outro traço; ex.: "tatsumaki chibi fanart", tags ["chibi"]; "polnareff genderswap fanart", tags ["genderswap"]). Só em batidas que mostram esse personagem, e não precisa ser momento de piada: é o tipo mais comum de "twist", use mais variações que memes.
 Só memes e variações que existem de verdade; nada sexual. Nas outras batidas, omita "twist".`
 
+/** Quantas palavras cabem na duração (cerca de 2,6 por segundo falado). */
+export const maxWords = (duration: number) => Math.round(duration * 2.6)
+
+/** O roteiro como sai do gerador: o projeto é criado com ele. */
+export type Script = Awaited<ReturnType<typeof generateScript>>
+
 export async function generateScript(input: {
   theme: string
   /** A instrução do tom (ADR 0019), ex.: "polêmico. Defenda uma opinião forte…" */
@@ -146,10 +152,25 @@ export async function generateScript(input: {
   duration: number
   style: ShortStyle
   narration?: string
+  /** O gancho combinado na ideia ou no debate (ADR 0034): antes, o roteiro escrevia outro. */
+  hook?: string
+  /** Por que o tema foi escolhido: o argumento que o roteiro precisa entregar. */
+  brief?: string
+  /** A versão anterior e o que a revisora pediu para mudar (ADR 0034). */
+  revision?: { narration: string; problems: string[] }
 }): Promise<{ title: string; subject: string; narration: string; beats: Beat[]; ai: AiCredit }> {
-  const { theme, toneGuide, duration, style, narration } = input
+  const { theme, toneGuide, duration, style, narration, hook, brief, revision } = input
   const beatCount = Math.round(duration / PACE_SECONDS[style.pace])
-  const words = Math.round(duration * 2.6)
+  const words = maxWords(duration)
+
+  // o combinado na ideia ou no debate, e a crítica da revisora quando é uma versão nova (ADR 0034)
+  const agreed = [
+    hook ? `\n- O gancho combinado é: "${hook}". Abra com ele; ajuste só o necessário para soar falado.` : '',
+    brief ? `\n- Por que este tema foi escolhido (o vídeo tem que entregar isso): ${brief}` : '',
+  ].join('')
+  const rewrite = revision
+    ? `\n\nA revisora leu a versão anterior e pediu mudanças:\n${revision.problems.map(p => `- ${p}`).join('\n')}\nVersão anterior:\n"""${revision.narration}"""\nReescreva a narração corrigindo esses pontos e mantendo o que estava bom.`
+    : ''
 
   const task = narration
     ? `O usuário já tem a narração. NÃO mude o texto: divida exatamente esta narração em batidas, na ordem:\n"""${narration}"""`
@@ -158,7 +179,7 @@ export async function generateScript(input: {
 - Comece com um gancho forte nos primeiros 2 segundos.
 - Tom: ${toneGuide}.
 - Estrutura de argumento: gancho → a tese em uma frase → 2 provas concretas (um acontecimento, o capítulo ou episódio, um número ou uma fala; uma 3ª só se couber no limite de palavras), cada uma com a sua batida → conclusão que responde ao gancho → chamada para comentar.
-- Cada prova é específica e dá para conferir. Nada de frase genérica ("ele é muito forte", "todo mundo sabe").`
+- Cada prova é específica e dá para conferir. Nada de frase genérica ("ele é muito forte", "todo mundo sabe").${agreed}${rewrite}`
 
   const prompt = `Você é roteirista e editor de Shorts verticais (YouTube Shorts, Reels, TikTok) em português do Brasil.
 
@@ -194,6 +215,58 @@ Responda só com JSON:
   }
 }
 
+
+/** A pesquisa da revisora: confere as provas que o roteiro cita, com as mesmas 4 buscas do roteiro (ADR 0034). */
+const REVIEW_RESEARCH = `Antes de responder, pesquise na web, com até ${MAX_SEARCHES} buscas curtas e diferentes entre si, as provas concretas que o roteiro cita: os acontecimentos, o capítulo ou episódio, os números e as falas. Aponte como problema só o que está errado ou o que parece inventado e você não conseguiu confirmar. Não coloque links nem fontes na resposta.`
+
+/**
+ * A revisão do roteiro (ADR 0034): a Estrategista lê só o roteiro e o combinado (sem os números do canal,
+ * para gastar pouco), confere os fatos na web e aprova ou pede mudanças. Quem decide se aprovou é o
+ * código, pelo "approved" (e pela contagem de palavras, em scriptReview.ts).
+ */
+export async function reviewScript(input: {
+  theme: string
+  hook?: string
+  brief?: string
+  duration: number
+  narration: string
+  version: number
+}): Promise<{ approved: boolean; problems: string[]; message: string; ai: AiCredit }> {
+  const { theme, hook, brief, duration, narration, version } = input
+  const prompt = `Você é a Estrategista de um canal de Shorts narrados em português do Brasil. A Roteirista escreveu o roteiro abaixo para o tema escolhido, e você revisa antes de o vídeo ser montado.
+
+Tema: "${theme}"${hook ? `\nGancho combinado: "${hook}"` : ''}${brief ? `\nPor que o tema foi escolhido: ${brief}` : ''}
+Duração: ${duration} segundos (no máximo ${maxWords(duration)} palavras faladas)
+
+Roteiro (versão ${version}):
+"""${narration}"""
+
+Confira:
+- Coesão: cada frase leva à próxima; nada solto, repetido ou contraditório.
+- Se faz sentido: o argumento se sustenta, e a conclusão responde ao gancho.
+- A estrutura: gancho → a tese em uma frase → 2 provas concretas → conclusão → chamada para comentar.
+- Se o gancho prende nos 2 primeiros segundos.
+- Se é o tema combinado, e não outro, e se entrega o porquê dele.
+- Os fatos: as provas citadas existem e estão certas.
+
+Aprove ("approved": true) se o roteiro está bom para virar vídeo, mesmo com detalhes que você faria diferente. Reprove só por um problema que o espectador notaria: fato errado ou inventado, argumento que não fecha, fuga do tema, gancho fraco ou texto confuso.
+
+Responda só com JSON:
+{ "approved": true, "problems": ["cada problema numa frase, dizendo o que mudar"], "message": "a sua fala para a Roteirista, como numa conversa, em 2 ou 3 frases, sem markdown" }`
+
+  const { data, ai } = await askJsonMeta<{ approved?: unknown; problems?: unknown; message?: unknown }>(prompt, {
+    claudeOnly: true,
+    research: true,
+    researchNote: REVIEW_RESEARCH,
+  })
+  const problems = Array.isArray(data.problems) ? data.problems.map(p => String(p).trim().slice(0, 300)).filter(Boolean).slice(0, 6) : []
+  return {
+    approved: data.approved === true,
+    problems,
+    message: String(data.message ?? '').trim().slice(0, 800) || (data.approved === true ? 'Aprovado.' : 'Precisa de ajustes.'),
+    ai,
+  }
+}
 export async function adjustBeats(input: {
   request: string
   beats: Beat[]

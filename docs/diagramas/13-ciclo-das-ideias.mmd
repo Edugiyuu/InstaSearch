@@ -10,11 +10,12 @@ flowchart TD
     NEW --> PUB
     CMP --> OWN["🗣️ Debate das IAs:<br/>4 temas de obras diferentes<br/>(filtro de variedade + 1 aposta do nicho<br/>+ 1 volta de quem deu views),<br/>Estrategista × Roteirista"]
     OWN -- "as duas aceitam<br/>o mesmo tema" --> VETO{"5 s para<br/>você vetar"}
-    VETO -- "passou o tempo" --> AUTO["Roteiro, montagem<br/>e imagens sozinho"]
+    VETO -- "passou o tempo" --> REV["📝 Roteirista escreve,<br/>Estrategista revisa<br/>(coesão e fatos; até 2 reescritas)"]
+    REV --> AUTO["Montagem<br/>e imagens sozinho"]
     VETO -- "✋ vetou: o tema sai" --> OWN
     OWN -- "recusam os 4 ou acabam<br/>as 6 falas: 4 temas novos<br/>(até 3 rodadas)" --> OWN
     OWN -- "sem acordo na 3ª rodada<br/>ou ■ Parar debate" --> NONE["Nenhum vídeo"]
-    BANK -- "🤖 Criar sozinho" --> AUTO
-    ID -- "🤖 Criar sozinho" --> AUTO
+    BANK -- "🤖 Criar sozinho" --> REV
+    ID -- "🤖 Criar sozinho" --> REV
     AUTO --> VOZ["🎙 Você grava a voz<br/>e revisa"]
     VOZ --> PUB

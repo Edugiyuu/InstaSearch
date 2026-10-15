@@ -336,3 +336,34 @@
   background: var(--accent);
   transition: width 0.1s linear;
 }
+
+/* Revisão do roteiro depois do acordo (ADR 0034) */
+.dc-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.dc-status.aprovado {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.dc-status.reprovado {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.dc-msg .dc-script {
+  white-space: pre-wrap;
+  color: var(--muted);
+}
+
+.dc-problems {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+}

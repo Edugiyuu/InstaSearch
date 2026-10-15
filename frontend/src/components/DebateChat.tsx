@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Debate, debateStoppable, DebateMessage, Idea, MAX_ROUNDS, MAX_TURNS, RoundEnd, Speaker, SPEAKER_FOCUS, SPEAKER_NAME, VETO_SECONDS } from '../api/ideas'
+import type { ScriptReview } from '../api/shorts'
 import { Spinner } from './flow'
 import './DebateChat.css'
 
@@ -79,6 +80,77 @@ function Message({ m }: { m: DebateMessage }) {
       </span>
       <p>{m.text}</p>
       <span className="dc-vote">{m.vote ? `aceita o tema ${m.vote}` : 'ainda não aceita nenhum'}</span>
+    </div>
+  )
+}
+
+const REVIEW_STATUS: Record<ScriptReview['status'], string> = {
+  revisando: 'Revisando',
+  aprovado: 'Aprovado',
+  reprovado: 'Não aprovado',
+  erro: 'Parou',
+}
+
+/**
+ * Depois do acordo, a revisão do roteiro (ADR 0034): cada versão da Roteirista e a revisão da
+ * Estrategista, que confere coesão, sentido e os fatos. Sem aprovação, o vídeo segue com os pontos na Revisão.
+ */
+function ReviewChat({ review }: { review: ScriptReview }) {
+  const end = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [review.steps.length, review.thinking])
+
+  return (
+    <div className="dc-review">
+      <div className="dc-head">
+        <strong>📝 Revisão do roteiro</strong>
+        <span className={`dc-status ${review.status}`}>{REVIEW_STATUS[review.status]}</span>
+      </div>
+      <div className="dc-chat">
+        {review.steps.map((s, i) =>
+          s.kind === 'roteiro' ? (
+            <div key={i} className="dc-msg roteirista">
+              <span className="dc-who">
+                Roteirista <span className="meta">· roteiro, versão {s.version}</span>
+              </span>
+              <p className="dc-script">{s.text}</p>
+            </div>
+          ) : (
+            <div key={i} className="dc-msg estrategista">
+              <span className="dc-who">
+                Estrategista <span className="meta">· revisão da versão {s.version}</span>
+              </span>
+              <p>{s.text}</p>
+              {!!s.problems?.length && (
+                <ul className="dc-problems">
+                  {s.problems.map((p, j) => (
+                    <li key={j}>{p}</li>
+                  ))}
+                </ul>
+              )}
+              <span className="dc-vote">{s.approved ? '✓ aprova o roteiro' : 'pede mudanças'}</span>
+            </div>
+          ),
+        )}
+        {review.thinking && (
+          <div className={`dc-msg ${review.thinking === 'roteiro' ? 'roteirista' : 'estrategista'} typing`}>
+            <span className="dc-who">{review.thinking === 'roteiro' ? 'Roteirista' : 'Estrategista'}</span>
+            <p>
+              <Spinner />{' '}
+              {review.thinking === 'revisao'
+                ? 'revisando e conferindo os fatos na web…'
+                : review.steps.length
+                  ? 'reescrevendo o roteiro com o que a Estrategista pediu…'
+                  : 'escrevendo o roteiro (com pesquisa)…'}
+            </p>
+          </div>
+        )}
+        <div ref={end} />
+      </div>
+      {review.status === 'reprovado' && (
+        <p className="dc-note">A Estrategista não aprovou nenhuma versão. O vídeo segue com a última, e os pontos que sobraram aparecem na Revisão do projeto.</p>
+      )}
     </div>
   )
 }
@@ -236,6 +308,7 @@ export function DebateChat({
           )}
         </div>
       )}
+      {debate.review && <ReviewChat review={debate.review} />}
       {debate.status === 'sem-acordo' && (
         <p className="dc-result fail">
           {debate.past?.length
