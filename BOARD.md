@@ -18,6 +18,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Backlog
 
+- [ ] A personagem é achada por palavra, e "Todo" (Aoi Todo, de JJK) bate com "todo mundo" no tema de outros vídeos: hoje o vídeo da Makima conta como "o vídeo mais recente do Todo", e ele descansa sem motivo (talvez só nomes com maiúscula no tema, ou só no título; ADR 0028 e 0033)
 - [ ] Mostrar o gasto real de tokens: o log do Claude Code conta só a entrada fora do cache ("4 tokens de entrada"); somar o cache (lido e criado) e mostrar o total por debate e por vídeo, para saber quanto cada etapa gasta do plano
 - [ ] "↻ Buscar de novo na web" troca todas as imagens sem desfazer (a montagem não entra no `undo` do projeto) e não pede confirmação; num projeto com todas as cenas travadas, não faz nada e não avisa
 - [ ] Uns 12 projetos antigos têm todas as imagens travadas pelo "Preencher automático" de antes do [ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md), e não dá para separar das que o usuário escolheu

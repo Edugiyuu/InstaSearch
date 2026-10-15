@@ -48,3 +48,5 @@ Com os vídeos de hoje: a Tatsumaki descansa (3 dos últimos 8), e Yuki Tsukumo,
 - **O "vídeo mais recente abaixo da mediana" vale só para a volta** (escolha do usuário): no tema comum, travaria para sempre uma personagem com um único vídeo fraco.
 - **O brainstorm recebe a lista dos vídeos acima da mediana**, porque as campeãs costumam ser mais antigas que os 8 últimos vídeos que ele vê.
 - **A volta sempre entra entre os 4 temas**, se passou nas regras (é a vaga dela); a ordem final continua sorteada.
+- **Margem de raspão (mudou no mesmo dia):** o usuário quer que quem fica de raspão volte. Contar os vídeos do dia não resolvia (um vídeo de poucas horas, com 173 visualizações, deixaria a Yuki "abaixo" antes da hora), então eles continuam fora, e quem fica até **5% abaixo da mediana** conta como acima: o Todo (1.343 contra 1.350) passa. Também passa "O passado de Tatsumaki" (1.330), e a Tatsumaki, que hoje tem 2 dos últimos 8 vídeos, pode voltar.
+- **Um registro por projeto e plataforma:** um post apagado e publicado de novo deixava um registro com 0 visualizações puxando a mediana para baixo; fica o de mais visualizações.

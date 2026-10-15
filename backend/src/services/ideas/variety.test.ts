@@ -149,7 +149,7 @@ describe('volta de personagens que deram views (ADR 0033)', () => {
     expect(rejected.find(r => r.theme === 'Outra volta')?.reason).toBe('já há uma volta')
   })
 
-  it('acima da mediana pela plataforma, só com vídeos medidos e públicos', () => {
+  it('acima da mediana com 5% de raspão, pela plataforma, sem os vídeos do dia nem os privados', () => {
     const v = (projectId: string, views: number, platform: 'instagram' | 'youtube' = 'instagram', snapshots = 1, privacy?: string) => ({
       projectId,
       platform,
@@ -157,17 +157,23 @@ describe('volta de personagens que deram views (ADR 0033)', () => {
       current: { at: '', ageDays: 2, views },
       snapshots: Array.from({ length: snapshots }, () => ({ at: '', ageDays: 1, views })),
     })
+    // os números do Instagram em 15/10
     const above = aboveMedian([
-      v('a', 1718), v('b', 1382), v('c', 1350), v('d', 167),
-      v('hoje', 9999, 'instagram', 0), // sem foto fixa: fora da mediana e sem resultado
-      v('d', 50, 'youtube'), v('e', 10, 'youtube'), v('f', 5, 'youtube'),
+      v('tatsumaki', 1718), v('tsunade', 1407), v('yuki', 1382), v('kenjaku', 1368), v('opm', 1350),
+      v('todo', 1343), v('passado', 1330), v('makima', 1258), v('gojo', 167),
+      v('maki', 173, 'instagram', 0), // publicado há horas: fora da mediana e sem resultado
+      v('tatsumaki', 0, 'instagram', 0), // o mesmo projeto de novo (post apagado): fica o de mais visualizações
+      v('gojo', 50, 'youtube'), v('e', 10, 'youtube'), v('f', 5, 'youtube'),
       v('g', 999, 'youtube', 1, 'private'),
     ])
-    // mediana do Instagram (167, 1350, 1382, 1718) = 1366; a do YouTube (5, 10, 50) = 10
-    expect(above.get('a')).toBe(true)
-    expect(above.get('c')).toBe(false)
-    expect(above.get('d')).toBe(true) // ruim no Instagram, bom no YouTube
-    expect(above.has('hoje')).toBe(false)
+    // mediana do Instagram = 1.350 (5% abaixo: 1.282,5); a do YouTube (5, 10, 50) = 10
+    expect(above.get('tatsumaki')).toBe(true)
+    expect(above.get('todo')).toBe(true) // 1.343: 0,5% abaixo, passa de raspão
+    expect(above.get('passado')).toBe(true) // 1.330: 1,5% abaixo
+    expect(above.get('makima')).toBe(false) // 1.258: 7% abaixo
+    expect(above.has('maki')).toBe(false)
+    expect(above.get('gojo')).toBe(true) // ruim no Instagram, bom no YouTube
+    expect(above.get('f')).toBe(false)
     expect(above.has('g')).toBe(false)
   })
 

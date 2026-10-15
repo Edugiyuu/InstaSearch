@@ -18,6 +18,8 @@ export const WORK_LIMIT = 2
 /** Não sugar (ADR 0033): a personagem que já tem `REST_LIMIT` dos últimos `REST_WINDOW` vídeos descansa. */
 export const REST_WINDOW = 8
 export const REST_LIMIT = 3
+/** Quem fica até 5% abaixo da mediana conta como acima: passa de raspão (ADR 0033). */
+export const MEDIAN_MARGIN = 0.05
 
 /** Um vídeo já feito, do mais novo para o mais velho. */
 export interface RecentVideo {
@@ -26,7 +28,7 @@ export interface RecentVideo {
   /** A obra (o `subject` do projeto, ADR 0024); os projetos antigos não têm. */
   work?: string
   trend?: Trend
-  /** Visualizações acima (true) ou abaixo (false) da mediana; sem valor = ainda não medido (ADR 0033). */
+  /** Visualizações acima da mediana, com a margem (true), ou abaixo (false); sem valor = ainda não medido (ADR 0033). */
   above?: boolean
 }
 
@@ -98,19 +100,30 @@ export function revisitReason(idea: Pick<Idea, 'character'>, recent: RecentVideo
   return null
 }
 
+type Measured = Pick<VideoMetrics, 'platform' | 'projectId' | 'privacy' | 'snapshots' | 'current'>
+
 /**
- * Quais projetos ficaram acima da mediana de visualizações (ADR 0033): a mediana é a dos vídeos da mesma
- * plataforma com pelo menos uma foto fixa (o de hoje ainda não teve tempo) e sem os privados. Com Instagram
- * e YouTube, basta ir bem num. Os vídeos sem projeto (feitos fora do app) ficam de fora.
+ * Quais projetos ficaram acima da mediana de visualizações (ADR 0033), com a margem de raspão de 5%. A
+ * mediana é a dos vídeos públicos da mesma plataforma com pelo menos uma foto fixa: um vídeo de poucas
+ * horas ainda está juntando visualizações e marcaria a personagem como "abaixo" antes da hora. Um projeto
+ * com dois registros na mesma plataforma (um post apagado e publicado de novo) conta uma vez, com o que
+ * tem mais visualizações. Com Instagram e YouTube, basta ir bem num. Os vídeos sem projeto (feitos fora
+ * do app) ficam de fora.
  */
-export function aboveMedian(videos: Pick<VideoMetrics, 'platform' | 'projectId' | 'privacy' | 'snapshots' | 'current'>[]) {
-  const measured = videos.filter(v => v.projectId && v.privacy !== 'private' && v.snapshots.length > 0)
+export function aboveMedian(videos: Measured[]) {
+  const best = new Map<string, Measured>()
+  for (const v of videos) {
+    if (!v.projectId || v.privacy === 'private' || v.snapshots.length === 0) continue
+    const key = `${v.platform}:${v.projectId}`
+    if ((best.get(key)?.current.views ?? -1) < v.current.views) best.set(key, v)
+  }
+  const list = [...best.values()]
   const mid = new Map(
-    (['instagram', 'youtube'] as const).map(p => [p, median(measured.filter(v => v.platform === p).map(v => v.current.views))]),
+    (['instagram', 'youtube'] as const).map(p => [p, median(list.filter(v => v.platform === p).map(v => v.current.views))]),
   )
   const result = new Map<string, boolean>()
-  for (const v of measured) {
-    const above = v.current.views > (mid.get(v.platform) ?? Infinity)
+  for (const v of list) {
+    const above = v.current.views >= (mid.get(v.platform) ?? Infinity) * (1 - MEDIAN_MARGIN)
     result.set(v.projectId!, result.get(v.projectId!) || above)
   }
   return result
