@@ -6,7 +6,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-- [ ] Temas e roteiros sem a fórmula "X é mais que visual": o brainstorm proíbe o ângulo e pede outros jeitos de fanservice com opinião, o debate recusa ângulo repetido, e o roteiro ganha uma piada ligada ao tema (adendo ao [ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md))
+- [ ] Piada ligada ao tema no roteiro: uma por vídeo, no jeito do tom (ironia com algo que o fã conhece; tirada seca no tom sério; pode pular em tema triste), e a revisora confere se faz sentido
 
 
 ## A fazer
@@ -45,6 +45,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-16 · Temas sem a fórmula "X é mais que visual": o brainstorm proíbe o ângulo e pede outros jeitos de fanservice com opinião (ranking, comparação, ship, melhor e pior design), e o debate recusa ângulo repetido (adendo ao [ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md))
 - [x] 2026-10-16 · Buscas de imagem que dá para achar: fala abstrata ("é a número 1", "humana até no erro") pede o personagem em fanart, cosplay ou cena marcante, e não uma situação que quase não existe em imagem ("ranking com a Fubuki em primeiro"); fanart e cosplay levam o nome da obra na busca (adendo ao [ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))
 - [x] 2026-10-15 · Revisão do roteiro pelas IAs: depois do acordo (e no "Criar sozinho"), a Roteirista escreve com o gancho e o porquê combinados e a Estrategista revisa coesão, sentido, estrutura, o tema e os fatos (até 4 buscas), com até 2 reescritas; o código confere a aprovação e a contagem de palavras; sem aprovação, o vídeo segue e os pontos aparecem em "📝 Revisão do roteiro"; o "Por que este tema" ficou com 1 ou 2 frases ([ADR 0034](docs/decisions/0034-revisao-do-roteiro-pelas-ias.md))
 - [x] 2026-10-15 · Volta de personagens que deram views no debate: uma vaga (🔁 volta) para uma personagem de vídeo acima da mediana, com assunto novo, livre da janela de 3 vídeos e da regra da obra; não pode ser a do último vídeo e descansa se o vídeo mais recente dela ficou abaixo da mediana; qualquer personagem descansa com 3 dos últimos 8 vídeos ([ADR 0033](docs/decisions/0033-volta-de-personagens-que-deram-views.md))

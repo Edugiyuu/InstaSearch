@@ -130,6 +130,7 @@ export async function brainstormCandidates(
     `Regras de apelo (os temas de antes saíam com cara de notícia, e o criador quer temas com "tchan"):
 - Cada tema é uma OPINIÃO FORTE que toma um lado e divide o público, do tipo que dá vontade de comentar para discordar: "A Hinata é a personagem mais desperdiçada de Naruto", "A Nami pós-time-skip é o melhor design de One Piece, e não é por acaso". Nada com cara de notícia ou de resenha: "o episódio X dividiu os fãs", "a recepção de Y no Japão", "a adaptação de Z está boa?". Uma novidade pode ser o gatilho, mas o tema é a opinião sobre ela, não a notícia.
 - Pelo menos metade das ideias tem fanservice, de preferência com uma personagem mulher em destaque: beleza, design, visual novo, cenas marcantes dela, disputa de quem é a mais bonita ou a melhor, ship, versão alternativa. Sempre junto de uma opinião forte, nunca só "olha como ela é bonita". Só personagens adultas; nada sexual explícito.
+- PROIBIDA a fórmula "ela é mais que o visual / o corpo / a beleza / o fanservice" (e "é só beleza?", "não é só visual"): o canal já fez vários vídeos assim e cansou. Varie o ângulo: um ranking ("as 5 mais bonitas de Bleach"), uma comparação ("a Rebecca é melhor que a Lucy"), "quem venceria", um ship, o melhor e o pior design, um visual que a obra estragou, uma cena que a obra desperdiçou. Nunca use o mesmo ângulo de um dos últimos vídeos, mesmo com outra personagem.
 - O "hook" provoca: abre com a opinião ou com uma pergunta que a pessoa quer responder, nunca com o resumo de um fato.`,
   ]
     .filter(Boolean)
