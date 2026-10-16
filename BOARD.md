@@ -6,7 +6,6 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-- [ ] Piada ligada ao tema no roteiro: uma por vídeo, no jeito do tom (ironia com algo que o fã conhece; tirada seca no tom sério; pode pular em tema triste), e a revisora confere se faz sentido
 
 
 ## A fazer
