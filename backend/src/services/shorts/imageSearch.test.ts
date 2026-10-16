@@ -1,5 +1,18 @@
 import { describe, expect, it } from '@jest/globals'
-import { interleave, mentions, pickCandidates, safety, type WebImage } from './imageSearch.js'
+import { interleave, mentions, pickCandidates, safety, webQuery, type WebImage } from './imageSearch.js'
+
+describe('webQuery: a busca do Google e do Bing', () => {
+  it('fanart e cosplay levam a obra, senão vem a Fubuki da Hololive', () => {
+    expect(webQuery('Fubuki fanart', ['Fubuki'], 'One Punch Man')).toBe('Fubuki fanart One Punch Man')
+    expect(webQuery('Fubuki cosplay', ['Fubuki'], 'One Punch Man')).toBe('Fubuki cosplay One Punch Man')
+  })
+
+  it('meme não leva a obra, e o personagem que o texto não cita entra', () => {
+    expect(webQuery('this is fine meme', [], 'One Punch Man')).toBe('this is fine meme')
+    expect(webQuery('sorrindo com a mão no peito', ['Fubuki'], 'One Punch Man')).toBe('sorrindo com a mão no peito Fubuki One Punch Man')
+    expect(webQuery('pôster de One Punch Man', [], 'One Punch Man')).toBe('pôster de One Punch Man')
+  })
+})
 
 describe('safety: o filtro das sugestões pela opção "Imagens sugestivas"', () => {
   it('desligada: Bing rígido e Danbooru só "geral"', () => {

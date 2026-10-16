@@ -100,3 +100,12 @@ As alternativas de cada escolha estão na seção acima, com o motivo de não se
 - **Ganhamos:** o personagem certo na cena (ou um aviso de que falta, em vez de uma imagem errada); uma biblioteca que fica mais confiável a cada vídeo; memes e variações que engajam; imagens inteiras, sem zoom em dobro.
 - **Custa:** umas 4 chamadas de visão a mais por montagem (e a montagem fica alguns segundos mais lenta); uma fila única para recatalogar 78 imagens; um campo novo por cena no roteiro (a busca criativa e o tipo); largura e altura em cada imagem da biblioteca.
 - **Revisar quando:** a visão errar personagens parecidos (aí comparar com o retrato do AniList), ou os memes ficarem repetitivos ou fora de hora (aí o ajuste rápido do 3B).
+
+## Adendo (2026-10-15): específica, mas que dê para achar
+
+No vídeo "Fubuki, a irmã esquecida", o roteiro pediu, para a fala "Sem poder de S-Class, é a número 1", a imagem "ranking de heróis Classe B com Fubuki em primeiro", e para "Humana até no erro!", "Fubuki com expressão séria e ressentida". Essas imagens quase não existem: o Bing trouxe páginas de ranking ("All Heroes Rank One Punch Man") e vídeos do YouTube, e o usuário teve de trocar à mão. O usuário: "é muito específico, é difícil demais achar isso", e para essas falas prefere "uma cosplay da personagem, ou uma fanart".
+
+- **A busca tem que ser fácil de achar.** No pedido do roteiro (e do chat da cena, que usa o mesmo formato), uma situação específica só quando é uma cena conhecida da obra (uma luta, um episódio, uma arte oficial), e no máximo uma emoção simples. **Fala abstrata** (opinião, ranking, sentimento, comparação) pede o personagem numa imagem que existe aos montes: "Fubuki fanart", "Fubuki cosplay" ou uma cena marcante dele. O "específico" deste ADR continua valendo para o personagem certo, que segue obrigatório.
+- **Fanart e cosplay levam o nome da obra na busca.** Antes, toda busca "criativa" saía sem a obra, por causa do meme de reação; "Fubuki fanart" sozinho traria a Fubuki da Hololive. Agora só o meme sai sem a obra (`webQuery`, em `imageSearch.ts`).
+- **Ficou de fora:** buscar de novo com "<personagem> fanart" quando a IA de visão não acha nenhuma imagem boa. Resolveria também os roteiros antigos, mas gasta mais uma chamada de visão por cena; fica para o caso de o pedido não bastar.
+- **Revisar quando:** as cenas ficarem repetitivas (fanart do mesmo personagem em todas), ou as falas abstratas continuarem vindo com buscas impossíveis.

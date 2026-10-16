@@ -177,11 +177,7 @@ export async function searchWebImages(input: WebSearchInput): Promise<WebSearchR
   if (hit && Date.now() - hit.at < CACHE_MS) return withoutLibrary(hit.value)
 
   const google = webSearchEnabled().google
-  // a obra vai junto, senão "cena violenta com sangue" traz sangue de qualquer série; no meme não,
-  // porque o meme de reação ("this is fine meme") não é da obra, e o meme da obra já a cita
-  const googleQuery = [q, ...names.filter(c => !normalize(q).includes(normalize(c))), creative || mentions(q, subject) ? '' : subject]
-    .filter(Boolean)
-    .join(' ')
+  const googleQuery = webQuery(q, names, subject)
   const [g, w, people] = await Promise.all([
     google ? safe('Google', () => searchGoogle(googleQuery, page)) : null,
     safe('Bing', () => searchBing(googleQuery, page, 'web', filter)),
@@ -249,6 +245,17 @@ async function safe<T>(label: string, fn: () => Promise<T>): Promise<T | null> {
     logger.warn(`⚠️ Busca de imagens (${label}) falhou: ${error.response?.status ?? ''} ${error.message}`)
     return null
   }
+}
+
+/**
+ * A busca do Google e do Bing: o texto da cena, os personagens que ele não cita e a obra. A obra vai junto,
+ * senão "cena violenta com sangue" traz sangue de qualquer série. No meme não, porque o meme de reação
+ * ("this is fine meme") não é da obra, e o meme da obra já a cita. Na fanart e no cosplay, sim: "Fubuki
+ * fanart" sozinho traz a Fubuki da Hololive, não a de One-Punch Man.
+ */
+export function webQuery(q: string, names: string[], subject: string) {
+  const meme = /\bmemes?\b/.test(normalize(q))
+  return [q, ...names.filter(c => !normalize(q).includes(normalize(c))), meme || mentions(q, subject) ? '' : subject].filter(Boolean).join(' ')
 }
 
 /** O texto já cita a obra? Cada palavra do nome tem que aparecer: "edgerunners lucy" não cita "Cyberpunk: Edgerunners". */
