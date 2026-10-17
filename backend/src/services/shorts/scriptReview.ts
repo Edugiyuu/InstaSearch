@@ -1,12 +1,12 @@
 // Revisão do roteiro (ADR 0034): a Roteirista escreve, a Estrategista revisa, e sem aprovação vem uma
-// versão nova, até 2 reescritas. Quem decide se aprovou é o código: o "approved" da revisora e a contagem
+// versão nova, até 3 reescritas. Quem decide se aprovou é o código: o "approved" da revisora e a contagem
 // de palavras (a IA não decide sozinha que "está bom"). Sem rede nem disco: quem escreve e quem revisa
 // entram como funções (testado em scriptReview.test.ts).
 
 import type { AiCredit, ScriptReview } from './types.js'
 
-/** Até 2 reescritas: no máximo 3 versões e 3 revisões. */
-export const MAX_REWRITES = 2
+/** Até 3 reescritas: no máximo 4 versões e 4 revisões (adendo ao ADR 0034). */
+export const MAX_REWRITES = 3
 /** O roteiro pode passar um pouco do limite de palavras; mais que isso, o vídeo fica mais longo que o pedido. */
 export const WORD_SLACK = 1.1
 

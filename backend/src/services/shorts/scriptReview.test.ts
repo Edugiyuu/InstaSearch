@@ -38,11 +38,11 @@ describe('revisão do roteiro pelas IAs (ADR 0034)', () => {
   })
 
   it(`sem aprovação, para depois de ${MAX_REWRITES} reescritas e segue com a última versão e os problemas`, async () => {
-    const f = fakes([no('a'), no('b'), no('O gancho não prende.'), ok])
+    const f = fakes([no('a'), no('b'), no('c'), no('O gancho não prende.'), ok])
     const { script, review } = await reviewLoop({ write: f.write, review: f.review, maxWords: 80 })
     expect(f.written).toHaveLength(MAX_REWRITES + 1)
-    expect(script.narration).toBe('versão 3')
-    expect(reviewSummary(review)).toEqual({ approved: false, versions: 3, problems: ['O gancho não prende.'] })
+    expect(script.narration).toBe('versão 4')
+    expect(reviewSummary(review)).toEqual({ approved: false, versions: 4, problems: ['O gancho não prende.'] })
   })
 
   it('o código não aprova um roteiro longo demais, mesmo que a revisora aprove', async () => {

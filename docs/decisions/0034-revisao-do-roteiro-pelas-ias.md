@@ -66,3 +66,10 @@ Num debate de hoje (15/10, "Obito vs. Naruto"), o Claude respondeu 6 vezes no de
   - As duas IAs podem discordar por gosto, e não por erro; o limite de voltas segura isso.
   - Com 1A, o roteiro continua no Gemini e a revisão no Claude: é um modelo criticando o outro, o que é bom para pegar erro, mas a "Roteirista" do chat é, na verdade, o `generateScript`.
 - **Revisar quando:** a revisora aprovar quase sempre na primeira (a etapa não está pegando nada: tirar ou endurecer), reprovar quase sempre (critério exigente demais), ou os vídeos com o roteiro revisado não melhorarem a retenção.
+
+## Adendo (2026-10-17): até 3 reescritas
+
+A escolha 3A previa até 2 reescritas (3 versões). Num roteiro de "E se…" sobre Cyberpunk: Edgerunners, a Estrategista apontou fatos errados nas versões 1 e 2 e ainda achou dois problemas na 3, que seguiu sem aprovação. O limite passa para **3 reescritas** (até 4 versões e 4 revisões): a última crítica agora vira uma versão nova, em vez de só aparecer na Revisão.
+
+- **Custa:** no pior caso, mais 1 chamada da revisora (com até 4 buscas) e mais 1 roteiro no gerador; a criação fica um pouco mais lenta.
+- **Revisar quando:** a 4ª versão quase nunca for aprovada (aí o problema é o pedido do roteiro, não o número de voltas).

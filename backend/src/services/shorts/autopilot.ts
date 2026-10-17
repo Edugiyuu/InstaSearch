@@ -172,7 +172,7 @@ async function run(job: AutopilotJob) {
 
 /**
  * O roteiro com a revisão das IAs (ADR 0034): a Roteirista (o gerador de roteiro) escreve com o gancho e o
- * porquê da ideia, e a Estrategista revisa, com até 2 reescritas. Com debate, cada passo vai para o chat.
+ * porquê da ideia, e a Estrategista revisa, com até 3 reescritas. Com debate, cada passo vai para o chat.
  */
 async function writeReviewed(job: AutopilotJob, idea: Idea) {
   const { theme, duration, style, tone } = await scriptInputs({ theme: idea.theme, styleId: idea.styleId, toneId: idea.toneId, duration: idea.duration })
