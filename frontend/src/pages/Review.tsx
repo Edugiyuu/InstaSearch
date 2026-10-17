@@ -28,6 +28,7 @@ import { ScenePick, ScenePickOption } from '../components/ScenePick'
 import { BackdropPick } from '../components/BackdropPick'
 import { WhyTopic } from '../components/WhyTopic'
 import { ScriptReviewNote } from '../components/ScriptReviewNote'
+import { TierListCard } from '../components/TierListCard'
 import { StickerChoice, StickerPick } from '../components/StickerPick'
 import './Review.css'
 
@@ -575,6 +576,17 @@ function Review() {
           {project.autopilot?.review && (
             <div className="panel rv-card">
               <ScriptReviewNote autopilot={project.autopilot} />
+            </div>
+          )}
+
+          {project.format === 'tierlist' && project.tier && (
+            <div className="panel rv-card">
+              <TierListCard
+                project={project}
+                disabled={!!working}
+                onRank={rank => run(`Fileira ${rank}`, () => shortsApi.setTierRank(project.id, rank))}
+                onAdjust={ask}
+              />
             </div>
           )}
 

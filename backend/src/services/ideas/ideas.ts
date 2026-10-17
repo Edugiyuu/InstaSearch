@@ -15,7 +15,8 @@ import { askJsonMeta, MAX_SEARCHES } from '../shorts/llm.js'
 import { listProjects } from '../shorts/projects.js'
 import { listStyles } from '../shorts/styles.js'
 import { listTones } from '../shorts/tones.js'
-import type { ShortProject } from '../shorts/types.js'
+import { ACTIVE_FORMATS, TIER_LIST_ON } from '../shorts/formats.js'
+import type { ShortProject, VideoFormat } from '../shorts/types.js'
 import { buildRefs, cleanIdeas, commentLine, MAX_IDEAS, videoLine, type RawIdea } from './clean.js'
 import type { Idea, IdeaStatus } from './types.js'
 
@@ -96,6 +97,17 @@ export async function brainstorm(input: { seed?: string; request?: string }) {
 /** A pesquisa do debate (ADR 0028): o que acontece nas obras do canal e o que está viralizando no nicho. */
 const RESEARCH_DEBATE = `${RESEARCH} Pesquise também o que está viralizando AGORA no nicho do canal (o mesmo tipo de conteúdo dos vídeos dele, por exemplo anime, desenho, games e cultura geek), mesmo fora das obras que o canal já tratou: trends de fãs, memes, versões alternativas de personagens (como a "Malfoid", a versão mulher do Draco Malfoy), polêmicas e estreias de que o público está falando. E o que os fãs estão discutindo sobre personagens mulheres: disputas de quem é a mais bonita ou a melhor, enquetes de popularidade, designs novos, cosplays e fanarts que viralizaram.`
 
+/** Como o pedido do brainstorm explica cada formato (ADR 0036); só os ligados entram (ACTIVE_FORMATS). */
+const FORMAT_PROMPT: Record<VideoFormat, string> = {
+  opiniao: '- "opiniao": opinião com provas (gancho, tese, 2 provas, conclusão).',
+  tierlist:
+    '- "tierlist": tier list em SÉRIE, um personagem por vídeo. "series" é a obra e o critério ("One Punch Man: o melhor personagem"), e "character" é o personagem que ESTE vídeo ranqueia. O tema é do tipo "Tier list de One Punch Man: onde fica o Garou?". Continue uma série que já existe (com alguém que ainda não está no quadro) ou comece uma nova numa obra do canal.',
+  versus: '- "versus": X contra Y ("Rebecca ou Lucy: quem é melhor?").',
+  ese: '- "ese": E se… ("E se a Tatsumaki entrasse na Associação dos Monstros?").',
+  mito: '- "mito": mito ou verdade ("3 coisas que todo mundo acha da Makima, e estão erradas").',
+  antesdepois: '- "antesdepois": antes e depois ("Nami antes e depois do time-skip").',
+}
+
 /**
  * As candidatas do debate das IAs (ADR 0027 e 0028): um brainstorm próprio, sem tema, que não grava nada
  * nem mexe no lote de ideias novas da tela (só a vencedora do debate entra no banco). Pede mais ideias do
@@ -104,10 +116,18 @@ const RESEARCH_DEBATE = `${RESEARCH} Pesquise também o que está viralizando AG
  * - `done`: todos os títulos já feitos (à mão e sozinho), para não repetir o assunto;
  * - `recent`: os mais recentes, com obra e "em alta", para variar;
  * - `champions`: os títulos dos vídeos acima da mediana de visualizações, para a ideia de volta (ADR 0033);
+ * - `series`: as tier lists do canal, com quem já foi ranqueado, para a próxima parte (ADR 0036);
  * - `avoid`: as ideias que o filtro tirou numa tentativa anterior ou que caíram numa rodada anterior do debate, com o motivo.
  */
 export async function brainstormCandidates(
-  input: { channel: string[]; done: string[]; recent: string; champions?: string[]; avoid?: { theme: string; reason: string }[] },
+  input: {
+    channel: string[]
+    done: string[]
+    recent: string
+    champions?: string[]
+    series?: { series: string; ranked: string[] }[]
+    avoid?: { theme: string; reason: string }[]
+  },
   count: number,
 ) {
   const list = (titles: string[]) => titles.map(t => `- ${t}`).join('\n')
@@ -127,6 +147,14 @@ export async function brainstormCandidates(
 - "Em alta" é o TEMA, não a obra: só marque "alta" se o tema fala de algo que aconteceu nas últimas semanas (um episódio, capítulo, anúncio, design ou trend novo) e a pesquisa confirmou. Teste: se o tema funcionaria igual há um ano, ele é "atemporal", mesmo que a obra esteja em evidência (o passado do Gaara é atemporal, mesmo com Naruto voltando).
 - Fora isso, fique nas obras que o canal já fala. A exceção é UMA ideia de aposta ("bet": true): algo que está bombando agora no mesmo nicho do canal, mesmo numa obra que ele nunca tratou (uma trend de fãs, um meme, uma versão alternativa de personagem). Só se a pesquisa confirmou que está bombando, e nunca de outro nicho (nada de culinária num canal de anime).
 - Até UMA ideia de volta ("revisit": true): uma personagem de um vídeo do canal que ficou acima da mediana de visualizações, com um assunto NOVO (outra pergunta, outro recorte, nunca o mesmo vídeo com outro título). Nessa ideia, a obra e a janela de 3 vídeos não contam, mas a personagem não pode ser a do último vídeo, nem uma que já tem 3 dos últimos 8 vídeos, nem uma cujo vídeo mais recente ficou abaixo da mediana: ela descansa. Voltar é bom de vez em quando; sugar a personagem até a última gota, não.`,
+    `Formatos de vídeo (o app confere: o formato de um dos 2 últimos vídeos é descartado). Cada ideia tem um "format", e as 6 usam pelo menos 4 formatos diferentes, só destes:
+${ACTIVE_FORMATS.map(f => FORMAT_PROMPT[f]).join('\n')}${
+      !TIER_LIST_ON
+        ? ''
+        : input.series?.length
+          ? `\nAs tier lists do canal (quem já foi ranqueado, com a fileira; não repita ninguém):\n${input.series.map(s => `- "${s.series}": ${s.ranked.join(', ')}`).join('\n')}`
+          : '\nO canal ainda não tem nenhuma tier list.'
+    }`,
     `Regras de apelo (os temas de antes saíam com cara de notícia, e o criador quer temas com "tchan"):
 - Cada tema é uma OPINIÃO FORTE que toma um lado e divide o público, do tipo que dá vontade de comentar para discordar: "A Hinata é a personagem mais desperdiçada de Naruto", "A Nami pós-time-skip é o melhor design de One Piece, e não é por acaso". Nada com cara de notícia ou de resenha: "o episódio X dividiu os fãs", "a recepção de Y no Japão", "a adaptação de Z está boa?". Uma novidade pode ser o gatilho, mas o tema é a opinião sobre ela, não a notícia.
 - Pelo menos metade das ideias tem fanservice, de preferência com uma personagem mulher em destaque: beleza, design, visual novo, cenas marcantes dela, disputa de quem é a mais bonita ou a melhor, ship, versão alternativa. Sempre junto de uma opinião forte, nunca só "olha como ela é bonita". Só personagens adultas; nada sexual explícito.
@@ -206,11 +234,11 @@ ${
 - "theme" é escrito como o criador escreveria no campo "Sobre o que é o vídeo?": uma pergunta ou afirmação específica (ex.: "Por que o Luffy nunca mata ninguém em One Piece?"). Nada genérico.
 - "hook" é a primeira frase falada do vídeo, com até 15 palavras.
 - "duration": 15, 20, 30 ou 40 (segundos).
-- "work": o nome oficial completo da obra (ex.: "One-Punch Man", nunca "OPM"); "character": a personagem principal do tema (nome e sobrenome, se tiver), ou vazio se não houver uma; "trend": "alta" se o tema depende do que está acontecendo agora, ou "atemporal".${opts.variety ? '\n- "bet": true só na ideia de aposta; "revisit": true só na ideia de volta; nas outras, false.' : ''}
+- "work": o nome oficial completo da obra (ex.: "One-Punch Man", nunca "OPM"); "character": a personagem principal do tema (nome e sobrenome, se tiver), ou vazio se não houver uma; "trend": "alta" se o tema depende do que está acontecendo agora, ou "atemporal".${opts.variety ? `\n- "bet": true só na ideia de aposta; "revisit": true só na ideia de volta; nas outras, false. "format": um de ${ACTIVE_FORMATS.join(', ')}${TIER_LIST_ON ? '; "series" só na tierlist' : ''}.` : ''}
 - "why": 2 ou 3 frases, citando os números quando houver ("o vídeo do Gojo foi 2,4× a mediana"). No "why", chame os vídeos pelo título e os comentários pelo texto: o criador não vê as etiquetas [V1] e [C1], que servem só para "videos" e "comments".
 
 Responda só com JSON:
-{ "ideas": [ { "theme": "...", "hook": "...", "styleId": "...", "toneId": "...", "duration": 30, "why": "...", "videos": ["V1"], "comments": ["C2"], "web": "o que a pesquisa encontrou, ou vazio", "work": "...", "character": "...", "trend": "alta"${opts.variety ? ', "bet": false, "revisit": false' : ''} } ] }`
+{ "ideas": [ { "theme": "...", "hook": "...", "styleId": "...", "toneId": "...", "duration": 30, "why": "...", "videos": ["V1"], "comments": ["C2"], "web": "o que a pesquisa encontrou, ou vazio", "work": "...", "character": "...", "trend": "alta"${opts.variety ? ', "bet": false, "revisit": false, "format": "opiniao", "series": ""' : ''} } ] }`
 
   const { data, ai } = await askJsonMeta<{ ideas?: RawIdea[] }>(prompt, { research: true, researchNote: opts.variety ? RESEARCH_DEBATE : RESEARCH })
   const cleaned = cleanIdeas(Array.isArray(data.ideas) ? data.ideas : [], refs, {

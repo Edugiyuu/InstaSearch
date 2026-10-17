@@ -123,6 +123,7 @@ backend/src/
 │   │   ├── projects.ts        criar, montar, ajustar, desfazer, transcrever
 │   │   ├── autopilot.ts       criar sozinho: a fila ideia → roteiro → montagem → imagens (ADR 0026)
 │   │   ├── scriptReview.ts    a revisão do roteiro pelas IAs: escreve, revisa e reescreve até 2 vezes (ADR 0034)
+│   │   ├── formats.ts         os formatos de vídeo e a tier list em série: estrutura, quadro, fileira (ADR 0036)
 │   │   ├── library.ts         arquivos baixados, figurinhas e sons de cada cena
 │   │   ├── imageSearch.ts     busca na web (Bing, Danbooru, AniList, Serper)
 │   │   ├── sceneEdits.ts      o chat só mexe nas cenas citadas
@@ -138,7 +139,7 @@ frontend/src/
 ├── pages/                     uma por tela
 ├── hooks/                     estado das telas (loading, error)
 ├── api/                       chamadas ao backend, com os tipos
-├── video/                     a composição Remotion (prévia e MP4)
+├── video/                     a composição Remotion (prévia e MP4); TierListScene.tsx desenha o quadro da tier list (ADR 0036)
 ├── components/                menu, modal de publicar, pop-ups da cena…
 └── styles/                    tokens de cor (index.css) e componentes (ui.css)
 ```

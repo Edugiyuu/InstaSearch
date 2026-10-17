@@ -12,6 +12,8 @@ import { getIdea, updateIdea } from '../ideas/ideas.js'
 import type { Idea } from '../ideas/types.js'
 import { assemble, autoFillImages, createProject, getProject, listProjects, scriptInputs, setAutopilot } from './projects.js'
 import { reviewLoop, reviewSummary } from './scriptReview.js'
+import { formatStructure, sameSeries, tierLetterProblem, tierSeries } from './formats.js'
+import { characterPortrait } from './imageSearch.js'
 import { generateScript, maxWords, reviewScript } from './shortsAI.js'
 import type { Autopilot } from './types.js'
 
@@ -123,7 +125,20 @@ async function run(job: AutopilotJob) {
 
       step(job, 'roteiro')
       const { script, review } = await writeReviewed(job, idea)
-      const project = await createProject({ theme: idea.theme, styleId: idea.styleId, toneId: idea.toneId, duration: idea.duration, script })
+      // na tier list, o personagem e o retrato oficial, que vai no quadro (ADR 0036, 5A)
+      const tier =
+        idea.format === 'tierlist' && idea.series && idea.character
+          ? { series: idea.series, character: idea.character, portrait: await characterPortrait(idea.character, `${idea.work ?? ''} ${idea.series}`) }
+          : undefined
+      const project = await createProject({
+        theme: idea.theme,
+        styleId: idea.styleId,
+        toneId: idea.toneId,
+        duration: idea.duration,
+        script,
+        format: tier ? 'tierlist' : idea.format,
+        tier,
+      })
       job.projectId = project.id
       job.title = project.title
       await setAutopilot(project.id, {
@@ -177,15 +192,27 @@ async function run(job: AutopilotJob) {
 async function writeReviewed(job: AutopilotJob, idea: Idea) {
   const { theme, duration, style, tone } = await scriptInputs({ theme: idea.theme, styleId: idea.styleId, toneId: idea.toneId, duration: idea.duration })
   const agreed = { theme: theme || idea.theme, hook: idea.hook || undefined, brief: idea.why || undefined }
+  const format = idea.format ?? 'opiniao'
+  const tier = format === 'tierlist' ? await tierContext(idea) : undefined
   return reviewLoop({
-    write: revision => generateScript({ ...agreed, toneGuide: tone.guide, duration, style, revision }),
-    review: (script, version) => reviewScript({ ...agreed, duration, narration: script.narration, version }),
+    write: revision => generateScript({ ...agreed, toneGuide: tone.guide, duration, style, revision, format, tier }),
+    review: (script, version) => reviewScript({ ...agreed, duration, narration: script.narration, version, structure: formatStructure(format, tier) }),
     maxWords: maxWords(duration),
+    // na tier list, a narração nunca diz a fileira: quem revela é a animação (ADR 0036, 6)
+    checks: tier ? [tierLetterProblem] : [],
     onChange: review => {
       step(job, review.thinking === 'revisao' ? 'revisao' : 'roteiro')
       return job.debateId ? saveReview(job.debateId, review) : undefined
     },
   })
+}
+
+/** A tier list da ideia (ADR 0036): quem já está no quadro da série e que parte é este vídeo. */
+async function tierContext(idea: Idea) {
+  if (!idea.series || !idea.character) return undefined
+  const series = tierSeries(await listProjects()).find(s => sameSeries(s.series, idea.series))
+  const previous = series?.entries ?? []
+  return { series: series?.series ?? idea.series, character: idea.character, part: previous.length + 1, previous }
 }
 
 /** Ao subir o servidor: o que estava no meio parou junto, então vira "Continuar" no projeto. */

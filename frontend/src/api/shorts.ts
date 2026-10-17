@@ -60,6 +60,38 @@ export interface Beat {
   twist?: { kind: 'meme' | 'variacao'; query: string; tags?: string[] }
   /** Fundo escolhido na revisão; sem valor, o automático decide (ADR 0020 e 0022). */
   framing?: FramingChoice
+  /** Cena da tier list (ADR 0036), no lugar da imagem: o quadro, ou a revelação da fileira. */
+  tier?: 'quadro' | 'revelacao'
+}
+
+/** Os formatos de vídeo (ADR 0036). */
+export type VideoFormat = 'opiniao' | 'tierlist' | 'versus' | 'ese' | 'mito' | 'antesdepois'
+export const FORMAT_NAME: Record<VideoFormat, string> = {
+  opiniao: 'opinião com provas',
+  tierlist: 'tier list',
+  versus: 'X contra Y',
+  ese: 'E se…',
+  mito: 'mito ou verdade',
+  antesdepois: 'antes e depois',
+}
+
+/** As fileiras, como no TierMaker (ADR 0036). */
+export const TIER_RANKS = ['S', 'A', 'B', 'C', 'D'] as const
+export type TierRank = (typeof TIER_RANKS)[number]
+
+export interface TierEntry {
+  series: string
+  character: string
+  rank: TierRank
+  portrait?: string
+}
+
+/** O quadro de um vídeo da tier list: os vídeos da série feitos antes dele, mais ele. */
+export interface TierBoard {
+  series: string
+  previous: TierEntry[]
+  current: TierEntry
+  part: number
 }
 
 
@@ -142,6 +174,10 @@ export interface ShortProject {
   theme: string
   /** A obra do vídeo (ADR 0024); projetos antigos não têm, e aí vale o tema. */
   subject?: string
+  /** O formato (ADR 0036); sem o campo, opinião com provas. */
+  format?: VideoFormat
+  /** Só na tier list: o personagem do vídeo e a fileira. */
+  tier?: TierEntry
   styleId: string
   duration: number
   tone: string
@@ -392,6 +428,9 @@ export const shortsApi = {
   /** scene: a cena aberta na prévia (a primeira é 1), para o chat entender "esta cena". */
   adjust: (id: string, request: string, scene?: number) => data<ShortProject>(api.post(`/shorts/projects/${id}/adjust`, { request, scene })),
   undo: (id: string) => data<ShortProject>(api.post(`/shorts/projects/${id}/undo`)),
+  /** O quadro da tier list do vídeo (ADR 0036); null se não é tier list. */
+  tierBoard: (id: string) => data<TierBoard | null>(api.get(`/shorts/projects/${id}/tier-board`)),
+  setTierRank: (id: string, rank: TierRank) => data<ShortProject>(api.put(`/shorts/projects/${id}/tier`, { rank })),
   /** Transcreve (de novo) a voz em segundo plano; acompanhe pelo project.transcript. */
   transcribe: (id: string) => data<ShortProject>(api.post(`/shorts/projects/${id}/transcribe`)),
   whisperStatus: () => data<WhisperStatus>(api.get('/shorts/whisper')),
@@ -654,7 +693,8 @@ export interface AppSettings {
   suggestiveImages: boolean
 }
 
-export const beatsNeedingImage = (p: ShortProject) => p.beats.filter(b => !b.locked && b.imageStatus !== 'match')
+// a cena do quadro da tier list não tem imagem: o quadro é desenhado no vídeo (ADR 0036)
+export const beatsNeedingImage = (p: ShortProject) => p.beats.filter(b => !b.locked && !b.tier && b.imageStatus !== 'match')
 
 /** Texto e cor do status de um projeto nas listas. */
 export function projectStatus(p: ShortProject) {

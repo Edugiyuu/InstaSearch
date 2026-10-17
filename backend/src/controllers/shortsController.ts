@@ -9,6 +9,7 @@ import os from 'os'
 import path from 'path'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
 import * as projects from '../services/shorts/projects.js'
+import { isRank } from '../services/shorts/formats.js'
 import * as library from '../services/shorts/library.js'
 import * as videoScenes from '../services/shorts/videoScenes.js'
 import * as styles from '../services/shorts/styles.js'
@@ -84,7 +85,21 @@ export const getProject = asyncHandler(async (req: Request, res: Response) => {
 })
 
 export const createProject = asyncHandler(async (req: Request, res: Response) => {
-  res.status(201).json({ success: true, data: await projects.createProject(req.body) })
+  // só os campos do Novo vídeo: o roteiro pronto e a tier list vêm da criação sozinha, não do navegador
+  const { theme, styleId, duration, toneId, tone, narration } = req.body ?? {}
+  res.status(201).json({ success: true, data: await projects.createProject({ theme, styleId, duration, toneId, tone, narration }) })
+})
+
+/** O quadro da tier list do vídeo (ADR 0036), ou null se não é tier list. */
+export const getTierBoard = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await projects.getTierBoard(req.params.id) })
+})
+
+/** Troca a fileira do personagem da tier list (ADR 0036). */
+export const setTierRank = asyncHandler(async (req: Request, res: Response) => {
+  const rank = String(req.body?.rank ?? '').toUpperCase()
+  if (!isRank(rank)) throw new AppError('Fileira inválida: use S, A, B, C ou D', 400, 'VALIDATION')
+  res.json({ success: true, data: await projects.setTierRank(req.params.id, rank) })
 })
 
 export const updateProject = asyncHandler(async (req: Request, res: Response) => {

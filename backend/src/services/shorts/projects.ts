@@ -15,7 +15,8 @@ import { listSounds, syncSoundUsage } from './sounds.js'
 import { normalize } from './library.js'
 import { transcribeAudio, WHISPER_MODEL } from './transcription.js'
 import { BUILT_IN_TONES, getTone, toneByName } from './tones.js'
-import { STICKER_LEVELS, type AiCredit, type AssemblyLogEntry, type Beat, type FramingChoice, type ProjectSettings, type ShortProject, type Transcript } from './types.js'
+import { tierBoard } from './formats.js'
+import { STICKER_LEVELS, type AiCredit, type AssemblyLogEntry, type Beat, type FramingChoice, type ProjectSettings, type ShortProject, type TierEntry, type TierRank, type Transcript, type VideoFormat } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const AUDIO_DIR = path.join(__dirname, '../../../data/short_projects/audio')
@@ -93,8 +94,12 @@ export async function scriptInputs(input: ProjectInput) {
   return { theme, duration, style, tone }
 }
 
-/** `script`: um roteiro já escrito e revisado pelas IAs (ADR 0034); sem ele, o gerador escreve agora. */
-export async function createProject(input: ProjectInput & { script?: Script }) {
+/**
+ * `script`: um roteiro já escrito e revisado pelas IAs (ADR 0034); sem ele, o gerador escreve agora.
+ * `format` e `tier`: o formato do vídeo e, na tier list, a série e o personagem (ADR 0036); a fileira
+ * vem do roteiro.
+ */
+export async function createProject(input: ProjectInput & { script?: Script; format?: VideoFormat; tier?: Omit<TierEntry, 'rank'> }) {
   const { theme, duration, style, tone } = await scriptInputs(input)
 
   const script =
@@ -113,6 +118,8 @@ export async function createProject(input: ProjectInput & { script?: Script }) {
     title: script.title,
     theme: theme || script.title,
     subject: script.subject,
+    ...(input.format && input.format !== 'opiniao' ? { format: input.format } : {}),
+    ...(input.format === 'tierlist' && input.tier ? { tier: { ...input.tier, rank: script.tierRank ?? 'B' } } : {}),
     styleId: style.id,
     duration,
     tone: tone.name,
@@ -184,7 +191,7 @@ export const subjectOf = (p: ShortProject) => p.subject ?? p.theme
  */
 export async function assemble(id: string, opts: { images?: boolean } = {}) {
   const project = await getProject(id)
-  project.beats = project.beats.map(b => (b.locked ? b : { ...b, imageId: undefined, imageStatus: 'missing' as const }))
+  project.beats = project.beats.map(b => (b.locked || b.tier ? b : { ...b, imageId: undefined, imageStatus: 'missing' as const }))
   const log: AssemblyLogEntry[] = []
   if (opts.images !== false) {
     const fill = await fillFromWeb(project)
@@ -217,7 +224,10 @@ export async function adjust(id: string, request: string, openScene?: number) {
     sounds: sfx.map(s => ({ id: s.id, name: s.name })),
     openScene,
     subject: subjectOf(project),
+    tier: project.tier ? { character: project.tier.character, rank: project.tier.rank } : undefined,
   })
+  // "põe o Garou no B" (ADR 0036): só o quadro muda
+  if (out.tierRank && project.tier) project.tier = { ...project.tier, rank: out.tierRank }
 
   const changed = out.beats !== project.beats
   const stickersChanged = out.settings.stickers !== project.settings.stickers
@@ -236,6 +246,20 @@ export async function adjust(id: string, request: string, openScene?: number) {
     { id: generateId('adj'), request: request.trim(), reply: out.reply, at: new Date().toISOString(), ai: out.ai },
   ]
   return save(project)
+}
+
+/** A Revisão trocou a fileira do personagem da tier list (ADR 0036): muda o quadro deste vídeo e dos seguintes. */
+export async function setTierRank(id: string, rank: TierRank) {
+  const project = await getProject(id)
+  if (!project.tier) throw new AppError('Este vídeo não é uma tier list', 400, 'VALIDATION')
+  project.tier = { ...project.tier, rank }
+  return save(project)
+}
+
+/** O quadro da tier list deste vídeo: os vídeos da série criados antes dele, mais ele (ADR 0036, 3C). */
+export async function getTierBoard(id: string) {
+  const project = await getProject(id)
+  return tierBoard(project, await storage.findAll()) ?? null
 }
 
 export async function undo(id: string) {
@@ -268,7 +292,8 @@ export async function setBeatImage(id: string, beatId: string, imageId: string |
 }
 
 /** Cenas que ainda precisam de imagem: sem imagem, ou com uma parecida que o usuário não aprovou. */
-const needsImage = (b: Beat) => !b.locked && b.imageStatus !== 'match'
+// a cena do quadro da tier list não tem imagem: o quadro é desenhado no vídeo (ADR 0036)
+const needsImage = (b: Beat) => !b.locked && !b.tier && b.imageStatus !== 'match'
 
 /** Fontes cujos personagens vêm das etiquetas (Danbooru) ou do cadastro (AniList), e não de um título qualquer. */
 const trustedSource = (img: WebImage) => (img.source === 'danbooru' || img.source === 'anilist') && !!img.characters?.length

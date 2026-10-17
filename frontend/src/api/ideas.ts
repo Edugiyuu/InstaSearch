@@ -1,7 +1,7 @@
 // Banco de ideias (ADR 0021). Os tipos espelham backend/src/services/ideas/types.ts.
 import api from '../services/api'
 import type { Platform } from './insights'
-import type { AiCredit, ScriptReview } from './shorts'
+import type { AiCredit, ScriptReview, VideoFormat } from './shorts'
 
 export type IdeaStatus = 'nova' | 'guardada' | 'descartada' | 'feita'
 
@@ -30,6 +30,9 @@ export interface Idea {
   bet?: boolean
   /** Volta: uma personagem de um vídeo acima da mediana, com um assunto novo (ADR 0033). */
   revisit?: boolean
+  /** O formato do vídeo (ADR 0036) e, na tier list, a série. */
+  format?: VideoFormat
+  series?: string
   status: IdeaStatus
   discardReason?: string
   projectId?: string

@@ -483,6 +483,15 @@ async function resolveCharacters(names: string[], context: string): Promise<(Per
   return lists.map((list, i) => picked[i] ?? list.find(p => p.series.some(s => known.has(s))) ?? best(list, names[i]))
 }
 
+/**
+ * O retrato oficial do personagem (AniList), para o quadro da tier list (ADR 0036, 5A): é sempre o
+ * personagem certo. `context`: a obra e a série, para desempatar nomes. Sem retrato, undefined.
+ */
+export async function characterPortrait(name: string, context: string) {
+  const [person] = await safe('AniList', () => resolveCharacters([name], context)).then(r => r ?? [])
+  return person?.image
+}
+
 function anilistImages(people: (Person | undefined)[]) {
   const found = people.filter((p): p is Person => Boolean(p?.image))
   if (found.length === 0) return null

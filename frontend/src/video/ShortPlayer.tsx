@@ -3,6 +3,7 @@ import { Player, PlayerRef } from '@remotion/player'
 import type { LibraryImage, ShortProject, SoundItem } from '../api/shorts'
 import { ShortVideo } from './ShortVideo'
 import { useCatchphrases } from '../hooks/useShorts'
+import { useTierBoard } from '../hooks/useTierBoard'
 import { FPS, HEIGHT, shortVideoProps, WIDTH } from './timeline'
 
 export interface ShortPlayerHandle {
@@ -28,9 +29,10 @@ export const ShortPlayer = forwardRef<ShortPlayerHandle, Props>(function ShortPl
 ) {
   const playerRef = useRef<PlayerRef>(null)
   const { byId: catchphrases } = useCatchphrases()
+  const { board: tier } = useTierBoard(project)
   const { timeline, props: inputProps, durationInFrames } = useMemo(
-    () => shortVideoProps(project, images, sounds, catchphrases),
-    [project, images, sounds, catchphrases],
+    () => shortVideoProps(project, images, sounds, catchphrases, tier),
+    [project, images, sounds, catchphrases, tier],
   )
 
   useImperativeHandle(ref, () => ({

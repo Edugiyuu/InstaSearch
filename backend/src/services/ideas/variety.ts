@@ -8,6 +8,8 @@
 
 import { median } from '../insights/compare.js'
 import type { VideoMetrics } from '../insights/types.js'
+import { ACTIVE_FORMATS, alreadyRanked, FORMAT_NAME, FORMAT_WINDOW, formatOf, tierSeries } from '../shorts/formats.js'
+import type { TierEntry, VideoFormat } from '../shorts/types.js'
 import type { Idea, Trend } from './types.js'
 
 /** A personagem não volta enquanto estiver num destes últimos vídeos. */
@@ -30,6 +32,11 @@ export interface RecentVideo {
   trend?: Trend
   /** Visualizações acima da mediana, com a margem (true), ou abaixo (false); sem valor = ainda não medido (ADR 0033). */
   above?: boolean
+  /** O formato do vídeo (ADR 0036); sem o campo, opinião com provas. */
+  format?: VideoFormat
+  /** Na tier list: a série e quem o vídeo ranqueou. */
+  tier?: TierEntry
+  createdAt?: string
 }
 
 export interface Rejected {
@@ -129,6 +136,25 @@ export function aboveMedian(videos: Measured[]) {
   return result
 }
 
+/**
+ * O formato não repete o de um dos 2 últimos vídeos (ADR 0036, 2A); a tier list precisa da série e de um
+ * personagem que ainda não está no quadro dela (3A).
+ */
+export function formatReason(idea: Pick<Idea, 'format' | 'series' | 'character'>, recent: RecentVideo[]) {
+  const format = formatOf(idea)
+  if (!ACTIVE_FORMATS.includes(format)) return `o formato "${FORMAT_NAME[format]}" está desligado por enquanto`
+  const same = recent.slice(0, FORMAT_WINDOW).find(v => formatOf(v) === format)
+  if (same) return `o formato "${FORMAT_NAME[format]}" foi o de um dos ${FORMAT_WINDOW} últimos vídeos ("${same.title}")`
+  if (format !== 'tierlist') return null
+  if (!idea.series || !idea.character) return 'a tier list precisa da série e do personagem da vez'
+  const ranked = alreadyRanked(seriesOf(recent), idea)
+  return ranked ? `${idea.character} já está no quadro de "${idea.series}" (fileira ${ranked.rank})` : null
+}
+
+/** As séries de tier list dos vídeos feitos (o mais velho primeiro), com quem já foi ranqueado. */
+export const seriesOf = (recent: RecentVideo[]) =>
+  tierSeries(recent.map((v, i) => ({ format: v.format, tier: v.tier, createdAt: v.createdAt ?? String(recent.length - i).padStart(6, '0') })))
+
 /** Embaralha (Fisher–Yates). `random` é trocável para o teste. */
 export function shuffle<T>(items: T[], random = Math.random) {
   const out = [...items]
@@ -147,7 +173,7 @@ export function shuffle<T>(items: T[], random = Math.random) {
  * 4. se todas as escolhidas forem "em alta" e sobrar uma atemporal, ela entra no lugar da última;
  * 5. sorteia a ordem (contra o viés de posição).
  */
-export function pickCandidates<T extends Pick<Idea, 'theme' | 'work' | 'character' | 'trend' | 'bet' | 'revisit'>>(
+export function pickCandidates<T extends Pick<Idea, 'theme' | 'work' | 'character' | 'trend' | 'bet' | 'revisit' | 'format' | 'series'>>(
   ideas: T[],
   recent: RecentVideo[],
   count: number,
@@ -156,11 +182,13 @@ export function pickCandidates<T extends Pick<Idea, 'theme' | 'work' | 'characte
   const rejected: Rejected[] = []
   const allowed: T[] = []
   for (const idea of ideas) {
-    const reason = idea.revisit
-      ? (revisitReason(idea, recent) ?? (allowed.some(a => a.revisit) ? 'já há uma volta' : null))
-      : (blockReason(idea, recent) ??
-        (allowed.some(a => !a.revisit && sameWork(a.work, idea.work)) ? `outra ideia já é de ${idea.work}` : null) ??
-        (idea.bet && allowed.some(a => a.bet) ? 'já há uma aposta' : null))
+    const reason =
+      formatReason(idea, recent) ??
+      (idea.revisit
+        ? (revisitReason(idea, recent) ?? (allowed.some(a => a.revisit) ? 'já há uma volta' : null))
+        : (blockReason(idea, recent) ??
+          (allowed.some(a => !a.revisit && sameWork(a.work, idea.work)) ? `outra ideia já é de ${idea.work}` : null) ??
+          (idea.bet && allowed.some(a => a.bet) ? 'já há uma aposta' : null)))
     if (reason) rejected.push({ theme: idea.theme, reason })
     else allowed.push(idea)
   }
@@ -182,7 +210,9 @@ const aboveText = (v: RecentVideo) => (v.above === undefined ? '' : v.above ? ' 
 export function varietyLines(recent: RecentVideo[], size = REST_WINDOW) {
   const last = recent.slice(0, size)
   if (!last.length) return ''
-  const lines = last.map(v => `- ${v.title}${v.work ? ` · ${v.work}` : ''}${v.trend ? ` · ${v.trend === 'alta' ? 'em alta' : 'atemporal'}` : ''}${aboveText(v)}`)
+  const lines = last.map(
+    v => `- ${v.title} · ${FORMAT_NAME[formatOf(v)]}${v.work ? ` · ${v.work}` : ''}${v.trend ? ` · ${v.trend === 'alta' ? 'em alta' : 'atemporal'}` : ''}${aboveText(v)}`,
+  )
   const counts = new Map<string, number>()
   for (const v of last) if (v.work) counts.set(v.work, (counts.get(v.work) ?? 0) + 1)
   const repeated = [...counts].filter(([, n]) => n > 1).map(([w, n]) => `${n}× ${w}`)

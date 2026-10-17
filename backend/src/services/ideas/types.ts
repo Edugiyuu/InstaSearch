@@ -1,7 +1,7 @@
 // Banco de ideias de vídeo (ADR 0021, escolhas 4B e 5B). Dados em data/ideas/.
 
 import type { Platform } from '../insights/types.js'
-import type { AiCredit, ScriptReview } from '../shorts/types.js'
+import type { AiCredit, ScriptReview, VideoFormat } from '../shorts/types.js'
 
 /** nova = do último brainstorm, ainda sem decisão; feita = virou projeto. */
 export type IdeaStatus = 'nova' | 'guardada' | 'descartada' | 'feita'
@@ -40,6 +40,10 @@ export interface Idea {
   bet?: boolean
   /** Volta: uma personagem de um vídeo acima da mediana, com um assunto novo (ADR 0033). */
   revisit?: boolean
+  /** O formato do vídeo (ADR 0036); sem o campo, opinião com provas. */
+  format?: VideoFormat
+  /** Na tier list: a série (obra e critério); o personagem ranqueado é o `character`. */
+  series?: string
   status: IdeaStatus
   /** Por que o usuário descartou ("já fiz", "não curto"); entra nos próximos brainstorms. */
   discardReason?: string

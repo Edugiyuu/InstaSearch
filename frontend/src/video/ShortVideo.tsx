@@ -2,15 +2,19 @@
 // Cada batida é uma <Sequence>: imagem (ou trecho de vídeo) com movimento, efeito (seta, X, círculo, figurinha de reação) e legenda.
 import { CSSProperties } from 'react'
 import { AbsoluteFill, Audio, Freeze, Img, interpolate, OffthreadVideo, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion'
-import type { ProjectSettings, Region } from '../api/shorts'
+import type { ProjectSettings, Region, TierBoard } from '../api/shorts'
 import { CatchphraseProps, focusRegion, MediaProps, sfxVolume, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
 import { framing, looseFraming, regionOnScreen, sceneLook } from './framing'
+import { TierListScene, type TierPhase } from './TierListScene'
 
 const RED = '#E52222'
 const YELLOW = '#FFD60A'
 
-export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro }: ShortVideoProps) {
+export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro, tier }: ShortVideoProps) {
   const first = beats[0]
+  // a cena da revelação da tier list: antes dela o personagem ainda não está no quadro; depois, está (ADR 0036)
+  const reveal = beats.findIndex(t => t.beat.tier === 'revelacao')
+  const phase = (t: TimedBeat): TierPhase => (t.index === reveal ? 'revelacao' : reveal >= 0 && t.index > reveal ? 'depois' : 'antes')
   const last = beats[beats.length - 1]
   const start = intro?.frames ?? 0
   const end = last ? last.from + last.frames : start
@@ -33,8 +37,13 @@ export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro }
       )}
       {beats.map(t => (
         <Sequence key={t.beat.id} from={t.from} durationInFrames={t.frames} name={t.beat.text}>
-          <BeatScene timed={t} settings={settings} />
-          {t.sfxSrc && <Audio src={t.sfxSrc} volume={sfxVolume(settings, t.beat)} />}
+          <BeatScene timed={t} settings={settings} tier={t.beat.tier ? tier : undefined} phase={phase(t)} />
+          {/* na revelação, o impacto toca quando o personagem voa para a fileira, e não no corte */}
+          {t.sfxSrc && (
+            <Sequence from={t.revealAt ?? 0} layout="none">
+              <Audio src={t.sfxSrc} volume={sfxVolume(settings, t.beat)} />
+            </Sequence>
+          )}
         </Sequence>
       ))}
       {outro && (
@@ -57,12 +66,26 @@ export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro }
   )
 }
 
-function BeatScene({ timed, settings }: { timed: TimedBeat; settings: ProjectSettings }) {
+function BeatScene({ timed, settings, tier, phase }: { timed: TimedBeat; settings: ProjectSettings; tier?: TierBoard; phase: TierPhase }) {
   const frame = useCurrentFrame()
   const { beat, image } = timed
   const region = focusRegion(beat, image?.regions)
   const flash = timed.index > 0 && (settings.pace === 'frenetico' || (settings.pace === 'rapido' && timed.index % 4 === 0))
   const look = sceneLook(beat.scene, beat.framing, !!image?.clip)
+
+  // a cena da tier list desenha o quadro no lugar da imagem, sem efeito nem figurinha; a legenda continua
+  if (tier) {
+    return (
+      <AbsoluteFill>
+        <TierListScene board={tier} phase={phase} revealAt={timed.revealAt} />
+        {settings.caption === 'completa' ? (
+          <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} />
+        ) : (
+          settings.caption !== 'sem' && <Caption text={beat.text} mode={settings.caption} />
+        )}
+      </AbsoluteFill>
+    )
+  }
 
   return (
     <AbsoluteFill>

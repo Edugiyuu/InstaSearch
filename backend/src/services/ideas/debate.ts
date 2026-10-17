@@ -17,7 +17,8 @@ import type { ScriptReview, ShortProject } from '../shorts/types.js'
 import { buildRefs, commentLine, videoLine } from './clean.js'
 import { brainstormCandidates, listIdeas, storeIdea } from './ideas.js'
 import type { Debate, DebateMessage, DebateRound, Idea, RoundEnd, Speaker } from './types.js'
-import { aboveMedian, pickCandidates, varietyLines, type RecentVideo } from './variety.js'
+import { FORMAT_NAME } from '../shorts/formats.js'
+import { aboveMedian, pickCandidates, seriesOf, varietyLines, type RecentVideo } from './variety.js'
 
 /** No máximo 6 falas por rodada, 3 de cada (ADR 0027, 2A). */
 export const MAX_TURNS = 6
@@ -226,7 +227,16 @@ async function recentVideos(projects: ShortProject[]): Promise<RecentVideo[]> {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map(p => {
       const idea = p.autopilot?.ideaId ? ideas.get(p.autopilot.ideaId) : undefined
-      return { title: p.title, theme: p.theme, work: p.subject || idea?.work, trend: idea?.trend, above: above.get(p.id) }
+      return {
+        title: p.title,
+        theme: p.theme,
+        work: p.subject || idea?.work,
+        trend: idea?.trend,
+        above: above.get(p.id),
+        format: p.format,
+        tier: p.tier,
+        createdAt: p.createdAt,
+      }
     })
 }
 
@@ -243,6 +253,8 @@ async function candidates(projects: ShortProject[], recent: RecentVideo[], refus
     recent: varietyLines(recent),
     // as personagens destes vídeos podem voltar, com assunto novo (ADR 0033)
     champions: recent.filter(v => v.above).map(v => v.title),
+    // as tier lists do canal, para a próxima parte ranquear alguém novo (ADR 0036)
+    series: seriesOf(recent).map(s => ({ series: s.series, ranked: s.entries.map(e => `${e.character} (${e.rank})`) })),
     avoid: refused,
   }
   let picked = pickCandidates(await brainstormCandidates(input, BRAINSTORM), recent, CANDIDATES)
@@ -252,7 +264,7 @@ async function candidates(projects: ShortProject[], recent: RecentVideo[], refus
     picked = { chosen: retry.chosen, rejected: [...picked.rejected, ...retry.rejected] }
   }
   if (picked.chosen.length < 2) {
-    throw new AppError('O brainstorm só trouxe temas repetidos (mesma obra ou personagem dos últimos vídeos). Tente de novo.', 502, 'AI_EMPTY')
+    throw new AppError('O brainstorm só trouxe temas repetidos (mesma obra, personagem ou formato dos últimos vídeos). Tente de novo.', 502, 'AI_EMPTY')
   }
   return { ideas: picked.chosen, rejected: picked.rejected }
 }
@@ -284,6 +296,7 @@ const tags = (i: Idea) => {
     i.trend === 'alta' ? 'em alta' : i.trend === 'atemporal' ? 'atemporal' : '',
     i.bet ? 'APOSTA: fora das obras do canal, mas do mesmo nicho e bombando agora' : '',
     i.revisit ? `VOLTA: ${i.character ?? 'a personagem'} já deu views no canal, agora com um assunto novo` : '',
+    i.format && i.format !== 'opiniao' ? `formato: ${FORMAT_NAME[i.format]}${i.format === 'tierlist' ? ` (série "${i.series}", ranqueia ${i.character})` : ''}` : '',
   ]
   const text = t.filter(Boolean).join(' · ')
   return text ? ` [${text}]` : ''

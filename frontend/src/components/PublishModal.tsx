@@ -14,6 +14,7 @@ import {
 } from '../api/shorts'
 import { useInstagram } from '../hooks/useInstagram'
 import { useCatchphrases } from '../hooks/useShorts'
+import { useTierBoard } from '../hooks/useTierBoard'
 import { shortVideoProps } from '../video/timeline'
 import { copyText, ProjectCover, Segmented, Spinner } from './flow'
 import './PublishModal.css'
@@ -59,10 +60,11 @@ function PublishModal({ project, images, sounds, onClose, onSaved }: Props) {
   // ── MP4: começa sozinho ao abrir e acompanha o andamento ──
 
   const { byId: catchphrases, loaded: catchphrasesLoaded } = useCatchphrases()
+  const { board: tier, loaded: tierLoaded } = useTierBoard(project)
   const renderProps = useMemo(() => {
-    const { props, durationInFrames } = shortVideoProps(project, images, sounds, catchphrases)
+    const { props, durationInFrames } = shortVideoProps(project, images, sounds, catchphrases, tier)
     return { ...props, durationInFrames }
-  }, [project, images, sounds, catchphrases])
+  }, [project, images, sounds, catchphrases, tier])
 
   const startRender = useCallback(async () => {
     setMessage(null)
@@ -76,7 +78,8 @@ function PublishModal({ project, images, sounds, onClose, onSaved }: Props) {
   // só uma vez ao abrir (mudanças aqui, como legenda e publicações, não mudam o vídeo),
   // mas, com abertura ou final, espera os bordões carregarem para o MP4 sair com eles
   const started = useRef(false)
-  const propsReady = (!project.settings.intro && !project.settings.outro) || catchphrasesLoaded
+  // a tier list só renderiza com o quadro carregado (ADR 0036)
+  const propsReady = ((!project.settings.intro && !project.settings.outro) || catchphrasesLoaded) && tierLoaded
   useEffect(() => {
     if (started.current || !propsReady) return
     started.current = true

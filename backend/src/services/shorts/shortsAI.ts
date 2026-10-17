@@ -1,7 +1,21 @@
 import { AppError } from '../../middleware/errorHandler.js'
 import { askJson, askJsonMeta, MAX_SEARCHES } from './llm.js'
 import { citedScenes, describeChanges, diffBeats, hasChanges, keepOnlyCited, scenesText } from './sceneEdits.js'
-import { STICKER_LEVELS, type AiCredit, type Beat, type Effect, type LibraryImage, type Motion, type ProjectSettings, type SceneKind, type ShortStyle } from './types.js'
+import { ensureTierScenes, formatStructure, isRank } from './formats.js'
+import {
+  STICKER_LEVELS,
+  type AiCredit,
+  type Beat,
+  type Effect,
+  type LibraryImage,
+  type Motion,
+  type ProjectSettings,
+  type SceneKind,
+  type ShortStyle,
+  type TierEntry,
+  type TierRank,
+  type VideoFormat,
+} from './types.js'
 
 const PACE_SECONDS: Record<ShortStyle['pace'], number> = {
   calmo: 1.8,
@@ -105,6 +119,8 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
         twist: b.twist === undefined && previous ? previous.twist : cleanTwist(b.twist),
         // escolha do usuário na revisão; com outra imagem ou outro tipo de cena ("transforma em prova"), volta para o automático
         framing: changedImage || previous?.scene !== scene ? undefined : previous?.framing,
+        // a cena do quadro da tier list (ADR 0036); o chat que não fala dela mantém a de antes
+        tier: b.tier === 'quadro' || b.tier === 'revelacao' ? b.tier : b.tier === undefined ? previous?.tier : undefined,
       }
     })
 }
@@ -126,7 +142,8 @@ const BEAT_FORMAT = `Cada batida:
   "sfx": "efeito sonoro no corte, ou omita: ${SFX.join(' | ')}",
   "motion": "zoom-in" | "zoom-out" | "shake" | "pan",
   "focus": "área da imagem para dar zoom, se fizer sentido: rosto, mão, olhos, corpo",
-  "twist": "só em algumas batidas (veja a regra de memes): { \"kind\": \"meme\" | \"variacao\", \"query\": \"busca curta em inglês\", \"tags\": [\"etiqueta do Danbooru da variação, ex.: genderswap, chibi\"] }; omita nas outras"
+  "twist": "só em algumas batidas (veja a regra de memes): { \"kind\": \"meme\" | \"variacao\", \"query\": \"busca curta em inglês\", \"tags\": [\"etiqueta do Danbooru da variação, ex.: genderswap, chibi\"] }; omita nas outras",
+  "tier": "só na tier list: \"quadro\" (a cena mostra o quadro) ou \"revelacao\" (a cena põe o personagem na fileira); omita nos outros vídeos e nas outras batidas"
 }`
 
 /** A obra do vídeo (ADR 0024): vai em toda busca de imagem, então precisa ser o nome que se busca. */
@@ -158,8 +175,14 @@ export async function generateScript(input: {
   brief?: string
   /** A versão anterior e o que a revisora pediu para mudar (ADR 0034). */
   revision?: { narration: string; problems: string[] }
-}): Promise<{ title: string; subject: string; narration: string; beats: Beat[]; ai: AiCredit }> {
-  const { theme, toneGuide, duration, style, narration, hook, brief, revision } = input
+  /** O formato do vídeo (ADR 0036); sem ele, opinião com provas. */
+  format?: VideoFormat
+  /** Na tier list: a série, o personagem da vez, a parte e quem já está no quadro. */
+  tier?: { series: string; character: string; part: number; previous: TierEntry[] }
+}): Promise<{ title: string; subject: string; narration: string; beats: Beat[]; tierRank?: TierRank; ai: AiCredit }> {
+  const { theme, toneGuide, duration, style, narration, hook, brief, revision, tier } = input
+  const format = input.format ?? 'opiniao'
+  const tierList = format === 'tierlist' && !!tier
   const beatCount = Math.round(duration / PACE_SECONDS[style.pace])
   const words = maxWords(duration)
 
@@ -178,7 +201,7 @@ export async function generateScript(input: {
 - No máximo ${words} palavras (${duration} segundos falados). Conte: passar disso deixa o vídeo mais longo que o pedido.
 - Comece com um gancho forte nos primeiros 2 segundos.
 - Tom: ${toneGuide}.
-- Estrutura de argumento: gancho → a tese em uma frase → 2 provas concretas (um acontecimento, o capítulo ou episódio, um número ou uma fala; uma 3ª só se couber no limite de palavras), cada uma com a sua batida → conclusão que responde ao gancho → chamada para comentar.
+- ${formatStructure(tierList || format !== 'tierlist' ? format : 'opiniao', tier)}
 - Cada prova é específica e dá para conferir. Nada de frase genérica ("ele é muito forte", "todo mundo sabe").${agreed}${rewrite}`
 
   const prompt = `Você é roteirista e editor de Shorts verticais (YouTube Shorts, Reels, TikTok) em português do Brasil.
@@ -198,19 +221,23 @@ Concatenar os "say" de todas as batidas tem que dar exatamente a narração.
 ${BEAT_FORMAT}
 
 Responda só com JSON:
-{ "title": "título curto do vídeo (até 6 palavras)", "subject": "${SUBJECT_HINT}", "narration": "narração completa", "beats": [ ... ] }`
+{ "title": "título curto do vídeo (até 6 palavras)", "subject": "${SUBJECT_HINT}", "narration": "narração completa", ${tierList ? '"tierRank": "A", ' : ''}"beats": [ ... ] }`
 
   // escrevendo do zero, a IA confirma os fatos na web (pouco); com a narração pronta, só divide
-  const { data: out, ai } = await askJsonMeta<{ title?: string; subject?: string; narration?: string; beats?: RawBeat[] }>(prompt, {
+  const { data: out, ai } = await askJsonMeta<{ title?: string; subject?: string; narration?: string; tierRank?: unknown; beats?: RawBeat[] }>(prompt, {
     research: !narration,
   })
-  const beats = cleanBeats(out.beats ?? [])
-  if (beats.length === 0) throw new AppError('A IA não devolveu nenhuma batida. Tente de novo.', 502, 'AI_EMPTY')
+  const cleaned = cleanBeats(out.beats ?? [])
+  if (cleaned.length === 0) throw new AppError('A IA não devolveu nenhuma batida. Tente de novo.', 502, 'AI_EMPTY')
+  // na tier list, o quadro e a revelação saem certos mesmo se a IA não marcar (ADR 0036)
+  const beats = tierList ? ensureTierScenes(cleaned) : cleaned.map(b => ({ ...b, tier: undefined }))
+  const rank = String(out.tierRank ?? '').trim().toUpperCase()
   return {
     title: out.title?.trim() || theme,
     subject: String(out.subject ?? '').trim().slice(0, 80),
     narration: narration ?? out.narration?.trim() ?? beats.map(b => b.say).join(' '),
     beats,
+    ...(tierList ? { tierRank: isRank(rank) ? rank : ('B' as TierRank) } : {}),
     ai,
   }
 }
@@ -231,8 +258,11 @@ export async function reviewScript(input: {
   duration: number
   narration: string
   version: number
+  /** A estrutura do formato do vídeo (ADR 0036); sem ela, a de opinião com provas. */
+  structure?: string
 }): Promise<{ approved: boolean; problems: string[]; message: string; ai: AiCredit }> {
   const { theme, hook, brief, duration, narration, version } = input
+  const structure = input.structure ?? formatStructure('opiniao')
   const prompt = `Você é a Estrategista de um canal de Shorts narrados em português do Brasil. A Roteirista escreveu o roteiro abaixo para o tema escolhido, e você revisa antes de o vídeo ser montado.
 
 Tema: "${theme}"${hook ? `\nGancho combinado: "${hook}"` : ''}${brief ? `\nPor que o tema foi escolhido: ${brief}` : ''}
@@ -244,7 +274,8 @@ Roteiro (versão ${version}):
 Confira:
 - Coesão: cada frase leva à próxima; nada solto, repetido ou contraditório.
 - Se faz sentido: o argumento se sustenta, e a conclusão responde ao gancho.
-- A estrutura: gancho → a tese em uma frase → 2 provas concretas → conclusão → chamada para comentar.
+- A estrutura do formato do vídeo:
+${structure}
 - Se o gancho prende nos 2 primeiros segundos.
 - Se é o tema combinado, e não outro, e se entrega o porquê dele.
 - Os fatos: as provas citadas existem e estão certas.
@@ -279,8 +310,10 @@ export async function adjustBeats(input: {
   openScene?: number
   /** A obra do vídeo (ADR 0024), ou o tema nos projetos antigos: as cenas novas buscam imagens dela. */
   subject?: string
-}): Promise<{ reply: string; beats: Beat[]; narration: string; settings: ProjectSettings; ai: AiCredit }> {
-  const { request, beats, narration, settings, style, sounds = [], subject } = input
+  /** Na tier list (ADR 0036): o personagem do vídeo e a fileira dele, que o chat pode trocar. */
+  tier?: { character: string; rank: TierRank }
+}): Promise<{ reply: string; beats: Beat[]; narration: string; settings: ProjectSettings; tierRank?: TierRank; ai: AiCredit }> {
+  const { request, beats, narration, settings, style, sounds = [], subject, tier } = input
   const openScene = input.openScene && input.openScene <= beats.length ? input.openScene : undefined
   const soundName = (id?: string) => sounds.find(s => s.id === id)?.name ?? 'nenhum'
   // "cena" é o número que o usuário vê; sem ele a IA contava a posição na lista e errava por uma
@@ -306,15 +339,22 @@ Aplique o pedido. Regras:
 - Só mude o que o pedido pede. Se o pedido cita cenas, não mexa nas outras.
 - "twist" (meme ou variação da imagem): mantenha como está, a menos que o pedido fale de memes ou de imagens diferentes; para tirar, use null. Quando pedir mais ou menos memes, siga esta regra: ${TWIST_RULE}
 - Se o pedido for sobre ritmo, efeitos, legenda ou figurinhas do vídeo inteiro, mude "settings" (pace: calmo|normal|rapido|frenetico, effects: poucos|medida|muitos, caption: quadrinho|completa|limpa|sem, stickers: nenhuma|poucas|muitas). Para tirar todas as figurinhas, use stickers=nenhuma e não mexa nas batidas.
-- "narration" é a junção dos "say".
+- "narration" é a junção dos "say".${
+    tier
+      ? `
+- Este vídeo é uma TIER LIST: o quadro mostra ${tier.character} na fileira ${tier.rank}. Se o pedido mudar a fileira ("põe no B"), responda "tierRank" com a nova (S, A, B, C ou D) e não mexa nas batidas, a não ser que o pedido peça também. A narração nunca diz a fileira ("tier A", "rank B"): ela aponta para o quadro ("o lugar dele é aqui"). Mantenha o "tier" das batidas.`
+      : ''
+  }
 - "sound" é o efeito sonoro que toca na batida. Para trocar, use o nome exato de um destes: ${sounds.length ? sounds.map(s => `"${s.name}"`).join(', ') : '(a biblioteca não tem efeitos sonoros)'}; para tirar, "nenhum". Não mude o "sound" das batidas que o pedido não cita.
 
 ${BEAT_FORMAT}
 
 Responda só com JSON:
-{ "reply": "uma frase dizendo o que você mudou, começando com um verbo no passado (ex.: 'Encurtei o gancho…')", "settings": {...}, "beats": [ ... ] }`
+{ "reply": "uma frase dizendo o que você mudou, começando com um verbo no passado (ex.: 'Encurtei o gancho…')", "settings": {...}, ${tier ? '"tierRank": "só se o pedido mudar a fileira", ' : ''}"beats": [ ... ] }`
 
-  const { data: out, ai } = await askJsonMeta<{ reply?: string; beats?: RawBeat[]; settings?: Partial<ProjectSettings> }>(prompt)
+  const { data: out, ai } = await askJsonMeta<{ reply?: string; beats?: RawBeat[]; settings?: Partial<ProjectSettings>; tierRank?: unknown }>(prompt)
+  const askedRank = String(out.tierRank ?? '').trim().toUpperCase()
+  const tierRank = tier && isRank(askedRank) && askedRank !== tier.rank ? askedRank : undefined
   let next = out.beats?.length ? cleanBeats(out.beats, beats, sounds) : beats
 
   // pedido que cita cenas: o que a IA mudou fora delas volta como estava
@@ -330,10 +370,12 @@ Responda só com JSON:
   if (!hasChanges(changes)) next = beats
   const nextSettings = { ...settings, ...pickSettings(out.settings) }
   return {
-    reply: chatReply({ aiReply: out.reply?.trim() || 'Pronto.', changes, cited, reverted, settingsChanged: settingsDiffer(settings, nextSettings) }),
+    // trocar só a fileira não mexe nas cenas: o "nada mudou" do chatReply não vale
+    reply: tierRank && !hasChanges(changes) ? out.reply?.trim() || `Coloquei ${tier!.character} na fileira ${tierRank}.` : chatReply({ aiReply: out.reply?.trim() || 'Pronto.', changes, cited, reverted, settingsChanged: settingsDiffer(settings, nextSettings) }),
     beats: next,
     narration: next === beats ? narration : next.map(b => b.say).join(' '),
     settings: nextSettings,
+    ...(tierRank ? { tierRank } : {}),
     ai,
   }
 }

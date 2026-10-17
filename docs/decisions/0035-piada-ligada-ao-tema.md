@@ -2,7 +2,7 @@
 
 **Status:** Abandonada · **Data:** 2026-10-16 · Muda o pedido do roteiro (`generateScript`) e a revisão do [0034](0034-revisao-do-roteiro-pelas-ias.md)
 
-> **Abandonada (2026-10-16):** o usuário leu os exemplos e não gostou: "não é que eu quero piadas, eu quero só vídeos diferentes". Os memes nas imagens ([0020](0020-imagens-especificas-memes-e-zoom.md)) ficam, porque ele gosta deles. O que ele quer é variedade nos vídeos, que fica para outra decisão.
+> **Abandonada (2026-10-16):** o usuário leu os exemplos e não gostou: "não é que eu quero piadas, eu quero só vídeos diferentes". Os memes nas imagens ([0020](0020-imagens-especificas-memes-e-zoom.md)) ficam: o usuário gosta deles. O que ele quer é variedade nos vídeos, que fica para outra decisão.
 
 ## Contexto
 

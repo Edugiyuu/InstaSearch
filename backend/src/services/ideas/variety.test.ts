@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals'
-import { aboveMedian, blockReason, mentions, pickCandidates, revisitReason, sameWork, shuffle, varietyLines, type RecentVideo } from './variety.js'
+import { aboveMedian, blockReason, formatReason, mentions, pickCandidates, revisitReason, sameWork, shuffle, varietyLines, type RecentVideo } from './variety.js'
 import type { Trend } from './types.js'
+import type { VideoFormat } from '../shorts/types.js'
 
 // os últimos vídeos de verdade em 13/10 (ADR 0028): três da Tatsumaki em seis
 const recent: RecentVideo[] = [
@@ -10,7 +11,8 @@ const recent: RecentVideo[] = [
   { title: 'Megumi vs Sukuna: E o Yuji?', work: 'Jujutsu Kaisen', trend: 'alta' },
 ]
 
-const idea = (theme: string, work: string, character?: string, trend: Trend = 'alta', bet = false, revisit = false) => ({ theme, work, character, trend, bet, revisit })
+// formato "X contra Y": os vídeos de exemplo são de antes do ADR 0036 (todos opinião), e o formato não repete
+const idea = (theme: string, work: string, character?: string, trend: Trend = 'alta', bet = false, revisit = false) => ({ theme, work, character, trend, bet, revisit, format: 'versus' as const })
 const noShuffle = () => 0.999 // com 0,999 o Fisher–Yates troca cada item com ele mesmo
 
 describe('variedade nos temas do debate (ADR 0028)', () => {
@@ -178,6 +180,27 @@ describe('volta de personagens que deram views (ADR 0033)', () => {
   })
 
   it('mostra às IAs quem ficou acima ou abaixo da mediana', () => {
-    expect(varietyLines(recent14)).toContain('- O passado de Tatsumaki · One-Punch Man · abaixo da mediana')
+    expect(varietyLines(recent14)).toContain('- O passado de Tatsumaki · opinião com provas · One-Punch Man · abaixo da mediana')
   })
 })
+
+describe('formatos de vídeo e a tier list em série (ADR 0036)', () => {
+  const opm = (title: string, format?: VideoFormat, tier?: { character: string; rank: 'S' | 'A' | 'B' | 'C' | 'D' }): RecentVideo => ({
+    title,
+    work: 'One-Punch Man',
+    format,
+    ...(tier ? { tier: { series: 'One Punch Man: o melhor personagem', ...tier } } : {}),
+  })
+
+  it('o formato não repete o de um dos 2 últimos vídeos (sem formato = opinião)', () => {
+    const recent = [opm('Genos no quadro', 'tierlist', { character: 'Genos', rank: 'A' }), opm('Fubuki esquecida')]
+    expect(formatReason({ format: 'tierlist', series: 'x', character: 'Garou' }, recent)).toMatch(/tier list/)
+    expect(formatReason({}, recent)).toMatch(/opinião com provas/)
+    expect(formatReason({ format: 'versus' }, recent)).toBeNull()
+  })
+
+  it('a tier list está desligada por enquanto: o brainstorm não propõe e o código barra', () => {
+    expect(formatReason({ format: 'tierlist', series: 'One Punch Man: o melhor personagem', character: 'Garou' }, [])).toMatch(/desligado/)
+  })
+})
+

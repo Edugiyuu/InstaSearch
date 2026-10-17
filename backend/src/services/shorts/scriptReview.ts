@@ -34,6 +34,8 @@ export async function reviewLoop<S extends { narration: string; ai?: AiCredit }>
   write: (revision?: { narration: string; problems: string[] }) => Promise<S>
   review: (script: S, version: number) => Promise<Verdict>
   maxWords: number
+  /** Regras que o código confere além das palavras, como a tier list não dizer a fileira (ADR 0036). */
+  checks?: ((narration: string) => string | null)[]
   onChange?: (review: ScriptReview) => unknown
 }): Promise<{ script: S; review: ScriptReview }> {
   const review: ScriptReview = { status: 'revisando', steps: [] }
@@ -50,9 +52,11 @@ export async function reviewLoop<S extends { narration: string; ai?: AiCredit }>
 
       await notify({ thinking: 'revisao' })
       const verdict = await opts.review(script, version)
-      const tooLong = wordProblem(script.narration, opts.maxWords)
-      const problems = tooLong ? [...verdict.problems, tooLong] : verdict.problems
-      const approved = verdict.approved && !tooLong
+      const fromCode = [wordProblem(script.narration, opts.maxWords), ...(opts.checks ?? []).map(check => check(script.narration))].filter(
+        (p): p is string => Boolean(p),
+      )
+      const problems = [...verdict.problems, ...fromCode]
+      const approved = verdict.approved && fromCode.length === 0
       review.steps.push({ kind: 'revisao', version, text: verdict.message, approved, problems, ai: verdict.ai, at: new Date().toISOString() })
 
       if (approved || version > MAX_REWRITES) {

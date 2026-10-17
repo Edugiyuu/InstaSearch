@@ -100,6 +100,30 @@ export interface Beat {
    * fundo desfocado (fit). Sem valor, o automático do ADR 0020 decide pelo formato da imagem.
    */
   framing?: FramingChoice
+  /**
+   * Cena da tier list (ADR 0036), no lugar da imagem: "quadro" mostra o quadro da série; "revelacao" mostra
+   * o personagem e, na palavra que aponta ("aqui"), o põe na fileira.
+   */
+  tier?: TierScene
+}
+
+/** Os formatos de vídeo (ADR 0036): cada um muda a estrutura do roteiro; a tier list tem cena própria. */
+export const VIDEO_FORMATS = ['opiniao', 'tierlist', 'versus', 'ese', 'mito', 'antesdepois'] as const
+export type VideoFormat = (typeof VIDEO_FORMATS)[number]
+
+/** As fileiras da tier list, como no TierMaker (ADR 0036, 4A). */
+export const TIER_RANKS = ['S', 'A', 'B', 'C', 'D'] as const
+export type TierRank = (typeof TIER_RANKS)[number]
+export type TierScene = 'quadro' | 'revelacao'
+
+/** O personagem que o vídeo da tier list ranqueia; o quadro sai dos vídeos da série (ADR 0036, 3C). */
+export interface TierEntry {
+  /** A série: a obra e o critério ("One Punch Man: quem é o melhor personagem"). */
+  series: string
+  character: string
+  rank: TierRank
+  /** O retrato oficial (AniList), que vai no quadro (ADR 0036, 5A). */
+  portrait?: string
 }
 
 export interface BeatTwist {
@@ -164,6 +188,10 @@ export interface ShortProject {
    * Vazio quando o vídeo não é sobre nada específico; projetos antigos não têm.
    */
   subject?: string
+  /** O formato do vídeo (ADR 0036); sem o campo, opinião com provas (os de antes). */
+  format?: VideoFormat
+  /** Só na tier list: o personagem deste vídeo e a fileira dele. */
+  tier?: TierEntry
   styleId: string
   /** Duração alvo em segundos (15 a 40). */
   duration: number

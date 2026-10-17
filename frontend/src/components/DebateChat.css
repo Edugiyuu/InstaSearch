@@ -227,6 +227,11 @@
   color: var(--success);
 }
 
+.dc-tag.format {
+  background: color-mix(in srgb, var(--info) 14%, transparent);
+  color: var(--info);
+}
+
 .dc-tag.revisit {
   background: var(--accent-soft);
   color: var(--accent);

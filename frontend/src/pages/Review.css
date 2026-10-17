@@ -420,3 +420,10 @@
   height: 36px;
   padding: 0;
 }
+
+/* A fileira da tier list (ADR 0036) */
+.rv-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

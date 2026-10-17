@@ -64,3 +64,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0033](0033-volta-de-personagens-que-deram-views.md) | Volta de personagens que deram views, sem sugar até a última gota | Aceita |
 | [0034](0034-revisao-do-roteiro-pelas-ias.md) | Revisão do roteiro pelas IAs antes da montagem | Aceita |
 | [0035](0035-piada-ligada-ao-tema.md) | Uma piada ligada ao tema no roteiro | Abandonada |
+| [0036](0036-formatos-de-video-e-tier-list.md) | Formatos de vídeo, com a tier list animada | Aceita |

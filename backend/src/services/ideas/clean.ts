@@ -7,6 +7,7 @@
  */
 
 import type { AudienceComment, Comparison, VideoMetrics } from '../insights/types.js'
+import { isFormat } from '../shorts/formats.js'
 import type { ShortProject } from '../shorts/types.js'
 import type { Idea, IdeaEvidence } from './types.js'
 
@@ -94,9 +95,11 @@ export interface RawIdea {
   trend?: unknown
   bet?: unknown
   revisit?: unknown
+  format?: unknown
+  series?: unknown
 }
 
-export type CleanIdea = Pick<Idea, 'theme' | 'hook' | 'styleId' | 'toneId' | 'duration' | 'why' | 'evidence' | 'work' | 'character' | 'trend' | 'bet' | 'revisit'>
+export type CleanIdea = Pick<Idea, 'theme' | 'hook' | 'styleId' | 'toneId' | 'duration' | 'why' | 'evidence' | 'work' | 'character' | 'trend' | 'bet' | 'revisit' | 'format' | 'series'>
 
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '')
 const list = (v: unknown) => (Array.isArray(v) ? v.map(x => String(x).replace(/[[\]\s]/g, '').toUpperCase()) : [])
@@ -150,6 +153,9 @@ export function cleanIdeas(
       trend: r.trend === 'alta' || r.trend === 'atemporal' ? r.trend : undefined,
       bet: r.bet === true || undefined,
       revisit: r.revisit === true || undefined,
+      format: isFormat(r.format) && r.format !== 'opiniao' ? r.format : undefined,
+      // a série só vale na tier list, e precisa do personagem que ela ranqueia
+      series: r.format === 'tierlist' ? text(r.series, 100) || undefined : undefined,
     })
     if (out.length >= MAX_IDEAS) break
   }

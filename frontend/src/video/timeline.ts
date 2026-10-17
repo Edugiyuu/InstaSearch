@@ -1,4 +1,4 @@
-import type { Beat, ButtonStyle, Catchphrase, ClickStyle, Entrance, LibraryImage, ProjectSettings, Region, ShortProject, SoundItem, SubscribePart, TextAnim, TextPosition } from '../api/shorts'
+import type { Beat, ButtonStyle, Catchphrase, ClickStyle, Entrance, LibraryImage, ProjectSettings, Region, ShortProject, SoundItem, SubscribePart, TextAnim, TextPosition, TierBoard } from '../api/shorts'
 import { afterButtonText, audioUrl, catchphraseFileUrl, catchphraseHasSound, imageUrl, mediaUrl, soundUrl } from '../api/shorts'
 import { alignWords, type WordTime } from './align'
 
@@ -37,6 +37,8 @@ export interface TimedBeat {
   sfxSrc?: string
   /** Com a voz transcrita: em que quadro (desde o início da batida) cada palavra da fala começa. */
   wordStarts?: number[]
+  /** Na revelação da tier list (ADR 0036): o quadro (desde o início da batida) em que o personagem voa para a fileira. */
+  revealAt?: number
 }
 
 /** Abertura ou final (ADR 0016): o que a composição precisa de um bordão. */
@@ -68,6 +70,8 @@ export interface ShortVideoProps extends Record<string, unknown> {
   intro?: CatchphraseProps
   /** Entra depois da última batida. */
   outro?: CatchphraseProps
+  /** O quadro da tier list (ADR 0036), nas cenas marcadas com `tier`. */
+  tier?: TierBoard
 }
 
 const splitWords = (text: string) => text.split(/\s+/).filter(Boolean)
@@ -157,12 +161,31 @@ export function buildTimeline(project: ShortProject, images: Map<string, Library
       sfxSrc: sfx ? soundUrl(sfx) : undefined,
       wordStarts: starts && voice ? voice.beats[index].map(w => Math.max(0, Math.round(w.start * FPS) - starts[index])) : undefined,
     }
+    if (beat.tier === 'revelacao') timed.revealAt = revealFrame(beat.say, frames, timed.wordStarts)
     from += frames
     return timed
   })
 
   /** end: o quadro em que a última batida termina */
   return { beats, end: Math.max(start + 1, from) }
+}
+
+/** As palavras que apontam para o quadro na revelação ("o lugar dele é aqui", "pra cá", "esse"). */
+const POINTING = /^(aqui|esse|essa|cá|ca)[.,!?…]*$/i
+
+/**
+ * Em que quadro da batida a animação da revelação começa (ADR 0036): na palavra que aponta. Com a voz
+ * transcrita, no tempo real dela; sem, pela posição da palavra na fala. Sem palavra que aponta, a 40%.
+ */
+export function revealFrame(say: string, frames: number, wordStarts?: number[]) {
+  const list = splitWords(say)
+  let i = -1
+  list.forEach((w, n) => {
+    if (POINTING.test(w)) i = n
+  })
+  const at = i < 0 ? frames * 0.4 : wordStarts?.[i] ?? (i / Math.max(1, list.length)) * frames
+  // a animação precisa de uns quadros para acontecer antes do corte
+  return Math.max(0, Math.min(Math.round(at), frames - 12))
 }
 
 /** Bordão → props da composição. Sem o arquivo que ele precisa (clipe sem vídeo), não entra. */
@@ -216,6 +239,8 @@ export function shortVideoProps(
   images: Map<string, LibraryImage>,
   sounds?: Map<string, SoundItem>,
   catchphrases?: Map<string, Catchphrase>,
+  /** O quadro da tier list (ADR 0036), que vem do servidor (useTierBoard). */
+  tier?: TierBoard | null,
 ) {
   const pick = (id?: string | null) => {
     const c = id ? catchphrases?.get(id) : undefined
@@ -232,6 +257,7 @@ export function shortVideoProps(
     musicSrc: music ? soundUrl(music) : undefined,
     ...(intro ? { intro } : {}),
     ...(outro ? { outro } : {}),
+    ...(tier ? { tier } : {}),
   }
   const durationInFrames = timeline.end + (outro?.frames ?? 0)
   return { timeline, props, durationInFrames }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Debate, debateStoppable, DebateMessage, Idea, MAX_ROUNDS, MAX_TURNS, RoundEnd, Speaker, SPEAKER_FOCUS, SPEAKER_NAME, VETO_SECONDS } from '../api/ideas'
-import type { ScriptReview } from '../api/shorts'
+import { FORMAT_NAME, type ScriptReview } from '../api/shorts'
 import { Spinner } from './flow'
 import './DebateChat.css'
 
@@ -46,6 +46,11 @@ function Topics({ ideas, messages, chosen, vetoed = [] }: { ideas: Idea[]; messa
                 {idea.bet && (
                   <span className="dc-tag bet" title="Algo bombando no nicho do canal, numa obra que ele ainda não tratou">
                     🎲 aposta
+                  </span>
+                )}
+                {idea.format && idea.format !== 'opiniao' && (
+                  <span className="dc-tag format" title={idea.format === 'tierlist' ? `Série "${idea.series}": este vídeo ranqueia ${idea.character}` : 'O formato do vídeo'}>
+                    {idea.format === 'tierlist' ? '🏆' : '🎬'} {FORMAT_NAME[idea.format]}
                   </span>
                 )}
                 {idea.revisit && (

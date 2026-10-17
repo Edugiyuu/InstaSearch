@@ -17,6 +17,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Backlog
 
+- [ ] Ligar a tier list (`TIER_LIST_ON` em `formats.ts`) e, se quiser testar sem depender do debate, um jeito de começar uma série na tela Ideias (ADR 0036)
 - [ ] A personagem é achada por palavra, e "Todo" (Aoi Todo, de JJK) bate com "todo mundo" no tema de outros vídeos: hoje o vídeo da Makima conta como "o vídeo mais recente do Todo", e ele descansa sem motivo (talvez só nomes com maiúscula no tema, ou só no título; ADR 0028 e 0033)
 - [ ] Mostrar o gasto real de tokens: o log do Claude Code conta só a entrada fora do cache ("4 tokens de entrada"); somar o cache (lido e criado) e mostrar o total por debate e por vídeo, para saber quanto cada etapa gasta do plano
 - [ ] "↻ Buscar de novo na web" troca todas as imagens sem desfazer (a montagem não entra no `undo` do projeto) e não pede confirmação; num projeto com todas as cenas travadas, não faz nada e não avisa
@@ -44,6 +45,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-17 · Formatos de vídeo: opinião, X contra Y, E se…, mito ou verdade e antes e depois, cada um com a sua estrutura no roteiro e na revisão; o código não repete o formato dos 2 últimos vídeos. A tier list em série (quadro com S a D, um personagem por vídeo, animação na palavra "aqui", fileira na Revisão e no chat) ficou pronta, mas desligada por enquanto ([ADR 0036](docs/decisions/0036-formatos-de-video-e-tier-list.md))
 - [x] 2026-10-17 · Revisão do roteiro com até 3 reescritas (até 4 versões): a última crítica da Estrategista vira uma versão nova, em vez de só aparecer na Revisão ([adendo ao ADR 0034](docs/decisions/0034-revisao-do-roteiro-pelas-ias.md))
 - [x] 2026-10-16 · Temas sem a fórmula "X é mais que visual": o brainstorm proíbe o ângulo e pede outros jeitos de fanservice com opinião (ranking, comparação, ship, melhor e pior design), e o debate recusa ângulo repetido (adendo ao [ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md))
 - [x] 2026-10-16 · Buscas de imagem que dá para achar: fala abstrata ("é a número 1", "humana até no erro") pede o personagem em fanart, cosplay ou cena marcante, e não uma situação que quase não existe em imagem ("ranking com a Fubuki em primeiro"); fanart e cosplay levam o nome da obra na busca (adendo ao [ADR 0020](docs/decisions/0020-imagens-especificas-memes-e-zoom.md))
