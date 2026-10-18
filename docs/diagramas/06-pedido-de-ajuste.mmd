@@ -10,6 +10,6 @@ sequenceDiagram
     CT->>SV: adjust()
     SV->>IA: cenas + pedido
     IA-->>SV: cenas novas
-    Note over SV: desfaz o que mudou<br/>fora da cena 6<br/>e grava o JSON
+    Note over SV: desfaz o que mudou<br/>fora da cena 6,<br/>mantém os efeitos que você<br/>escolheu (salvo se o pedido<br/>fala deles) e grava o JSON
     SV-->>PG: projeto novo
     PG-->>U: prévia muda

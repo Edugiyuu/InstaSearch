@@ -140,6 +140,7 @@ router.post('/shorts/autopilot/:projectId/continue', autopilotController.continu
 router.put('/shorts/projects/:id/beats/:beatId/sfx-volume', shortsController.setBeatSfxVolume)
 router.put('/shorts/projects/:id/beats/:beatId/sticker', shortsController.setBeatSticker)
 router.put('/shorts/projects/:id/beats/:beatId/framing', shortsController.setBeatFraming)
+router.put('/shorts/projects/:id/beats/:beatId/choice', shortsController.setBeatChoice)
 router.post('/shorts/projects/:id/auto-images', shortsController.autoImages)
 router.post('/shorts/projects/:id/audio', ...shortsController.uploadAudio)
 router.post('/shorts/projects/:id/transcribe', shortsController.transcribe)

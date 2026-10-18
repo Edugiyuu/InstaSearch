@@ -1,0 +1,65 @@
+/* Um efeito da cena com as opções à vista (ADR 0037) */
+.er {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  margin: 0 -6px;
+  border-radius: var(--radius);
+  transition: background 0.4s;
+}
+
+.er.flash {
+  background: var(--accent-soft);
+}
+
+.er-label {
+  width: 92px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.er-chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.er-chip:hover:not(.on) {
+  border-color: var(--text);
+}
+
+.er-chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.er-all {
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.er-all:hover {
+  text-decoration: underline;
+}
+
+.er-off {
+  font-size: 12px;
+  color: var(--faint);
+}

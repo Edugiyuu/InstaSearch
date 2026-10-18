@@ -16,7 +16,8 @@ import { normalize } from './library.js'
 import { transcribeAudio, WHISPER_MODEL } from './transcription.js'
 import { BUILT_IN_TONES, getTone, toneByName } from './tones.js'
 import { tierBoard } from './formats.js'
-import { STICKER_LEVELS, type AiCredit, type AssemblyLogEntry, type Beat, type FramingChoice, type ProjectSettings, type ShortProject, type TierEntry, type TierRank, type Transcript, type VideoFormat } from './types.js'
+import { applyChoice, clearChoices, validChoice, type ChoiceScope } from './effects.js'
+import { STICKER_LEVELS, type ChosenEffects, type ChosenField, type AiCredit, type AssemblyLogEntry, type Beat, type FramingChoice, type ProjectSettings, type ShortProject, type TierEntry, type TierRank, type Transcript, type VideoFormat } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const AUDIO_DIR = path.join(__dirname, '../../../data/short_projects/audio')
@@ -453,6 +454,23 @@ export async function setBeatFraming(id: string, beatId: string, framing: Framin
   if (!beat) throw new AppError('Cena não encontrada', 404, 'NOT_FOUND')
   if (framing) beat.framing = framing
   else delete beat.framing
+  return save(project)
+}
+
+/**
+ * Editor: um efeito da cena (ADR 0037): movimento, transição, foco do zoom ou destaque. value null =
+ * automático (o que a IA fez). `scope` aplica também nas outras cenas, ou nas do mesmo personagem.
+ * field 'all' com null tira todas as escolhas da cena.
+ */
+export async function setBeatChoice(id: string, beatId: string, field: ChosenField | 'all', value: string | null, scope: ChoiceScope) {
+  const project = await getProject(id)
+  if (!project.beats.some(b => b.id === beatId)) throw new AppError('Cena não encontrada', 404, 'NOT_FOUND')
+  if (field === 'all') {
+    project.beats = clearChoices(project.beats, beatId)
+    return save(project)
+  }
+  if (!validChoice(field, value)) throw new AppError('Opção inválida para esse efeito', 400, 'VALIDATION')
+  project.beats = applyChoice(project.beats, beatId, field, value as ChosenEffects[ChosenField] | null, scope)
   return save(project)
 }
 

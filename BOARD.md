@@ -14,8 +14,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
 - [ ] Remover a dependência `openai`, que não é usada (pendência do [ADR 0006](docs/decisions/0006-remover-openai.md))
-- [ ] Efeitos da cena na frente, etapa 1: Revisão com os cartões da cena (movimento com "parado", transição por corte, foco nas áreas que a IA marcou, destaque, imagem, fundo, som, figurinha), pop-ups com prévia no player, travas que o chat respeita salvo pedido explícito e o chat numa barra que abre como gaveta (telas 01c a 01h no Figma; [ADR 0037](docs/decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md))
-- [ ] Efeitos da cena na frente, etapa 2: ajustes finos nos pop-ups (intensidade e velocidade do movimento, força e duração da transição, cor e "quando entra" do destaque, quanto o zoom aproxima e desenhar a área) ([ADR 0037](docs/decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md))
+- [ ] Efeitos da cena na frente, etapa 2: ajustes finos (intensidade e velocidade do movimento, força e duração da transição, cor e "quando entra" do destaque, quanto o zoom aproxima e desenhar a área) ([ADR 0037](docs/decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md))
 
 ## Backlog
 
@@ -47,6 +46,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-18 · Efeitos da cena na frente, etapa 1: na Revisão, movimento (com "parado"), entrada (a transição de cada corte: corte seco, flash branco ou preto, tremida, zoom rápido), zoom em (as áreas marcadas na imagem) e destaque ficam com as opções à vista, com prévia no player ao passar o mouse e "usar em todas as cenas"; imagem, fundo, som e figurinha em pop-up; o chat só troca uma escolha se o pedido cita a cena e fala do efeito, e fica numa barra que abre como gaveta ([ADR 0037](docs/decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md) e adendo)
 - [x] 2026-10-17 · Formatos de vídeo: opinião, X contra Y, E se…, mito ou verdade e antes e depois, cada um com a sua estrutura no roteiro e na revisão; o código não repete o formato dos 2 últimos vídeos. A tier list em série (quadro com S a D, um personagem por vídeo, animação na palavra "aqui", fileira na Revisão e no chat) ficou pronta, mas desligada por enquanto ([ADR 0036](docs/decisions/0036-formatos-de-video-e-tier-list.md))
 - [x] 2026-10-17 · Revisão do roteiro com até 3 reescritas (até 4 versões): a última crítica da Estrategista vira uma versão nova, em vez de só aparecer na Revisão ([adendo ao ADR 0034](docs/decisions/0034-revisao-do-roteiro-pelas-ias.md))
 - [x] 2026-10-16 · Temas sem a fórmula "X é mais que visual": o brainstorm proíbe o ângulo e pede outros jeitos de fanservice com opinião (ranking, comparação, ship, melhor e pior design), e o debate recusa ângulo repetido (adendo ao [ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md))

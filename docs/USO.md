@@ -42,25 +42,32 @@ Você não faz nada: o app busca na web uma imagem por cena (a IA olha as sugest
 
 O centro do app. A **prévia ao vivo** é a composição final: o que você vê é exatamente o que vai para o MP4.
 
-- **Barra de cenas** abaixo do vídeo: 🟥 sem imagem, pontinho laranja = cena com som. Clique para pular (`/projeto/:id?cena=3` abre direto numa cena).
-- **Controles da cena**, numa linha sob a barra ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)). Tudo começa no **Automático** (o que a IA fez); o que você escolhe fica travado e a montagem não troca mais.
-  - **🖼 Trocar**: abre a tela Trocar imagem dessa cena.
-  - **▣ Fundo**: como a imagem aparece (tabela abaixo).
-  - **🔊 Efeito sonoro**: automático, sem som ou qualquer som da sua biblioteca, com **▶** para ouvir. No alto do pop-up ficam dois volumes: **Todos os efeitos** (o vídeo inteiro, 75% de início) e **Esta cena** (mais alto ou mais baixo que os outros; 100% = igual). Ao soltar o controle, o som toca no volume novo. Trocar o som da cena volta o volume dela para 100%.
-  - **😮 Figurinha**: um pop-up com miniaturas: **Automático** (o que a montagem escolheu), **Nenhuma** ou uma figurinha da sua biblioteca, com as do assunto do vídeo primeiro. A escolhida aparece mesmo numa cena sem reação (e junto de uma seta ou um X), e nem a montagem, nem o chat, nem o ajuste "Figurinhas" a trocam.
-- **✨ Peça um ajuste**: um chat. Cite cenas pelo número da tela ("na cena 6 põe um X", "cenas 3 e 4", "esta cena"). Se o pedido cita cenas, **só elas mudam**: se a IA mexer em outra, o app desfaz. A resposta diz o que *de fato* mudou, conferido pelo app ([ADR 0017](decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md)). **Desfazer** volta a versão anterior.
-- **Precisa de você**: cenas sem imagem → **Resolver agora** ou **✨ Preencher automático**.
-- **Ajustes rápidos** (valem para o vídeo inteiro):
+A tela tem três partes ([ADR 0037](decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md)):
+
+- **À esquerda, o vídeo** e, embaixo dele, os **ajustes do vídeo inteiro** em botões com o valor atual (tabela abaixo). Mais embaixo, **Precisa de você** (cenas sem imagem → **Escolher eu mesmo** ou **✨ Preencher automaticamente**) e **Sobre este vídeo** (o que a IA montou, a legenda no tempo da voz, por que este tema, quem fez).
+- **No centro, as cenas.** A faixa mostra a miniatura de cada cena (borda vermelha tracejada = sem imagem; laranja = imagem parecida; ponto amarelo = você escolheu efeitos nela) e, entre duas cenas, o ícone da **transição** (│ corte seco, ⚡ flash branco, ◼ flash preto, 〰 tremida, ⊕ zoom rápido). Clique numa cena para abri-la (`/projeto/:id?cena=3` abre direto numa cena); clique no ícone entre duas para ir à linha **Entrada** da cena seguinte.
+- **Efeitos da cena**: cada efeito é uma linha com as opções à vista. A primeira é **✨ Auto** (o que a IA fez, com o valor: "Auto · zoom in"); a escolhida fica amarela. **Passe o mouse numa opção e o player toca a cena com ela**, sem salvar; um clique aplica nesta cena. Depois de escolher, **⇉ usar em todas as cenas** leva a escolha para o vídeo inteiro. **↺ Voltar ao que a IA fez** desfaz as escolhas das quatro linhas da cena.
+
+| Linha | Opções |
+|---|---|
+| Movimento | Parado · Zoom in · Zoom out · Tremer · Deslizar |
+| Entrada | Corte seco · Flash branco · Flash preto · Tremida · Zoom rápido: como a cena entra no corte. No Auto, o ritmo decide como antes (flash em todo corte no Frenético, a cada 4 cenas no Rápido) |
+| Zoom em | As áreas que a IA marcou na imagem (rosto, mão…) ou a imagem inteira. É onde o zoom termina e para onde a seta e o círculo apontam |
+| Destaque | Nada · Círculo · Seta · X (a reação é a figurinha) |
+
+- **Também**, na linha de baixo, os controles com listas grandes, em pop-up como antes: **🖼 Trocar imagem** (abre a tela Trocar imagem), **▣ Fundo** (tabela mais abaixo), **🔊 Som** (automático, sem som ou um da biblioteca, com **▶** para ouvir, e os volumes **Todos os efeitos** e **Esta cena**) e **😮 Figurinha** (Automático, Nenhuma ou uma da biblioteca; a escolhida aparece mesmo numa cena sem reação, e nem a montagem, nem o chat, nem o ajuste "Figurinhas" a trocam).
+- **O chat fica numa barra embaixo**: escreva o pedido ali (o que precisa de texto: "final mais polêmico", "troca a música"); a barra mostra a última resposta, **↶ Desfazer** e **Conversa (n) ▴**, que abre a conversa inteira numa gaveta à direita (Esc recolhe). Cite cenas pelo número da tela ("na cena 6 põe um X", "cenas 3 e 4", "esta cena"). Se o pedido cita cenas, **só elas mudam**: se a IA mexer em outra, o app desfaz. A resposta diz o que *de fato* mudou, conferido pelo app ([ADR 0017](decisions/0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md)). Um efeito que **você** escolheu só muda se o pedido citar a cena **e** falar do efeito ("tira o tremor da cena 3"); num pedido geral ("mais movimento"), ele fica, e a resposta diz em quais cenas.
+- **Ajustes do vídeo inteiro**:
 
 | Ajuste | Opções |
 |---|---|
-| Imagens | **↻ Buscar de novo na web**: troca as imagens que a montagem escolheu; as que você escolheu ficam. As imagens vêm sempre da web, nunca de vídeos anteriores ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
+| Imagens | **↻ Buscar imagens de novo**: troca as imagens que a montagem escolheu; as que você escolheu ficam. As imagens vêm sempre da web, nunca de vídeos anteriores ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
 | Ritmo | Calmo · Normal · Rápido · Frenético (a IA junta ou divide cenas, sem mudar a fala) |
 | Efeitos | Poucos · Na medida · Muitos (setas, X, círculos, reações) |
 | Figurinhas | **Nenhuma** (tira as automáticas na hora, sem IA) · **Poucas** (onde a IA pôs uma reação; é o padrão) · **Muitas** (a IA põe reações em cerca de 1 cena a cada 3). As escolhidas na cena ficam. Só aparece figurinha quando alguma da biblioteca combina com a reação |
 | Legenda | Quadrinho (1 a 3 palavras-chave) · **Completa** (toda a fala, a palavra dita acende) · Limpa · Sem |
 | Música | uma da biblioteca · Sem música (ela abaixa sozinha quando tem voz) |
-| Bordão de abertura / do final | Nenhum · um dos seus bordões ([ADR 0016](decisions/0016-bordoes-de-abertura-e-final.md)) |
+| Abertura / Final | Nenhum · um dos seus bordões ([ADR 0016](decisions/0016-bordoes-de-abertura-e-final.md)) |
 
 **▣ Fundo da cena**, um pop-up com uma miniatura de cada jeito, feita com a imagem da própria cena:
 

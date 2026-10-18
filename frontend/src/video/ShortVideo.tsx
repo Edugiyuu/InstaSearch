@@ -2,8 +2,8 @@
 // Cada batida é uma <Sequence>: imagem (ou trecho de vídeo) com movimento, efeito (seta, X, círculo, figurinha de reação) e legenda.
 import { CSSProperties } from 'react'
 import { AbsoluteFill, Audio, Freeze, Img, interpolate, OffthreadVideo, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion'
-import type { ProjectSettings, Region, TierBoard } from '../api/shorts'
-import { CatchphraseProps, focusRegion, MediaProps, sfxVolume, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
+import type { ProjectSettings, Region, TierBoard, Transition } from '../api/shorts'
+import { CatchphraseProps, focusRegion, MediaProps, sceneTransition, sfxVolume, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
 import { framing, looseFraming, regionOnScreen, sceneLook } from './framing'
 import { TierListScene, type TierPhase } from './TierListScene'
 
@@ -70,7 +70,7 @@ function BeatScene({ timed, settings, tier, phase }: { timed: TimedBeat; setting
   const frame = useCurrentFrame()
   const { beat, image } = timed
   const region = focusRegion(beat, image?.regions)
-  const flash = timed.index > 0 && (settings.pace === 'frenetico' || (settings.pace === 'rapido' && timed.index % 4 === 0))
+  const transition = sceneTransition(beat, timed.index, settings)
   const look = sceneLook(beat.scene, beat.framing, !!image?.clip)
 
   // a cena da tier list desenha o quadro no lugar da imagem, sem efeito nem figurinha; a legenda continua
@@ -88,13 +88,13 @@ function BeatScene({ timed, settings, tier, phase }: { timed: TimedBeat; setting
   }
 
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={transitionMove(transition, frame)}>
       {!image ? (
         <MissingImage query={beat.query} />
       ) : look !== 'full' ? (
         <Evidence src={image.src} width={image.width} height={image.height} blurred={look === 'frame-blur'} />
       ) : (
-        <FullImage src={image.src} timed={timed} region={region} punch={settings.pace !== 'calmo'} />
+        <FullImage src={image.src} timed={timed} region={region} punch={settings.pace !== 'calmo' && beat.motion !== 'still'} />
       )}
 
       {image && <BeatEffect timed={timed} region={look !== 'full' ? undefined : regionOnScreen(region, image.width, image.height, looseFraming(beat.framing))} />}
@@ -107,11 +107,34 @@ function BeatScene({ timed, settings, tier, phase }: { timed: TimedBeat; setting
         settings.caption !== 'sem' && <Caption text={beat.text} mode={settings.caption} />
       )}
 
-      {flash && (
-        <AbsoluteFill style={{ background: '#fff', opacity: interpolate(frame, [0, 3], [0.45, 0], { extrapolateRight: 'clamp' }) }} />
+      {(transition === 'flash' || transition === 'flash-black') && (
+        <AbsoluteFill
+          style={
+            transition === 'flash'
+              ? { background: '#fff', opacity: interpolate(frame, [0, 3], [0.45, 0], { extrapolateRight: 'clamp' }) }
+              : { background: '#000', opacity: interpolate(frame, [0, 5], [0.9, 0], { extrapolateRight: 'clamp' }) }
+          }
+        />
       )}
     </AbsoluteFill>
   )
+}
+
+/**
+ * O começo da cena nas transições que mexem nela inteira (ADR 0037): a tremida sacode e para;
+ * o zoom rápido entra grande e assenta. Os flashes são uma camada por cima (BeatScene).
+ */
+function transitionMove(transition: Transition, frame: number): CSSProperties | undefined {
+  if (transition === 'shake') {
+    const decay = Math.max(0, 1 - frame / 9)
+    if (decay === 0) return undefined
+    return { transform: `translate(${Math.sin(frame * 2.9) * 44 * decay}px, ${Math.cos(frame * 2.3) * 30 * decay}px) rotate(${Math.sin(frame * 2.1) * 1.6 * decay}deg)` }
+  }
+  if (transition === 'zoom') {
+    const scale = interpolate(frame, [0, 6], [1.3, 1], { extrapolateRight: 'clamp', easing: t => 1 - (1 - t) ** 3 })
+    return scale === 1 ? undefined : { transform: `scale(${scale})` }
+  }
+  return undefined
 }
 
 // ── Cenas ────────────────────────────────────────────────
@@ -143,6 +166,10 @@ function FullImage({ src, timed, region, punch }: { src: string; timed: TimedBea
       y = Math.cos(frame * 1.9) * 20 * decay
       break
     }
+    case 'still':
+      // parado: sem movimento; com uma área escolhida, já aproximado nela
+      scale = region ? fr.zoomEnd : 1
+      break
     case 'pan': {
       scale = cap(1.22)
       // anda só o que o zoom deixa de sobra, para não mostrar a borda

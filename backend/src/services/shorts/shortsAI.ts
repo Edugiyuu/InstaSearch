@@ -2,13 +2,17 @@ import { AppError } from '../../middleware/errorHandler.js'
 import { askJson, askJsonMeta, MAX_SEARCHES } from './llm.js'
 import { citedScenes, describeChanges, diffBeats, hasChanges, keepOnlyCited, scenesText } from './sceneEdits.js'
 import { ensureTierScenes, formatStructure, isRank } from './formats.js'
+import { effectiveBeat, mentionedEffects, protectChosen } from './effects.js'
 import {
+  MOTIONS,
   STICKER_LEVELS,
+  TRANSITIONS,
   type AiCredit,
   type Beat,
   type Effect,
   type LibraryImage,
   type Motion,
+  type Transition,
   type ProjectSettings,
   type SceneKind,
   type ShortStyle,
@@ -39,7 +43,6 @@ const IMAGE_TYPE: Record<ShortStyle['imageType'], string> = {
 
 const SCENES: SceneKind[] = ['full', 'evidence']
 const EFFECTS: Effect[] = ['none', 'arrow', 'cross', 'circle', 'emoji']
-const MOTIONS: Motion[] = ['zoom-in', 'zoom-out', 'shake', 'pan']
 
 type RawBeat = Partial<Omit<Beat, 'characters' | 'twist'>> & { characters?: unknown; tags?: unknown; sound?: unknown; twist?: unknown }
 
@@ -102,6 +105,8 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
         emoji: b.effect === 'emoji' ? String(b.emoji || '😱') : undefined,
         motion: MOTIONS.includes(b.motion as Motion) ? (b.motion as Motion) : 'zoom-in',
         focus: b.focus && b.focus !== 'none' ? String(b.focus) : undefined,
+        // sem "transition" na resposta: mantém a de antes; "auto" volta para a regra do ritmo
+        transition: TRANSITIONS.includes(b.transition as Transition) ? (b.transition as Transition) : b.transition === undefined ? previous?.transition : undefined,
         // a IA não escolhe imagem; quem escolhe é a montagem (ou o usuário)
         imageId: changedImage ? undefined : previous?.imageId,
         imageStatus: changedImage ? 'missing' : previous?.imageStatus ?? 'missing',
@@ -140,7 +145,7 @@ const BEAT_FORMAT = `Cada batida:
   "emoji": "só se effect = emoji",
   "sticker": "só se effect = emoji: a reação em 1 a 3 palavras, para escolher uma figurinha (ex.: 'chocado', 'rindo', 'pensando', 'bravo')",
   "sfx": "efeito sonoro no corte, ou omita: ${SFX.join(' | ')}",
-  "motion": "zoom-in" | "zoom-out" | "shake" | "pan",
+  "motion": "zoom-in" | "zoom-out" | "shake" | "pan" | "still" (parada; só quando a imagem precisa ficar quieta),
   "focus": "área da imagem para dar zoom, se fizer sentido: rosto, mão, olhos, corpo",
   "twist": "só em algumas batidas (veja a regra de memes): { \"kind\": \"meme\" | \"variacao\", \"query\": \"busca curta em inglês\", \"tags\": [\"etiqueta do Danbooru da variação, ex.: genderswap, chibi\"] }; omita nas outras",
   "tier": "só na tier list: \"quadro\" (a cena mostra o quadro) ou \"revelacao\" (a cena põe o personagem na fileira); omita nos outros vídeos e nas outras batidas"
@@ -317,8 +322,9 @@ export async function adjustBeats(input: {
   const openScene = input.openScene && input.openScene <= beats.length ? input.openScene : undefined
   const soundName = (id?: string) => sounds.find(s => s.id === id)?.name ?? 'nenhum'
   // "cena" é o número que o usuário vê; sem ele a IA contava a posição na lista e errava por uma
-  const compact = beats.map(({ id, say, text, query, searchTags, characters, scene, effect, emoji, sticker, sfx, sfxId, motion, focus, twist }, i) => ({
-    cena: i + 1, id, say, text, query, tags: searchTags, characters, scene, effect, emoji, sticker, sfx, sound: soundName(sfxId), motion, focus, twist,
+  // os efeitos como o vídeo mostra: os escolhidos pelo usuário valem por cima dos da IA (ADR 0037)
+  const compact = beats.map(effectiveBeat).map(({ id, say, text, query, searchTags, characters, scene, effect, emoji, sticker, sfx, sfxId, motion, focus, twist, transition }, i) => ({
+    cena: i + 1, id, say, text, query, tags: searchTags, characters, scene, effect, emoji, sticker, sfx, sound: soundName(sfxId), motion, focus, twist, transition: i === 0 ? undefined : transition ?? 'auto',
   }))
 
   const prompt = `Você edita um Short vertical em português do Brasil. O vídeo é uma lista de batidas; em cada batida o vídeo corta para uma imagem nova.
@@ -345,6 +351,8 @@ Aplique o pedido. Regras:
 - Este vídeo é uma TIER LIST: o quadro mostra ${tier.character} na fileira ${tier.rank}. Se o pedido mudar a fileira ("põe no B"), responda "tierRank" com a nova (S, A, B, C ou D) e não mexa nas batidas, a não ser que o pedido peça também. A narração nunca diz a fileira ("tier A", "rank B"): ela aponta para o quadro ("o lugar dele é aqui"). Mantenha o "tier" das batidas.`
       : ''
   }
+- "transition" é como a batida entra no corte que vem da anterior: "cut" (corte seco), "flash" (flash branco), "flash-black" (flash preto), "shake" (tremida), "zoom" (zoom rápido) ou "auto" (o ritmo decide). Não mude a "transition" das batidas que o pedido não cita.
+- "motion", "focus", "effect" e "transition" de uma batida que o pedido não cita ficam como estão; o usuário pode ter escolhido.
 - "sound" é o efeito sonoro que toca na batida. Para trocar, use o nome exato de um destes: ${sounds.length ? sounds.map(s => `"${s.name}"`).join(', ') : '(a biblioteca não tem efeitos sonoros)'}; para tirar, "nenhum". Não mude o "sound" das batidas que o pedido não cita.
 
 ${BEAT_FORMAT}
@@ -366,12 +374,16 @@ Responda só com JSON:
     reverted = kept.reverted
   }
 
+  // efeitos escolhidos pelo usuário só mudam se o pedido cita a cena e fala do efeito (ADR 0037, 3A)
+  const protectedEffects = protectChosen(beats, next, new Set(cited.map(n => beats[n - 1].id)), mentionedEffects(request))
+  if (next !== beats) next = protectedEffects.beats
+
   const changes = diffBeats(beats, next)
   if (!hasChanges(changes)) next = beats
   const nextSettings = { ...settings, ...pickSettings(out.settings) }
   return {
     // trocar só a fileira não mexe nas cenas: o "nada mudou" do chatReply não vale
-    reply: tierRank && !hasChanges(changes) ? out.reply?.trim() || `Coloquei ${tier!.character} na fileira ${tierRank}.` : chatReply({ aiReply: out.reply?.trim() || 'Pronto.', changes, cited, reverted, settingsChanged: settingsDiffer(settings, nextSettings) }),
+    reply: tierRank && !hasChanges(changes) ? out.reply?.trim() || `Coloquei ${tier!.character} na fileira ${tierRank}.` : chatReply({ aiReply: out.reply?.trim() || 'Pronto.', changes, cited, reverted, settingsChanged: settingsDiffer(settings, nextSettings), keptChosen: protectedEffects.kept }),
     beats: next,
     narration: next === beats ? narration : next.map(b => b.say).join(' '),
     settings: nextSettings,
@@ -387,7 +399,16 @@ const settingsDiffer = (a: ProjectSettings, b: ProjectSettings) =>
  * A resposta do chat diz o que de fato mudou (ADR 0017). O texto da IA só aparece quando
  * ninguém desfez nada: se a IA mexeu na cena errada, o texto dela descreveria a mudança errada.
  */
-function chatReply(input: { aiReply: string; changes: ReturnType<typeof diffBeats>; cited: number[]; reverted: boolean; settingsChanged: boolean }) {
+function chatReply(input: { aiReply: string; changes: ReturnType<typeof diffBeats>; cited: number[]; reverted: boolean; settingsChanged: boolean; keptChosen?: number[] }) {
+  const { aiReply, changes, cited, reverted, settingsChanged, keptChosen = [] } = input
+  // ADR 0037: o que o usuário escolheu na cena não muda com um pedido que não fala daquilo
+  const where = scenesText(keptChosen)
+  // "na cena 3", "nas cenas 3 e 4", "em 5 cenas"
+  const kept = keptChosen.length ? ` Mantive os efeitos que você escolheu ${/^as? /.test(where) ? `n${where}` : `em ${where}`}.` : ''
+  return chatReplyText({ aiReply, changes, cited, reverted, settingsChanged }) + kept
+}
+
+function chatReplyText(input: { aiReply: string; changes: ReturnType<typeof diffBeats>; cited: number[]; reverted: boolean; settingsChanged: boolean }) {
   const { aiReply, changes, cited, reverted, settingsChanged } = input
   const what = describeChanges(changes)
   if (reverted) {

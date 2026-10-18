@@ -1,4 +1,4 @@
-import type { Beat, ButtonStyle, Catchphrase, ClickStyle, Entrance, LibraryImage, ProjectSettings, Region, ShortProject, SoundItem, SubscribePart, TextAnim, TextPosition, TierBoard } from '../api/shorts'
+import type { Beat, ButtonStyle, Transition, Catchphrase, ClickStyle, Entrance, LibraryImage, ProjectSettings, Region, ShortProject, SoundItem, SubscribePart, TextAnim, TextPosition, TierBoard } from '../api/shorts'
 import { afterButtonText, audioUrl, catchphraseFileUrl, catchphraseHasSound, imageUrl, mediaUrl, soundUrl } from '../api/shorts'
 import { alignWords, type WordTime } from './align'
 
@@ -11,6 +11,33 @@ export const DEFAULT_SFX_VOLUME = 0.75
 
 /** Volume do efeito de uma cena: o do vídeo vezes o ajuste da cena (acima de 1, o Remotion amplifica). */
 export const sfxVolume = (settings: ProjectSettings, beat: Beat) => (settings.sfxVolume ?? DEFAULT_SFX_VOLUME) * (beat.sfxVolume ?? 1)
+
+/**
+ * Os efeitos que valem no vídeo (ADR 0037): os escolhidos pelo usuário, por cima dos da IA.
+ * focus '' escolhido = a imagem inteira, sem área. O mesmo cálculo do `effectiveBeat` do servidor.
+ */
+export function effectiveBeat(beat: Beat): Beat {
+  const c = beat.chosen
+  if (!c) return beat
+  return {
+    ...beat,
+    motion: c.motion ?? beat.motion,
+    transition: c.transition ?? beat.transition,
+    effect: c.effect ?? beat.effect,
+    focus: c.focus !== undefined ? c.focus || undefined : beat.focus,
+  }
+}
+
+/**
+ * Como a cena entra (ADR 0037). Sem escolha (da IA, do chat ou do usuário), o ritmo decide, como antes:
+ * flash em todo corte no "frenético" e a cada 4 cenas no "rápido". A primeira cena não tem corte.
+ */
+export function sceneTransition(beat: Beat, index: number, settings: ProjectSettings): Transition {
+  if (index === 0) return 'cut'
+  const t = effectiveBeat(beat).transition
+  if (t) return t
+  return settings.pace === 'frenetico' || (settings.pace === 'rapido' && index % 4 === 0) ? 'flash' : 'cut'
+}
 
 /** Imagem (ou trecho de vídeo) da biblioteca, como a composição usa. */
 export interface MediaProps {
@@ -152,7 +179,8 @@ export function buildTimeline(project: ShortProject, images: Map<string, Library
     const sticker = beat.stickerId ? images.get(beat.stickerId) : undefined
     const sfx = beat.sfxId ? sounds.get(beat.sfxId) : undefined
     const timed: TimedBeat = {
-      beat,
+      // a composição desenha os efeitos que valem: os escolhidos pelo usuário ou os da IA
+      beat: effectiveBeat(beat),
       index,
       from,
       frames,

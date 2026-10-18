@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   beatsNeedingImage,
@@ -6,11 +6,16 @@ import {
   CaptionMode,
   Catchphrase,
   CATCHPHRASE_KIND_LABEL,
+  ChoiceScope,
+  ChosenEffects,
+  ChosenField,
+  Effect,
   EFFECTS_LABEL,
   EffectsLevel,
   errorMessage,
   FramingChoice,
   imageUrl,
+  Motion,
   Pace,
   PACE_LABEL,
   ShortProject,
@@ -18,14 +23,16 @@ import {
   soundUrl,
   StickerLevel,
   STICKERS_LABEL,
+  Transition,
 } from '../api/shorts'
-import { AiBadge, SearchList, Segmented, Spinner, useToast } from '../components/flow'
+import { AiBadge, SearchList, Spinner, useToast } from '../components/flow'
 import PublishModal from '../components/PublishModal'
 import { useCatchphrases, useLibrary, useProject, useSounds, useStyles } from '../hooks/useShorts'
 import { ShortPlayer, ShortPlayerHandle } from '../video/ShortPlayer'
-import { DEFAULT_SFX_VOLUME, sfxVolume, voiceTiming } from '../video/timeline'
+import { DEFAULT_SFX_VOLUME, effectiveBeat, sceneTransition, sfxVolume, voiceTiming } from '../video/timeline'
 import { ScenePick, ScenePickOption } from '../components/ScenePick'
 import { BackdropPick } from '../components/BackdropPick'
+import { EFFECT_INFO, EffectRow, MOTION_INFO, TRANSITION_INFO } from '../components/EffectRow'
 import { WhyTopic } from '../components/WhyTopic'
 import { ScriptReviewNote } from '../components/ScriptReviewNote'
 import { TierListCard } from '../components/TierListCard'
@@ -80,6 +87,12 @@ const STICKERS_REQUEST: Record<Exclude<StickerLevel, 'nenhuma'>, string> = {
 
 const SUGGESTIONS = ['Gancho mais curto', 'Final mais polêmico', 'Mais setas e X', 'Tira uma cena do meio', 'Legenda menor']
 
+const MOTIONS: Motion[] = ['still', 'zoom-in', 'zoom-out', 'shake', 'pan']
+const TRANSITIONS: Transition[] = ['cut', 'flash', 'flash-black', 'shake', 'zoom']
+const EFFECTS: Effect[] = ['none', 'circle', 'arrow', 'cross']
+
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+
 /** Um controle de volume do pop-up do som, em %. Ao soltar, toca o efeito para ouvir como ficou. */
 function VolumeRow({ label, title, value, max, onChange, onRelease }: {
   label: string
@@ -109,6 +122,44 @@ function VolumeRow({ label, title, value, max, onChange, onRelease }: {
   )
 }
 
+/** Um ajuste do vídeo inteiro: um botão pequeno com o valor, que abre a lista de opções. */
+function VideoChoice<T extends string>({ label, value, options, onChange, disabled }: {
+  label: string
+  value: T
+  options: Record<T, string>
+  onChange: (v: T) => void
+  disabled?: boolean
+}) {
+  return (
+    <ScenePick label={`${label}: ${options[value]}`} title={label}>
+      {close => (
+        <>
+          {(Object.keys(options) as T[]).map(k => (
+            <ScenePickOption key={k} on={k === value} onClick={() => { if (!disabled) onChange(k); close() }}>
+              {options[k]}
+            </ScenePickOption>
+          ))}
+        </>
+      )}
+    </ScenePick>
+  )
+}
+
+/** A cena com o efeito sob o mouse, só na prévia (ADR 0037, 4A); null = o automático. */
+function withTrial(project: ShortProject, beatId: string, field: ChosenField, value: string | null): ShortProject {
+  return {
+    ...project,
+    beats: project.beats.map(b => {
+      if (b.id !== beatId) return b
+      const chosen = { ...b.chosen } as Record<ChosenField, string | undefined>
+      if (value === null) delete chosen[field]
+      else chosen[field] = value
+      // os valores vêm das opções do pop-up, que são as do tipo
+      return { ...b, chosen: chosen as ChosenEffects }
+    }),
+  }
+}
+
 function Review() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -123,16 +174,42 @@ function Review() {
   const player = useRef<ShortPlayerHandle>(null)
   const preview = useRef<HTMLAudioElement | null>(null)
   const chatEnd = useRef<HTMLDivElement>(null)
+  const strip = useRef<HTMLDivElement>(null)
   const [current, setCurrent] = useState(initialBeat)
   const [request, setRequest] = useState('')
   const [working, setWorking] = useState<string | null>(null)
   const [publishing, setPublishing] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
+  // a linha que pisca quando o ícone de transição da faixa leva até ela
+  const [flashRow, setFlashRow] = useState<ChosenField | null>(null)
+  // o efeito sob o mouse num pop-up, tocando no player sem salvar (ADR 0037, 4A)
+  const [trial, setTrial] = useState<{ field: ChosenField; value: string | null } | null>(null)
+  const trying = useRef(false)
   // saves que esperam o controle parar de mexer (um arraste do volume manda dezenas de valores)
   const pendingSaves = useRef(new Map<string, ReturnType<typeof setTimeout>>())
 
   useEffect(() => {
     chatEnd.current?.scrollIntoView({ block: 'nearest' })
-  }, [project?.history.length, working])
+  }, [project?.history.length, working, chatOpen])
+
+  // a cena aberta fica à vista na faixa
+  useEffect(() => {
+    // só na horizontal: o scrollIntoView rolaria a página inteira junto
+    const box = strip.current
+    const on = box?.querySelector<HTMLElement>('.rv-thumb.on')
+    if (!box || !on) return
+    const left = on.offsetLeft - box.offsetLeft
+    if (left < box.scrollLeft) box.scrollLeft = left - 30
+    else if (left + on.offsetWidth > box.scrollLeft + box.clientWidth) box.scrollLeft = left + on.offsetWidth - box.clientWidth + 30
+  }, [current])
+
+  // Esc recolhe a conversa
+  useEffect(() => {
+    if (!chatOpen) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setChatOpen(false)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [chatOpen])
 
   const onBeatChange = useCallback((i: number) => setCurrent(i), [])
 
@@ -151,8 +228,14 @@ function Review() {
     return () => clearInterval(t)
   }, [syncing, projectId, setProject])
 
+  const trialBeatId = project?.beats[current]?.id
+  const playerProject = useMemo(
+    () => (project && trial && trialBeatId ? withTrial(project, trialBeatId, trial.field, trial.value) : project),
+    [project, trial, trialBeatId],
+  )
+
   if (loading) return <div className="page"><Spinner /></div>
-  if (!project) return <div className="page"><p className="form-error">{error}</p></div>
+  if (!project || !playerProject) return <div className="page"><p className="form-error">{error}</p></div>
 
   const run = async (label: string, action: () => Promise<ShortProject>) => {
     setWorking(label)
@@ -243,15 +326,17 @@ function Review() {
   const stickerCount = project.beats.filter(b => b.stickerId).length
   const pending = beatsNeedingImage(project)
   const missing = pending.filter(b => b.imageStatus === 'missing')
-  const effects = project.beats.filter(b => b.effect !== 'none').length
+  const effects = project.beats.filter(b => effectiveBeat(b).effect !== 'none').length
   const seconds = Math.round(project.audioDuration || project.duration)
   const style = styles.find(s => s.id === project.styleId)
   const beat = project.beats[current]
+  const shown = beat ? effectiveBeat(beat) : undefined
   const beatImage = beat?.imageId ? byId.get(beat.imageId) : undefined
   const sfxList = sounds.filter(s => s.kind === 'sfx')
   const stickerList = images.filter(i => i.kind === 'figurinha')
   const beatSticker = beat?.stickerId ? byId.get(beat.stickerId) : undefined
   const beatSound = beat?.sfxId ? soundsById.get(beat.sfxId) : undefined
+  const lastChat = project.history[project.history.length - 1]
 
   // editor: o usuário escolhe o efeito sonoro da cena (fica travado; "auto" devolve para a montagem)
   const setSfx = async (value: string) => {
@@ -287,6 +372,33 @@ function Review() {
     }
   }
 
+  /** Um efeito da cena (ADR 0037): movimento, transição, foco ou destaque; null = o automático. */
+  const setChoice = async (field: ChosenField | 'all', value: string | null, scope: ChoiceScope = 'cena') => {
+    if (!beat) return
+    try {
+      setProject(await shortsApi.setBeatChoice(project.id, beat.id, field, value, scope))
+    } catch (e) {
+      toast.show(errorMessage(e))
+    }
+  }
+
+  /**
+   * Prévia de um efeito (ADR 0037, 4A): o player toca a cena com o efeito sob o mouse, sem salvar.
+   * Na transição, começa um pouco antes, para ver o corte. undefined = parou de olhar.
+   */
+  const tryEffect = (field: ChosenField) => (value: string | null | undefined) => {
+    if (value === undefined) {
+      if (!trying.current) return
+      trying.current = false
+      setTrial(null)
+      player.current?.stopAt(current)
+      return
+    }
+    trying.current = true
+    setTrial({ field, value })
+    player.current?.playBeat(current, field === 'transition' ? 20 : 0)
+  }
+
   /** volume: 1 = o arquivo como é; o <audio> do navegador não passa de 1 (o vídeo amplifica, a prévia do ▶ não) */
   const playSound = (soundId?: string, volume = 1) => {
     const sound = soundId ? soundsById.get(soundId) : undefined
@@ -315,6 +427,51 @@ function Review() {
     setProject(p => (p ? { ...p, beats: p.beats.map(b => (b.id === beatId ? { ...b, sfxVolume: volume } : b)) } : p))
     saveSoon(`cena ${beatId}`, () => shortsApi.setBeatSfxVolume(project.id, beatId, volume))
   }
+
+  const regions = (beatImage?.regions ?? []).filter((r, i, all) => all.findIndex(o => o.label.toLowerCase() === r.label.toLowerCase()) === i)
+  const transitionAuto = beat ? sceneTransition({ ...beat, chosen: undefined }, current, project.settings) : 'cut'
+
+  const chatMessages = (
+    <div className="rv-messages">
+      {project.history.length === 0 && !working && (
+        <p className="rv-empty">Fale do jeito que quiser: “troca o final”, “mais rápido no começo”, “usa mais o rosto do Sukuna”.</p>
+      )}
+      {project.history.map(h => (
+        <div key={h.id} className="rv-msg">
+          <p className="rv-me">{h.request}</p>
+          <p className="rv-ai">{h.reply}</p>
+          <AiBadge ai={h.ai} compact />
+        </div>
+      ))}
+      {working && (
+        <div className="rv-msg">
+          <p className="rv-me">{working}</p>
+          <p className="rv-ai rv-typing"><Spinner /> mudando o vídeo…</p>
+        </div>
+      )}
+      <div ref={chatEnd} />
+    </div>
+  )
+
+  const chatInput = (
+    <div className="rv-input">
+      <input
+        className="field"
+        value={request}
+        onChange={e => setRequest(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && ask(request)}
+        placeholder="✨ Peça à IA: “troca o final”, “mais rápido no começo”…"
+        disabled={!!working}
+      />
+      <button className="btn-y" onClick={() => ask(request)} disabled={!!working || !request.trim()}>Enviar</button>
+    </div>
+  )
+
+  const undoButton = (
+    <button className="act rv-undo" onClick={() => run('Desfazer', () => shortsApi.undo(project.id))} disabled={!!working || project.undo.length === 0}>
+      ↶ Desfazer
+    </button>
+  )
 
   return (
     <div className="review">
@@ -345,155 +502,118 @@ function Review() {
       )}
 
       <div className="rv-body">
-        <section className="rv-video">
+        {/* Esquerda: o vídeo e os ajustes do vídeo inteiro (ADR 0037, 1A) */}
+        <aside className="rv-video">
           <div className="rv-player">
-            <ShortPlayer ref={player} project={project} images={byId} sounds={soundsById} onBeatChange={onBeatChange} initialBeat={initialBeat} />
+            <ShortPlayer ref={player} project={playerProject} images={byId} sounds={soundsById} onBeatChange={onBeatChange} initialBeat={initialBeat} />
           </div>
-          <div className="rv-strip" aria-label="Cenas">
-            {project.beats.map((b, i) => (
-              <button
-                key={b.id}
-                className={`rv-tick ${b.locked ? 'match' : b.imageStatus} ${i === current ? 'on' : ''} ${b.sfxId ? 'has-sfx' : ''}`}
-                style={{ flexGrow: Math.max(2, b.say.split(/\s+/).length) }}
-                title={`${i + 1}. ${b.text}${b.sfxId ? ` · 🔊 ${soundsById.get(b.sfxId)?.name ?? 'efeito'}` : ''}`}
-                onClick={() => player.current?.seekToBeat(i)}
-              />
-            ))}
-          </div>
-          {beat && (
-            // key: ao mudar de cena, os menus abertos fecham
-            <div className="rv-scene" key={beat.id}>
-              <button className="sp-chip" onClick={() => navigate(`/projeto/${project.id}/imagens?cena=${beat.id}`)} title="Trocar a imagem desta cena">
-                🖼 Trocar
-              </button>
-              {beatImage && <BackdropPick scene={beat.scene} choice={beat.framing} image={beatImage} onChange={setFraming} />}
-              {sfxList.length === 0 ? (
-                <Link to="/biblioteca?aba=sfx" className="sp-chip">🔊 + Efeitos sonoros</Link>
-              ) : (
-                <>
-                  <ScenePick
-                    label={`🔊 ${beatSound?.name ?? 'sem som'}${beat.sfxId && (beat.sfxVolume ?? 1) !== 1 ? ` · ${Math.round((beat.sfxVolume ?? 1) * 100)}%` : ''}`}
-                    title="Efeito sonoro desta cena e volume"
-                    className="rv-sfx-pick"
-                  >
+
+          <p className="rv-label">Vídeo inteiro</p>
+          <div className="rv-whole">
+            <VideoChoice label="Ritmo" value={project.settings.pace} options={PACE_LABEL} onChange={setPace} disabled={!!working} />
+            <VideoChoice label="Efeitos" value={project.settings.effects} options={EFFECTS_LABEL} onChange={setEffects} disabled={!!working} />
+            <VideoChoice label="Legenda" value={project.settings.caption} options={CAPTION_LABEL} onChange={setCaption} />
+            {stickerList.length ? (
+              <VideoChoice label="Figurinhas" value={project.settings.stickers ?? 'poucas'} options={STICKERS_LABEL} onChange={setStickers} disabled={!!working} />
+            ) : (
+              <Link to="/biblioteca?aba=figurinhas" className="sp-chip">+ Figurinhas</Link>
+            )}
+            {music.length ? (
+              <ScenePick label={`Música: ${music.find(m => m.id === project.musicId)?.name ?? 'sem'}`} title="Música do vídeo">
+                {close => (
+                  <>
+                    <ScenePickOption on={!project.musicId} onClick={() => { setMusic(null); close() }}>Sem música</ScenePickOption>
+                    {music.map(m => (
+                      <ScenePickOption key={m.id} on={project.musicId === m.id} onClick={() => { setMusic(m.id); close() }}>{m.name}</ScenePickOption>
+                    ))}
+                  </>
+                )}
+              </ScenePick>
+            ) : (
+              <Link to="/biblioteca?aba=musica" className="sp-chip">+ Músicas</Link>
+            )}
+            {catchphrases.length ? (
+              (['intro', 'outro'] as const).map(slot => {
+                // um bordão apagado da biblioteca aparece como "nenhum" (a composição já o ignora)
+                const chosen = catchphraseById.get(project.settings[slot] ?? '')
+                return (
+                  <ScenePick key={slot} label={`${slot === 'intro' ? 'Abertura' : 'Final'}: ${chosen?.name ?? 'nenhum'}`} title={slot === 'intro' ? 'Bordão de abertura' : 'Bordão do final'}>
                     {close => (
                       <>
-                        <p className="sp-sep">Volume</p>
-                        <VolumeRow
-                          label="Todos os efeitos"
-                          title="Volume de todos os efeitos sonoros do vídeo"
-                          value={videoSfxVolume}
-                          max={100}
-                          onChange={setVideoSfxVolume}
-                          onRelease={v => playSound(beat.sfxId, v * (beat.sfxVolume ?? 1))}
-                        />
-                        {beat.sfxId && (
-                          <VolumeRow
-                            label="Esta cena"
-                            title="Mais alto ou mais baixo que os outros efeitos (100% = igual)"
-                            value={beat.sfxVolume ?? 1}
-                            max={200}
-                            onChange={v => setSceneSfxVolume(beat.id, v)}
-                            onRelease={v => playSound(beat.sfxId, videoSfxVolume * v)}
-                          />
-                        )}
-                        <p className="sp-sep">Som desta cena</p>
-                        <ScenePickOption on={!beat.sfxLocked} onClick={() => { setSfx('auto'); close() }}>
-                          Automático ({beat.sfxLocked ? 'a montagem escolhe' : beatSound?.name ?? 'sem som'})
-                        </ScenePickOption>
-                        <ScenePickOption on={!!beat.sfxLocked && !beat.sfxId} onClick={() => { setSfx('none'); close() }}>
-                          Sem som
-                        </ScenePickOption>
-                        <p className="sp-sep">Seus efeitos</p>
-                        {sfxList.map(s => (
-                          <ScenePickOption
-                            key={s.id}
-                            on={!!beat.sfxLocked && beat.sfxId === s.id}
-                            onClick={() => { setSfx(s.id); close() }}
-                            extra={<button className="btn-g rv-sfx-play" onClick={() => playSound(s.id, videoSfxVolume)} title={`Ouvir ${s.name}`}>▶</button>}
-                          >
-                            {s.name}
-                          </ScenePickOption>
+                        <ScenePickOption on={!chosen} onClick={() => { setCatchphrase(slot, null); close() }}>Nenhum</ScenePickOption>
+                        {catchphrases.map(c => (
+                          <ScenePickOption key={c.id} on={chosen?.id === c.id} onClick={() => { setCatchphrase(slot, c.id); close() }}>{catchphraseLabel(c)}</ScenePickOption>
                         ))}
                       </>
                     )}
                   </ScenePick>
-                  <button className="sp-chip" onClick={() => playSound(beat.sfxId, sfxVolume(project.settings, beat))} disabled={!beatSound} title="Ouvir o efeito desta cena">▶</button>
-                </>
-              )}
-            </div>
-          )}
-          {beat && (
-            // segunda linha, para a primeira não ficar apertada
-            <div className="rv-scene rv-scene-2" key={`${beat.id}-figurinha`}>
-              {stickerList.length === 0 ? (
-                <Link to="/biblioteca?aba=figurinhas" className="sp-chip">😮 + Figurinhas</Link>
-              ) : (
-                <StickerPick
-                  stickers={stickerList}
-                  current={beatSticker}
-                  locked={!!beat.stickerLocked}
-                  context={`${project.subject ?? project.theme} ${beat.characters.join(' ')}`}
-                  onChange={setSticker}
-                />
-              )}
-            </div>
-          )}
-          {beat && (
-            <p className="rv-now">
-              <span className="c-muted">Cena {current + 1}/{project.beats.length}</span>
-              <span className="rv-now-text">“{beat.say}”</span>
-              <span className={beatImage ? 'c-muted' : 'c-danger'}>{beatImage ? beatImage.name : 'falta imagem'}</span>
-            </p>
-          )}
-        </section>
-
-        <section className="panel rv-chat">
-          <h2 className="panel-title">✨ Peça um ajuste</h2>
-          <div className="rv-messages">
-            {project.history.length === 0 && !working && (
-              <p className="rv-empty">Fale do jeito que quiser: “troca o final”, “mais rápido no começo”, “usa mais o rosto do Sukuna”.</p>
+                )
+              })
+            ) : (
+              <Link to="/biblioteca?aba=bordoes" className="sp-chip">+ Bordões</Link>
             )}
-            {project.history.map(h => (
-              <div key={h.id} className="rv-msg">
-                <p className="rv-me">{h.request}</p>
-                <p className="rv-ai">{h.reply}</p>
-                <AiBadge ai={h.ai} compact />
-              </div>
-            ))}
-            {working && (
-              <div className="rv-msg">
-                <p className="rv-me">{working}</p>
-                <p className="rv-ai rv-typing"><Spinner /> mudando o vídeo…</p>
-              </div>
-            )}
-            <div ref={chatEnd} />
-          </div>
-
-          <div className="rv-suggest">
-            {SUGGESTIONS.map(s => (
-              <button key={s} className="rv-chip" onClick={() => ask(s)} disabled={!!working}>{s}</button>
-            ))}
-          </div>
-          <div className="rv-input">
-            <input
-              className="field"
-              value={request}
-              onChange={e => setRequest(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && ask(request)}
-              placeholder="O que você quer mudar?"
+            <button
+              className="sp-chip"
+              onClick={() => repickImages('Buscando as imagens de novo na web')}
               disabled={!!working}
-            />
-            <button className="btn-y" onClick={() => ask(request)} disabled={!!working || !request.trim()}>Enviar</button>
+              title="Busca de novo na web as imagens que a montagem escolheu; as que você escolheu ficam"
+            >
+              ↻ Buscar imagens de novo
+            </button>
           </div>
-          <button className="act rv-undo" onClick={() => run('Desfazer', () => shortsApi.undo(project.id))} disabled={!!working || project.undo.length === 0}>
-            ↶ Desfazer a última mudança
-          </button>
-        </section>
 
-        <aside className="rv-side">
-          <div className="panel rv-card">
-            <span className="label">O que a IA montou</span>
+          {pending.length > 0 && (
+            <div className="panel rv-card rv-need">
+              <span className="label c-danger">Precisa de você</span>
+              <p className="rv-need-title">
+                {missing.length > 0 && `${missing.length} ${missing.length === 1 ? 'cena sem imagem' : 'cenas sem imagem'}`}
+                {missing.length > 0 && pending.length > missing.length && ' · '}
+                {pending.length > missing.length && `${pending.length - missing.length} com imagem parecida`}
+              </p>
+              <div className="rv-need-thumbs">
+                {pending.slice(0, 5).map(b => {
+                  const img = b.imageId ? byId.get(b.imageId) : undefined
+                  return (
+                    <button key={b.id} onClick={() => player.current?.seekToBeat(project.beats.indexOf(b))} title={b.query}>
+                      {img ? <img src={imageUrl(img)} alt="" /> : <span>?</span>}
+                    </button>
+                  )
+                })}
+              </div>
+              <button className="btn-y rv-need-btn" onClick={() => navigate(`/projeto/${project.id}/imagens`)}>
+                Escolher eu mesmo →
+              </button>
+              <button
+                className="btn-g rv-need-btn"
+                disabled={!!working}
+                title="Busca na internet e coloca a melhor imagem em cada cena que falta"
+                onClick={() =>
+                  run('Buscando imagens na internet', async () => {
+                    const out = await shortsApi.autoImages(project.id)
+                    await reloadLibrary()
+                    toast.show(`Coloquei imagem em ${out.added} de ${out.total} ${out.total === 1 ? 'cena' : 'cenas'}.`)
+                    return out.project
+                  })
+                }
+              >
+                ✨ Preencher automaticamente
+              </button>
+            </div>
+          )}
+
+          {project.format === 'tierlist' && project.tier && (
+            <div className="panel rv-card">
+              <TierListCard
+                project={project}
+                disabled={!!working}
+                onRank={rank => run(`Fileira ${rank}`, () => shortsApi.setTierRank(project.id, rank))}
+                onAdjust={ask}
+              />
+            </div>
+          )}
+
+          <details className="panel rv-card rv-about">
+            <summary>Sobre este vídeo</summary>
             <ul className="rv-facts">
               <li><strong>{project.beats.length}</strong> cenas em {seconds}s</li>
               <li><strong>{project.beats.length - pending.length}</strong> com imagem certa</li>
@@ -522,152 +642,238 @@ function Review() {
                 }
               />
             </ul>
-          </div>
-
-          <div className={`panel rv-card ${pending.length ? 'rv-need' : ''}`}>
-            {pending.length ? (
-              <>
-                <span className="label c-danger">Precisa de você</span>
-                <p className="rv-need-title">
-                  {missing.length > 0 && `${missing.length} ${missing.length === 1 ? 'cena sem imagem' : 'cenas sem imagem'}`}
-                  {missing.length > 0 && pending.length > missing.length && ' · '}
-                  {pending.length > missing.length && `${pending.length - missing.length} com imagem parecida`}
-                </p>
-                <div className="rv-need-thumbs">
-                  {pending.slice(0, 5).map(b => {
-                    const img = b.imageId ? byId.get(b.imageId) : undefined
-                    return (
-                      <button key={b.id} onClick={() => player.current?.seekToBeat(project.beats.indexOf(b))} title={b.query}>
-                        {img ? <img src={imageUrl(img)} alt="" /> : <span>?</span>}
-                      </button>
-                    )
-                  })}
-                </div>
-                <button className="btn-y rv-need-btn" onClick={() => navigate(`/projeto/${project.id}/imagens`)}>
-                  Escolher eu mesmo →
-                </button>
-                <button
-                  className="btn-g rv-need-btn"
-                  disabled={!!working}
-                  title="Busca na internet e coloca a melhor imagem em cada cena que falta"
-                  onClick={() =>
-                    run('Buscando imagens na internet', async () => {
-                      const out = await shortsApi.autoImages(project.id)
-                      await reloadLibrary()
-                      toast.show(`Coloquei imagem em ${out.added} de ${out.total} ${out.total === 1 ? 'cena' : 'cenas'}.`)
-                      return out.project
-                    })
-                  }
-                >
-                  ✨ Preencher automaticamente
-                </button>
-              </>
-            ) : (
-              <p className="c-success rv-ok">✓ Todas as cenas têm imagem</p>
+            {project.autopilot?.why && <WhyTopic autopilot={project.autopilot} />}
+            {project.autopilot?.review && <ScriptReviewNote autopilot={project.autopilot} />}
+            {(project.ai?.script || project.ai?.images) && (
+              <div className="rv-credits">
+                <span className="label">Quem fez</span>
+                <AiBadge label="Roteiro" ai={project.ai?.script} />
+                <AiBadge label="Imagens" ai={project.ai?.images} />
+                <SearchList ai={project.ai?.script} />
+              </div>
             )}
-          </div>
+          </details>
+        </aside>
 
-          {project.autopilot?.why && (
-            <div className="panel rv-card">
-              <WhyTopic autopilot={project.autopilot} />
+        {/* Centro: as cenas e os efeitos da cena aberta; o chat fica numa barra embaixo */}
+        <main className="rv-main">
+          <section className="panel rv-scenes">
+            <p className="rv-scenes-head">
+              <strong>Cenas</strong>
+              <span>Clique numa cena para mexer nos efeitos dela; clique no ícone entre duas cenas para trocar a transição.</span>
+            </p>
+            <div className="rv-strip" ref={strip} aria-label="Cenas">
+              {project.beats.map((b, i) => {
+                const img = b.imageId ? byId.get(b.imageId) : undefined
+                const fx = effectiveBeat(b)
+                const t = sceneTransition(b, i, project.settings)
+                const status = b.locked ? 'match' : b.imageStatus
+                return (
+                  <Fragment key={b.id}>
+                    {i > 0 && (
+                      <button
+                        className={`rv-tr ${t !== 'cut' ? 'fx' : ''} ${b.chosen?.transition ? 'mine' : ''} ${i === current && flashRow === 'transition' ? 'on' : ''}`}
+                        title={`Entre a cena ${i} e a ${i + 1}: ${TRANSITION_INFO[t].name.toLowerCase()}`}
+                        onClick={() => {
+                          player.current?.seekToBeat(i)
+                          setCurrent(i)
+                          setFlashRow('transition')
+                          setTimeout(() => setFlashRow(null), 1200)
+                        }}
+                      >
+                        {TRANSITION_INFO[t].glyph}
+                      </button>
+                    )}
+                    <button
+                      className={`rv-thumb ${status} ${i === current ? 'on' : ''}`}
+                      title={`${i + 1}. ${b.say}`}
+                      onClick={() => player.current?.seekToBeat(i)}
+                    >
+                      {img ? <img src={imageUrl(img)} alt="" loading="lazy" /> : <span className="rv-thumb-missing">?</span>}
+                      <span className="rv-thumb-n">{i + 1}</span>
+                      {b.chosen && <span className="rv-thumb-mine" title="Você escolheu efeitos nesta cena" />}
+                      <span className="rv-thumb-fx">
+                        {MOTION_INFO[fx.motion].glyph}
+                        {fx.effect !== 'none' && ` ${EFFECT_INFO[fx.effect].glyph}`}
+                        {b.sfxId && ' ♪'}
+                      </span>
+                    </button>
+                  </Fragment>
+                )
+              })}
             </div>
-          )}
+          </section>
 
-          {project.autopilot?.review && (
-            <div className="panel rv-card">
-              <ScriptReviewNote autopilot={project.autopilot} />
-            </div>
-          )}
-
-          {project.format === 'tierlist' && project.tier && (
-            <div className="panel rv-card">
-              <TierListCard
-                project={project}
-                disabled={!!working}
-                onRank={rank => run(`Fileira ${rank}`, () => shortsApi.setTierRank(project.id, rank))}
-                onAdjust={ask}
-              />
-            </div>
-          )}
-
-          {(project.ai?.script || project.ai?.images) && (
-            <div className="panel rv-card rv-credits">
-              <span className="label">Quem fez</span>
-              <AiBadge label="Roteiro" ai={project.ai?.script} />
-              <AiBadge label="Imagens" ai={project.ai?.images} />
-              <SearchList ai={project.ai?.script} />
-            </div>
-          )}
-
-          <div className="panel rv-card">
-            <span className="label">Ajustes rápidos</span>
-            <div className="rv-knob">
-              <span>Imagens</span>
-              <button
-                className="act rv-repick"
-                onClick={() => repickImages('Buscando as imagens de novo na web')}
-                disabled={!!working}
-                title="Busca de novo na web as imagens que a montagem escolheu; as que você escolheu ficam"
-              >
-                ↻ Buscar de novo na web
-              </button>
-            </div>
-            <div className="rv-knob">
-              <span>Ritmo</span>
-              <Segmented value={project.settings.pace} options={PACE_LABEL} onChange={setPace} disabled={!!working} />
-            </div>
-            <div className="rv-knob">
-              <span>Efeitos</span>
-              <Segmented value={project.settings.effects} options={EFFECTS_LABEL} onChange={setEffects} disabled={!!working} />
-            </div>
-            <div className="rv-knob">
-              <span>Figurinhas</span>
-              {stickerList.length ? (
-                <Segmented value={project.settings.stickers ?? 'poucas'} options={STICKERS_LABEL} onChange={setStickers} disabled={!!working} />
-              ) : (
-                <Link to="/biblioteca?aba=figurinhas" className="act">+ Adicionar figurinhas à biblioteca</Link>
-              )}
-            </div>
-            <div className="rv-knob">
-              <span>Legenda</span>
-              <Segmented value={project.settings.caption} options={CAPTION_LABEL} onChange={setCaption} />
-            </div>
-            {(['intro', 'outro'] as const).map(slot => (
-              <div className="rv-knob" key={slot}>
-                <span>{slot === 'intro' ? 'Bordão de abertura' : 'Bordão do final'}</span>
-                {catchphrases.length ? (
-                  <select
-                    className="field rv-music"
-                    // um bordão apagado da biblioteca aparece como "Nenhum" (a composição já o ignora)
-                    value={catchphraseById.has(project.settings[slot] ?? '') ? project.settings[slot]! : ''}
-                    onChange={e => setCatchphrase(slot, e.target.value || null)}
-                  >
-                    <option value="">Nenhum</option>
-                    {catchphrases.map(c => (
-                      <option key={c.id} value={c.id}>{catchphraseLabel(c)}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <Link to="/biblioteca?aba=bordoes" className="act">+ Criar bordões na biblioteca</Link>
+          {beat && shown && (
+            <section className="panel rv-fx">
+              <div className="rv-fx-head">
+                <strong>Efeitos da cena {current + 1}</strong>
+                <span className="rv-fx-say">“{beat.say}”</span>
+                <span className="spacer" />
+                {beat.chosen && (
+                  // só os 4 efeitos do ADR 0037; imagem, fundo, som e figurinha têm o "Automático" de cada pop-up
+                  <button className="act" onClick={() => setChoice('all', null)}>
+                    ↺ Voltar ao que a IA fez
+                  </button>
                 )}
               </div>
-            ))}
-            <div className="rv-knob">
-              <span>Música</span>
-              {music.length ? (
-                <select className="field rv-music" value={project.musicId ?? ''} onChange={e => setMusic(e.target.value || null)}>
-                  <option value="">Sem música</option>
-                  {music.map(m => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
+
+              <div className="rv-fx-rows">
+                <EffectRow
+                  label="Movimento"
+                  options={MOTIONS.map(m => ({ value: m, ...MOTION_INFO[m] }))}
+                  chosen={beat.chosen?.motion}
+                  autoText={MOTION_INFO[beat.motion].name.toLowerCase()}
+                  onTrial={tryEffect('motion')}
+                  onPick={v => setChoice('motion', v)}
+                  onAll={() => setChoice('motion', beat.chosen?.motion ?? null, 'todas')}
+                />
+                <EffectRow
+                  label="Entrada"
+                  options={TRANSITIONS.map(t => ({ value: t, ...TRANSITION_INFO[t] }))}
+                  chosen={beat.chosen?.transition}
+                  autoText={TRANSITION_INFO[transitionAuto].name.toLowerCase()}
+                  onTrial={tryEffect('transition')}
+                  onPick={v => setChoice('transition', v)}
+                  onAll={() => setChoice('transition', beat.chosen?.transition ?? null, 'todas')}
+                  disabledText={current === 0 ? 'a primeira cena não tem corte antes' : undefined}
+                  flash={flashRow === 'transition'}
+                />
+                <EffectRow
+                  label="Zoom em"
+                  options={[
+                    ...regions.map(r => ({ value: r.label, name: capitalize(r.label) })),
+                    { value: '', name: 'Imagem inteira', glyph: '⛶' },
+                  ]}
+                  chosen={beat.chosen?.focus}
+                  autoText={beat.focus ?? 'imagem inteira'}
+                  onTrial={tryEffect('focus')}
+                  onPick={v => setChoice('focus', v)}
+                  onAll={() => setChoice('focus', beat.chosen?.focus ?? null, 'todas')}
+                />
+                <EffectRow
+                  label="Destaque"
+                  options={EFFECTS.map(e => ({ value: e, ...EFFECT_INFO[e] }))}
+                  chosen={beat.chosen?.effect}
+                  autoText={EFFECT_INFO[beat.effect].name.toLowerCase()}
+                  onTrial={tryEffect('effect')}
+                  onPick={v => setChoice('effect', v)}
+                  onAll={() => setChoice('effect', beat.chosen?.effect ?? null, 'todas')}
+                />
+              </div>
+
+              {/* imagem, fundo, som e figurinha têm listas grandes: continuam em pop-up (ADR 0022) */}
+              <div className="rv-fx-more">
+                <span className="rv-fx-more-label">Também</span>
+                <button className="sp-chip" onClick={() => navigate(`/projeto/${project.id}/imagens?cena=${beat.id}`)} title="Trocar a imagem desta cena">
+                  🖼 {beatImage ? 'Trocar imagem' : 'Falta imagem'}
+                </button>
+                {beatImage && <BackdropPick scene={beat.scene} choice={beat.framing} image={beatImage} onChange={setFraming} />}
+                {sfxList.length === 0 ? (
+                  <Link to="/biblioteca?aba=sfx" className="sp-chip">🔊 + Efeitos sonoros</Link>
+                ) : (
+                  <>
+                    <ScenePick
+                      label={`🔊 ${beatSound?.name ?? 'sem som'}${beat.sfxId && (beat.sfxVolume ?? 1) !== 1 ? ` · ${Math.round((beat.sfxVolume ?? 1) * 100)}%` : ''}`}
+                      title="Efeito sonoro desta cena e volume"
+                      className="rv-sfx-pick"
+                    >
+                      {close => (
+                        <>
+                          <p className="sp-sep">Volume</p>
+                          <VolumeRow
+                            label="Todos os efeitos"
+                            title="Volume de todos os efeitos sonoros do vídeo"
+                            value={videoSfxVolume}
+                            max={100}
+                            onChange={setVideoSfxVolume}
+                            onRelease={v => playSound(beat.sfxId, v * (beat.sfxVolume ?? 1))}
+                          />
+                          {beat.sfxId && (
+                            <VolumeRow
+                              label="Esta cena"
+                              title="Mais alto ou mais baixo que os outros efeitos (100% = igual)"
+                              value={beat.sfxVolume ?? 1}
+                              max={200}
+                              onChange={v => setSceneSfxVolume(beat.id, v)}
+                              onRelease={v => playSound(beat.sfxId, videoSfxVolume * v)}
+                            />
+                          )}
+                          <p className="sp-sep">Som desta cena</p>
+                          <ScenePickOption on={!beat.sfxLocked} onClick={() => { setSfx('auto'); close() }}>
+                            Automático ({beat.sfxLocked ? 'a montagem escolhe' : beatSound?.name ?? 'sem som'})
+                          </ScenePickOption>
+                          <ScenePickOption on={!!beat.sfxLocked && !beat.sfxId} onClick={() => { setSfx('none'); close() }}>
+                            Sem som
+                          </ScenePickOption>
+                          <p className="sp-sep">Seus efeitos</p>
+                          {sfxList.map(s => (
+                            <ScenePickOption
+                              key={s.id}
+                              on={!!beat.sfxLocked && beat.sfxId === s.id}
+                              onClick={() => { setSfx(s.id); close() }}
+                              extra={<button className="btn-g rv-sfx-play" onClick={() => playSound(s.id, videoSfxVolume)} title={`Ouvir ${s.name}`}>▶</button>}
+                            >
+                              {s.name}
+                            </ScenePickOption>
+                          ))}
+                        </>
+                      )}
+                    </ScenePick>
+                    <button className="sp-chip" onClick={() => playSound(beat.sfxId, sfxVolume(project.settings, beat))} disabled={!beatSound} title="Ouvir o efeito desta cena">▶</button>
+                  </>
+                )}
+                {stickerList.length === 0 ? (
+                  <Link to="/biblioteca?aba=figurinhas" className="sp-chip">😮 + Figurinhas</Link>
+                ) : (
+                  <StickerPick
+                    stickers={stickerList}
+                    current={beatSticker}
+                    locked={!!beat.stickerLocked}
+                    context={`${project.subject ?? project.theme} ${beat.characters.join(' ')}`}
+                    onChange={setSticker}
+                  />
+                )}
+              </div>
+              <p className="rv-fx-hint">Passe o mouse numa opção e o vídeo toca a cena com ela. Um clique aplica nesta cena; ✨ Auto é o que a IA fez. O que você escolher, o chat só troca se você pedir.</p>
+            </section>
+          )}
+
+          {/* O chat como caminho secundário (ADR 0037): uma barra que abre a conversa numa gaveta */}
+          <section className="panel rv-chatbar">
+            {chatInput}
+            <div className="rv-last">
+              {working ? (
+                <span className="rv-typing"><Spinner /> {working}…</span>
               ) : (
-                <Link to="/biblioteca?aba=musica" className="act">+ Adicionar músicas à biblioteca</Link>
+                <span className="rv-last-text" title={lastChat?.reply}>{lastChat ? `Última resposta: ${lastChat.reply}` : 'Para o que precisa de texto: o final, o gancho, a música.'}</span>
               )}
+              <span className="rv-last-acts">
+                {undoButton}
+                <button className="act" onClick={() => setChatOpen(true)}>Conversa ({project.history.length}) ▴</button>
+              </span>
             </div>
-          </div>
-        </aside>
+          </section>
+        </main>
       </div>
+
+      {chatOpen && (
+        <aside className="rv-drawer" aria-label="Peça um ajuste">
+          <div className="rv-drawer-head">
+            <h2 className="panel-title">✨ Peça um ajuste</h2>
+            <button className="act" onClick={() => setChatOpen(false)}>Recolher ⇥</button>
+          </div>
+          <p className="rv-drawer-hint">Para o que precisa de texto: “final mais polêmico”, “troca a música”. Os efeitos de uma cena são mais rápidos nos cartões.</p>
+          {chatMessages}
+          <div className="rv-suggest">
+            {SUGGESTIONS.map(s => (
+              <button key={s} className="rv-chip" onClick={() => ask(s)} disabled={!!working}>{s}</button>
+            ))}
+          </div>
+          {chatInput}
+          {undoButton}
+        </aside>
+      )}
 
       {publishing && <PublishModal project={project} images={byId} sounds={soundsById} onClose={() => setPublishing(false)} onSaved={setProject} />}
       {toast.node}

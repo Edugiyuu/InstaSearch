@@ -25,7 +25,20 @@ export interface ShortStyle {
 
 export type SceneKind = 'full' | 'evidence'
 export type Effect = 'none' | 'arrow' | 'cross' | 'circle' | 'emoji'
-export type Motion = 'zoom-in' | 'zoom-out' | 'shake' | 'pan'
+/** 'still' = parado (ADR 0037). */
+export type Motion = 'zoom-in' | 'zoom-out' | 'shake' | 'pan' | 'still'
+/** Como a cena entra, no corte que vem da anterior (ADR 0037); sem valor, o ritmo decide. */
+export type Transition = 'cut' | 'flash' | 'flash-black' | 'shake' | 'zoom'
+/** Efeitos que o usuário escolheu na cena (ADR 0037), por cima dos da IA; focus '' = a imagem inteira. */
+export interface ChosenEffects {
+  motion?: Motion
+  transition?: Transition
+  focus?: string
+  effect?: Effect
+}
+export type ChosenField = keyof ChosenEffects
+/** Em quais cenas a escolha vale. */
+export type ChoiceScope = 'cena' | 'todas' | 'personagem'
 export type ImageStatus = 'match' | 'similar' | 'missing'
 /** Fundo escolhido na revisão: tela cheia, inteira, moldura no quadriculado ou moldura sobre a imagem (ADR 0022). */
 export type FramingChoice = 'cover' | 'fit' | 'frame' | 'frame-blur'
@@ -60,6 +73,10 @@ export interface Beat {
   twist?: { kind: 'meme' | 'variacao'; query: string; tags?: string[] }
   /** Fundo escolhido na revisão; sem valor, o automático decide (ADR 0020 e 0022). */
   framing?: FramingChoice
+  /** Como a cena entra (a IA ou o chat); sem valor, o ritmo decide. */
+  transition?: Transition
+  /** O que o usuário escolheu na cena (ADR 0037). */
+  chosen?: ChosenEffects
   /** Cena da tier list (ADR 0036), no lugar da imagem: o quadro, ou a revelação da fileira. */
   tier?: 'quadro' | 'revelacao'
 }
@@ -440,6 +457,9 @@ export const shortsApi = {
   /** framing null = automático (ADR 0020). */
   setBeatFraming: (id: string, beatId: string, framing: FramingChoice | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/framing`, { framing })),
+  /** Um efeito da cena (ADR 0037); value null = automático; field 'all' com null = voltar ao que a IA fez. */
+  setBeatChoice: (id: string, beatId: string, field: ChosenField | 'all', value: string | null, scope: ChoiceScope = 'cena') =>
+    data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/choice`, { field, value, scope })),
   /** Efeito sonoro de uma cena: id de um som, null = sem som, 'auto' = a montagem escolhe. */
   setBeatSfx: (id: string, beatId: string, sfxId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sfx`, { sfxId })),

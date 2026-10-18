@@ -79,3 +79,13 @@ As opções mostram a imagem parada da cena e um ícone; o movimento de verdade 
   - **Do 0022:** o chat sai do lugar de destaque. Pedidos que só o texto resolve ("final mais polêmico", "troca a música") ficam a um clique a mais, e quem não conhece o app pode nem ver que pode conversar com a IA.
   - Campos novos na cena (transição, travas dos efeitos, ajustes finos e a área desenhada), que o roteiro, a montagem, o chat (`shortsAI.ts`) e o render precisam conhecer; a tela Revisão é refeita quase toda.
 - **Revisar quando:** o usuário passar mais tempo nos cartões do que gastava pedindo ao chat, ou parar de usar o chat por não achá-lo.
+
+## Adendo (2026-10-18): opções à vista, sem cartões
+
+Depois de usar a primeira versão, o usuário achou os cartões confusos: "não precisa ter tipo esses cards… quero que seja intuitivo de usar". Cada efeito pedia dois cliques (abrir o cartão, escolher no pop-up), e o valor atual ficava escondido atrás do cartão.
+
+- **Movimento, entrada (a transição), zoom em (o foco) e destaque viram linhas com as opções lado a lado** (Figma: tela 01). A primeira é **✨ Auto · <o que a IA fez>**; a escolhida fica amarela. Passar o mouse continua tocando a cena no player (4A); um clique aplica.
+- **"Aplicar a" sai do pop-up.** Depois de escolher, a linha mostra **⇉ usar em todas as cenas**. "Cenas com o personagem" saiu da tela (a rota ainda aceita), porque quase não seria usado e tornava cada escolha uma pergunta a mais.
+- **Imagem, fundo, som e figurinha continuam em pop-up**, numa linha "Também": as listas deles (sons e figurinhas da biblioteca, miniaturas do fundo) não cabem à vista.
+- O ícone de transição na faixa de cenas abre a cena seguinte e faz a linha "Entrada" piscar, em vez de abrir um pop-up.
+- Alternativas que o usuário viu: os controles por cima do player (fica cheio de botões) e ícones na faixa de cenas que trocam a cada clique (rápido, mas é preciso decorar os ícones).

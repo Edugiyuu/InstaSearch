@@ -38,6 +38,7 @@ Tudo de um vídeo fica num arquivo só: `backend/data/short_projects/<id>.json`.
 
 - **Beat** é uma **cena**: um trecho da fala (`say`), a legenda curta (`text`), o que a imagem precisa mostrar (`query`), os personagens, o tipo (`full` ou `evidence`, a "prova"), o efeito (seta, X, círculo, reação), a imagem escolhida e se ela bateu (`match`, `similar`, `missing`).
 - Os campos `…Locked` e `framing` guardam o que **você** escolheu à mão; a montagem e o chat respeitam.
+- `chosen` guarda os **efeitos** que você escolheu na cena (movimento, transição, foco do zoom e destaque), por cima dos da IA, que continuam guardados para o "Automático". O vídeo usa `chosen ?? valor da IA` (`effectiveBeat`, igual no servidor e no frontend); o chat vê esse valor e só troca uma escolha quando o pedido cita a cena e fala do efeito (`protectChosen`, [ADR 0037](decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md)). `transition` é como a cena entra; sem valor, o ritmo decide.
 - `status` segue a vida do vídeo: `roteiro` → `revisao` → `salvo` / `agendado` → `publicado`.
 
 ## A IA: quem responde
@@ -127,6 +128,7 @@ backend/src/
 │   │   ├── library.ts         arquivos baixados, figurinhas e sons de cada cena
 │   │   ├── imageSearch.ts     busca na web (Bing, Danbooru, AniList, Serper)
 │   │   ├── sceneEdits.ts      o chat só mexe nas cenas citadas
+│   │   ├── effects.ts         os efeitos escolhidos na cena e o que o chat pode trocar (ADR 0037)
 │   │   ├── transcription.ts   Whisper local
 │   │   ├── render.ts · publish.ts   MP4, Instagram e YouTube
 │   │   └── types.ts           ShortProject, Beat… (o modelo de dados)

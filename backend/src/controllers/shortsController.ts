@@ -26,7 +26,8 @@ import { forgetProjectJobs } from '../services/shorts/autopilot.js'
 import { discardIdeasWithoutProject } from '../services/ideas/ideas.js'
 import { unlinkDeletedProjects } from '../services/ideas/debate.js'
 import { suggestTone } from '../services/shorts/shortsAI.js'
-import { FRAMING_CHOICES, type FramingChoice } from '../services/shorts/types.js'
+import { CHOSEN_FIELDS, FRAMING_CHOICES, type ChosenField, type FramingChoice } from '../services/shorts/types.js'
+import { CHOICE_SCOPES, type ChoiceScope } from '../services/shorts/effects.js'
 
 const MAX_IMAGE = 15 * 1024 * 1024
 
@@ -137,6 +138,19 @@ export const setBeatFraming = asyncHandler(async (req: Request, res: Response) =
   const { id, beatId } = req.params
   const framing = FRAMING_CHOICES.includes(req.body.framing) ? (req.body.framing as FramingChoice) : null
   res.json({ success: true, data: await projects.setBeatFraming(id, beatId, framing) })
+})
+
+/**
+ * PUT /shorts/projects/:id/beats/:beatId/choice { field, value, scope } → um efeito da cena (ADR 0037).
+ * field: motion | transition | focus | effect | all; value null = automático; scope: cena | todas | personagem.
+ */
+export const setBeatChoice = asyncHandler(async (req: Request, res: Response) => {
+  const { id, beatId } = req.params
+  const field = req.body?.field
+  if (field !== 'all' && !CHOSEN_FIELDS.includes(field)) throw new AppError('Efeito desconhecido', 400, 'VALIDATION')
+  const value = req.body?.value === null || req.body?.value === undefined ? null : String(req.body.value)
+  const scope: ChoiceScope = CHOICE_SCOPES.includes(req.body?.scope) ? req.body.scope : 'cena'
+  res.json({ success: true, data: await projects.setBeatChoice(id, beatId, field as ChosenField | 'all', value, scope) })
 })
 
 export const uploadAudio = [

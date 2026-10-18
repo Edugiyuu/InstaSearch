@@ -16,7 +16,7 @@ Os princípios, o estado do projeto e o jeito de trabalhar. O código em si est�
 | Parte | Estado |
 |---|---|
 | Tema → roteiro com pesquisa → voz → montagem → revisão → MP4 | ✅ Funciona |
-| Peça um ajuste, desfazer, ajustes rápidos, controles da cena (fundo em 5 opções, volume dos efeitos, figurinha) | ✅ Funciona |
+| Efeitos da cena com as opções à vista e prévia no player (movimento, transição, zoom em, destaque; imagem, fundo, som e figurinha em pop-up); chat numa barra que abre como gaveta, desfazer, ajustes do vídeo inteiro | ✅ Funciona ([ADR 0037](docs/decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md)); os ajustes finos (intensidade, duração, cor, desenhar a área) são a etapa 2 |
 | Legenda e cortes no tempo da voz (Whisper) | ✅ Funciona |
 | Publicar no Instagram e no YouTube, agendar | ✅ Funciona |
 | Ideias a partir das métricas | ✅ Funciona |

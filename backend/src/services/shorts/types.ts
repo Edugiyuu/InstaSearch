@@ -45,7 +45,27 @@ export interface Tone {
 
 export type SceneKind = 'full' | 'evidence'
 export type Effect = 'none' | 'arrow' | 'cross' | 'circle' | 'emoji'
-export type Motion = 'zoom-in' | 'zoom-out' | 'shake' | 'pan'
+/** 'still' = parado (ADR 0037): a imagem não se mexe. */
+export type Motion = 'zoom-in' | 'zoom-out' | 'shake' | 'pan' | 'still'
+export const MOTIONS: Motion[] = ['zoom-in', 'zoom-out', 'shake', 'pan', 'still']
+/** Como a cena entra, no corte que vem da anterior (ADR 0037). */
+export type Transition = 'cut' | 'flash' | 'flash-black' | 'shake' | 'zoom'
+export const TRANSITIONS: Transition[] = ['cut', 'flash', 'flash-black', 'shake', 'zoom']
+/** O destaque que o usuário pode escolher (a reação é a figurinha, que tem o pop-up dela). */
+export const CHOSEN_EFFECTS: Effect[] = ['none', 'arrow', 'cross', 'circle']
+
+/**
+ * Efeitos que o usuário escolheu na cena (ADR 0037). Valem por cima dos da IA, que ficam guardados
+ * para o "Automático"; sem o campo, vale o da IA. focus '' = a imagem inteira, sem área.
+ */
+export interface ChosenEffects {
+  motion?: Motion
+  transition?: Transition
+  focus?: string
+  effect?: Effect
+}
+export type ChosenField = keyof ChosenEffects
+export const CHOSEN_FIELDS: ChosenField[] = ['motion', 'transition', 'focus', 'effect']
 export type ImageStatus = 'match' | 'similar' | 'missing'
 /** Fundo escolhido na revisão: tela cheia, inteira, moldura no quadriculado ou moldura sobre a imagem (ADR 0022). */
 export type FramingChoice = 'cover' | 'fit' | 'frame' | 'frame-blur'
@@ -100,6 +120,10 @@ export interface Beat {
    * fundo desfocado (fit). Sem valor, o automático do ADR 0020 decide pelo formato da imagem.
    */
   framing?: FramingChoice
+  /** Como a cena entra (ADR 0037); sem valor, o ritmo decide (flash nos cortes do "rápido" e do "frenético"). */
+  transition?: Transition
+  /** Os efeitos que o usuário escolheu na cena (ADR 0037); o chat só troca quando o pedido fala deles. */
+  chosen?: ChosenEffects
   /**
    * Cena da tier list (ADR 0036), no lugar da imagem: "quadro" mostra o quadro da série; "revelacao" mostra
    * o personagem e, na palavra que aponta ("aqui"), o põe na fileira.
