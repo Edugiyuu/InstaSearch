@@ -14,6 +14,8 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
 - [ ] Adicionar `.gitattributes` para padronizar as quebras de linha (LF/CRLF)
 - [ ] Remover a dependência `openai`, que não é usada (pendência do [ADR 0006](docs/decisions/0006-remover-openai.md))
+- [ ] Efeitos da cena na frente, etapa 1: Revisão com os cartões da cena (movimento com "parado", transição por corte, foco nas áreas que a IA marcou, destaque, imagem, fundo, som, figurinha), pop-ups com prévia no player, travas que o chat respeita salvo pedido explícito e o chat numa barra que abre como gaveta (telas 01c a 01h no Figma; [ADR 0037](docs/decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md))
+- [ ] Efeitos da cena na frente, etapa 2: ajustes finos nos pop-ups (intensidade e velocidade do movimento, força e duração da transição, cor e "quando entra" do destaque, quanto o zoom aproxima e desenhar a área) ([ADR 0037](docs/decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md))
 
 ## Backlog
 

@@ -1,6 +1,6 @@
 # 0022 — Imagens só da web, sem biblioteca de imagens, e controles à mão na cena
 
-**Status:** Aceita · **Data:** 2026-10-08 · Substitui em parte o [0010](0010-biblioteca-de-imagens-em-vez-de-geracao.md) (a parte das imagens; o resto da biblioteca continua)
+**Status:** Substituída em parte por [0037](0037-efeitos-da-cena-na-frente-e-chat-secundario.md) (o ponto 3: os controles da cena viram cartões no centro e o chat vai para uma barra embaixo) · **Data:** 2026-10-08 · Substitui em parte o [0010](0010-biblioteca-de-imagens-em-vez-de-geracao.md) (a parte das imagens; o resto da biblioteca continua)
 
 ## Contexto
 

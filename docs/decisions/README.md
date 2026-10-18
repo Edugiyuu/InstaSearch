@@ -40,7 +40,7 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0008](0008-claude-sonnet-como-reserva.md) | Claude Sonnet 5.5 (esforço médio) como modelo da reserva | Aceita |
 | [0009](0009-remotion-para-composicao.md) | Remotion para compor, pré-visualizar e renderizar | Aceita |
 | [0010](0010-biblioteca-de-imagens-em-vez-de-geracao.md) | Biblioteca pessoal de imagens em vez de gerar imagens por IA | Substituída em parte por 0022 |
-| [0011](0011-editor-automatico.md) | Editor automático, não editor manual | Aceita |
+| [0011](0011-editor-automatico.md) | Editor automático, não editor manual | Substituída em parte por 0037 |
 | [0012](0012-render-em-processo-separado.md) | Render em MP4 num processo separado, com o código do frontend | Aceita |
 | [0013](0013-workflow-kanban-github-projects.md) | Workflow Kanban no GitHub Projects | Substituída por 0014 |
 | [0014](0014-board-em-arquivo-e-commit-por-tarefa.md) | Board em arquivo e um commit por tarefa, sem branches nem PRs | Aceita |
@@ -51,7 +51,7 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0019](0019-roteiro-com-argumento-e-tons-proprios.md) | Roteiro com argumento e tons próprios | Substituída em parte por 0031 |
 | [0020](0020-imagens-especificas-memes-e-zoom.md) | Imagens específicas, memes e zoom na medida | Aceita |
 | [0021](0021-ideias-a-partir-do-desempenho.md) | Ideias de vídeo a partir do que funcionou no Instagram e no YouTube | Aceita |
-| [0022](0022-imagens-da-web-e-controles-da-cena.md) | Imagens só da web, sem biblioteca de imagens, e controles à mão na cena | Aceita |
+| [0022](0022-imagens-da-web-e-controles-da-cena.md) | Imagens só da web, sem biblioteca de imagens, e controles à mão na cena | Substituída em parte por 0037 |
 | [0023](0023-documentacao-enxuta-com-diagramas.md) | Documentação enxuta em poucos arquivos, com diagramas | Aceita |
 | [0024](0024-imagens-do-assunto-do-video.md) | Imagens do assunto do vídeo: a obra guia a busca e a escolha | Aceita |
 | [0025](0025-variacoes-volume-e-figurinhas.md) | Mais variações, volume dos efeitos e figurinha na cena | Aceita |
@@ -65,3 +65,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0034](0034-revisao-do-roteiro-pelas-ias.md) | Revisão do roteiro pelas IAs antes da montagem | Aceita |
 | [0035](0035-piada-ligada-ao-tema.md) | Uma piada ligada ao tema no roteiro | Abandonada |
 | [0036](0036-formatos-de-video-e-tier-list.md) | Formatos de vídeo, com a tier list animada | Aceita |
+| [0037](0037-efeitos-da-cena-na-frente-e-chat-secundario.md) | Efeitos da cena na frente, chat secundário | Aceita |

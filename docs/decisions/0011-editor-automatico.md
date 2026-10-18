@@ -1,6 +1,6 @@
 # 0011 — Editor automático, não editor manual
 
-**Status:** Aceita · **Data:** 2026-10-03 (retroativo)
+**Status:** Substituída em parte por [0037](0037-efeitos-da-cena-na-frente-e-chat-secundario.md) (a regra "sem painel por cena": os efeitos de cada cena ganham cartões com pop-up; o resto continua) · **Data:** 2026-10-03 (retroativo)
 
 ## Contexto
 
