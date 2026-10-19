@@ -25,7 +25,7 @@ Os princípios, o estado do projeto e o jeito de trabalhar. O código em si est�
 | Variedade nos temas do debate (obra e personagem conferidas, em alta × atemporal, aposta do nicho) | ✅ Funciona ([ADR 0028](docs/decisions/0028-variedade-nos-temas-do-debate.md)) |
 | Volta de personagens que deram views no debate (uma vaga, com assunto novo; descansa com 3 dos últimos 8 ou com o último vídeo abaixo da mediana) | ✅ Funciona ([ADR 0033](docs/decisions/0033-volta-de-personagens-que-deram-views.md)) |
 | Revisão do roteiro pelas IAs antes da montagem (a Estrategista confere coesão, sentido e os fatos; até 3 reescritas) | ✅ Funciona ([ADR 0034](docs/decisions/0034-revisao-do-roteiro-pelas-ias.md)) |
-| Formatos de vídeo (opinião, tier list, X contra Y, E se…, mito ou verdade, antes e depois), sem repetir o dos 2 últimos | ✅ Funciona; a tier list em série (quadro e animação no próprio vídeo) está pronta, mas desligada por enquanto ([ADR 0036](docs/decisions/0036-formatos-de-video-e-tier-list.md)) |
+| Formatos de vídeo (opinião, tier list, X contra Y, E se…, mito ou verdade, antes e depois), sem repetir o do último | ✅ Funciona; a tier list em série (quadro e animação no próprio vídeo) está pronta, mas desligada por enquanto ([ADR 0036](docs/decisions/0036-formatos-de-video-e-tier-list.md)) |
 | Debate em rodadas (até 3, com temas novos), 5 s para vetar o tema aceito e "Parar debate" | ✅ Funciona ([ADR 0030](docs/decisions/0030-debate-em-rodadas-com-veto.md)) |
 | Imagens só da web, sem a aba Imagens | ✅ Funciona ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
 | Ferramentas antigas (perfis, análises, gerador de prompts) | ⚠️ Legado, quase tudo *stub* |

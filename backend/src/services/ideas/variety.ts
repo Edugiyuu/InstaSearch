@@ -136,19 +136,19 @@ export function aboveMedian(videos: Measured[]) {
   return result
 }
 
-/** Os formatos ligados que não estão em nenhum dos 2 últimos vídeos: os únicos que passam no filtro (ADR 0036, 2A). */
+/** Os formatos ligados que não estão no último vídeo: os únicos que passam no filtro (ADR 0036, 2A e adendo). */
 export const freeFormats = (recent: RecentVideo[]) =>
   ACTIVE_FORMATS.filter(f => !recent.slice(0, FORMAT_WINDOW).some(v => formatOf(v) === f))
 
 /**
- * O formato não repete o de um dos 2 últimos vídeos (ADR 0036, 2A); a tier list precisa da série e de um
+ * O formato não repete o do último vídeo (ADR 0036, 2A e adendo); a tier list precisa da série e de um
  * personagem que ainda não está no quadro dela (3A).
  */
 export function formatReason(idea: Pick<Idea, 'format' | 'series' | 'character'>, recent: RecentVideo[]) {
   const format = formatOf(idea)
   if (!ACTIVE_FORMATS.includes(format)) return `o formato "${FORMAT_NAME[format]}" está desligado por enquanto`
   const same = recent.slice(0, FORMAT_WINDOW).find(v => formatOf(v) === format)
-  if (same) return `o formato "${FORMAT_NAME[format]}" foi o de um dos ${FORMAT_WINDOW} últimos vídeos ("${same.title}")`
+  if (same) return `o formato "${FORMAT_NAME[format]}" foi o do último vídeo ("${same.title}")`
   if (format !== 'tierlist') return null
   if (!idea.series || !idea.character) return 'a tier list precisa da série e do personagem da vez'
   const ranked = alreadyRanked(seriesOf(recent), idea)

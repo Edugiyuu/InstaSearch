@@ -15,8 +15,8 @@ export const TIER_LIST_ON = false
 /** Os formatos que o brainstorm pode propor agora. */
 export const ACTIVE_FORMATS = VIDEO_FORMATS.filter(f => f !== 'tierlist' || TIER_LIST_ON)
 
-/** O formato não volta enquanto estiver num destes últimos vídeos (ADR 0036, 2A). */
-export const FORMAT_WINDOW = 2
+/** O formato não volta enquanto estiver num destes últimos vídeos (ADR 0036, 2A; o adendo baixou de 2 para 1). */
+export const FORMAT_WINDOW = 1
 
 export const FORMAT_NAME: Record<VideoFormat, string> = {
   opiniao: 'opinião com provas',

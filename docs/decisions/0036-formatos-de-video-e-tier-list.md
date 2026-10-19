@@ -84,3 +84,11 @@ O problema (o usuário): se o roteiro termina com "por isso o Genos é tier A" e
 ## Adendo (2026-10-17): tier list desligada por enquanto
 
 O usuário pediu para tirar a tier list por enquanto. Os outros formatos continuam. A tier list ficou pronta e testada (a cena com o quadro e a animação, a série, a fileira na Revisão e no chat), mas **desligada**: `TIER_LIST_ON = false` em `formats.ts`. O brainstorm não a propõe, e o código barra uma ideia de tier list se ela aparecer. Para ligar de novo, basta mudar essa constante.
+
+## Adendo (2026-10-19): o formato não repete só o do último vídeo
+
+O usuário pediu para afrouxar a regra 2A: o código agora tira só as ideias com o formato do **último** vídeo, e não mais o de um dos 2 últimos (`FORMAT_WINDOW = 1` em `formats.ts`).
+
+- **Por quê:** com 5 formatos ligados e 2 bloqueados, sobravam só 3. Um debate saiu com só 2 temas: 8 das 9 ideias descartadas eram "opinião com provas", o formato do penúltimo vídeo. O brainstorm já recebe os formatos livres pelo nome, mas a margem continuava apertada.
+- **O que perdemos:** dois vídeos seguidos podem alternar entre só dois formatos (opinião, versus, opinião, versus…), e o mesmo formato pode voltar depois de um vídeo só. A variedade passa a depender também das IAs do debate, que veem o formato dos últimos vídeos.
+- **Revisar quando:** os vídeos ficarem presos num par de formatos; aí a janela volta para 2.

@@ -117,7 +117,7 @@ const FORMAT_PROMPT: Record<VideoFormat, string> = {
  * - `recent`: os mais recentes, com obra e "em alta", para variar;
  * - `champions`: os títulos dos vídeos acima da mediana de visualizações, para a ideia de volta (ADR 0033);
  * - `series`: as tier lists do canal, com quem já foi ranqueado, para a próxima parte (ADR 0036);
- * - `formats`: os formatos que passam no filtro agora (os ligados, menos os dos 2 últimos vídeos);
+ * - `formats`: os formatos que passam no filtro agora (os ligados, menos o do último vídeo);
  * - `avoid`: as ideias que o filtro tirou numa tentativa anterior ou que caíram numa rodada anterior do debate, com o motivo.
  */
 export async function brainstormCandidates(
@@ -154,7 +154,7 @@ export async function brainstormCandidates(
     `Formatos de vídeo. Cada ideia tem um "format", só destes, e as ${count} usam pelo menos ${Math.min(formats.length, 4)} formatos diferentes:
 ${formats.map(f => FORMAT_PROMPT[f]).join('\n')}${
       blocked.length
-        ? `\nNÃO use agora: ${blocked.map(f => `"${f}" (${FORMAT_NAME[f]})`).join(', ')}. Foi o formato de um dos 2 últimos vídeos, e o app descarta a ideia.`
+        ? `\nNÃO use agora: ${blocked.map(f => `"${f}" (${FORMAT_NAME[f]})`).join(', ')}. Foi o formato do último vídeo, e o app descarta a ideia.`
         : ''
     }${
       !TIER_LIST_ON || !formats.includes('tierlist')

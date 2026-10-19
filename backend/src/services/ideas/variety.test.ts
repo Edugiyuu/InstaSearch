@@ -192,16 +192,16 @@ describe('formatos de vídeo e a tier list em série (ADR 0036)', () => {
     ...(tier ? { tier: { series: 'One Punch Man: o melhor personagem', ...tier } } : {}),
   })
 
-  it('o formato não repete o de um dos 2 últimos vídeos (sem formato = opinião)', () => {
-    const recent = [opm('Genos no quadro', 'tierlist', { character: 'Genos', rank: 'A' }), opm('Fubuki esquecida')]
-    expect(formatReason({ format: 'tierlist', series: 'x', character: 'Garou' }, recent)).toMatch(/tier list/)
+  it('o formato não repete o do último vídeo (sem formato = opinião)', () => {
+    const recent = [opm('Fubuki esquecida'), opm('Garou contra Saitama', 'versus')]
     expect(formatReason({}, recent)).toMatch(/opinião com provas/)
+    // o penúltimo já não bloqueia (adendo: a janela baixou de 2 para 1)
     expect(formatReason({ format: 'versus' }, recent)).toBeNull()
   })
 
-  it('o brainstorm recebe só os formatos que passam (sem os dos 2 últimos nem os desligados)', () => {
+  it('o brainstorm recebe só os formatos que passam (sem o do último nem os desligados)', () => {
     const recent = [opm('Asuka ou Rei'), opm('E se a Rebecca vivesse', 'ese'), opm('Velho', 'versus')]
-    expect(freeFormats(recent)).toEqual(['versus', 'mito', 'antesdepois'])
+    expect(freeFormats(recent)).toEqual(['versus', 'ese', 'mito', 'antesdepois'])
   })
 
   it('a tier list está desligada por enquanto: o brainstorm não propõe e o código barra', () => {

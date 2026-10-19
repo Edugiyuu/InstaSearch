@@ -48,6 +48,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-19 · O formato não repete só o do último vídeo, e não mais o de um dos 2 últimos: com 2 bloqueados, sobravam só 3 formatos e poucas ideias passavam ([ADR 0036](docs/decisions/0036-formatos-de-video-e-tier-list.md), adendo)
 - [x] 2026-10-19 · Brainstorm do debate sabe quais formatos estão bloqueados (só 2 de 12 ideias passaram: quase todas eram "opinião com provas", o formato de um dos 2 últimos vídeos) (ADR 0036)
 - [x] 2026-10-18 · Efeitos da cena na frente, etapa 1: na Revisão, movimento (com "parado"), entrada (a transição de cada corte: corte seco, flash branco ou preto, tremida, zoom rápido), zoom em (as áreas marcadas na imagem) e destaque ficam com as opções à vista, com prévia no player ao passar o mouse e "usar em todas as cenas"; imagem, fundo, som e figurinha em pop-up; o chat só troca uma escolha se o pedido cita a cena e fala do efeito, e fica numa barra que abre como gaveta ([ADR 0037](docs/decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md) e adendo)
 - [x] 2026-10-17 · Formatos de vídeo: opinião, X contra Y, E se…, mito ou verdade e antes e depois, cada um com a sua estrutura no roteiro e na revisão; o código não repete o formato dos 2 últimos vídeos. A tier list em série (quadro com S a D, um personagem por vídeo, animação na palavra "aqui", fileira na Revisão e no chat) ficou pronta, mas desligada por enquanto ([ADR 0036](docs/decisions/0036-formatos-de-video-e-tier-list.md))

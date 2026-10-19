@@ -256,7 +256,7 @@ async function candidates(projects: ShortProject[], recent: RecentVideo[], refus
     // as tier lists do canal, para a próxima parte ranquear alguém novo (ADR 0036)
     series: seriesOf(recent).map(s => ({ series: s.series, ranked: s.entries.map(e => `${e.character} (${e.rank})`) })),
     avoid: refused,
-    // o brainstorm só propõe estes: o filtro descarta os formatos dos 2 últimos vídeos
+    // o brainstorm só propõe estes: o filtro descarta o formato do último vídeo
     formats: freeFormats(recent),
   }
   let picked = pickCandidates(await brainstormCandidates(input, BRAINSTORM), recent, CANDIDATES)
