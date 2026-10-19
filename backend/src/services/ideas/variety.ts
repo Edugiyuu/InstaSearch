@@ -136,6 +136,10 @@ export function aboveMedian(videos: Measured[]) {
   return result
 }
 
+/** Os formatos ligados que não estão em nenhum dos 2 últimos vídeos: os únicos que passam no filtro (ADR 0036, 2A). */
+export const freeFormats = (recent: RecentVideo[]) =>
+  ACTIVE_FORMATS.filter(f => !recent.slice(0, FORMAT_WINDOW).some(v => formatOf(v) === f))
+
 /**
  * O formato não repete o de um dos 2 últimos vídeos (ADR 0036, 2A); a tier list precisa da série e de um
  * personagem que ainda não está no quadro dela (3A).

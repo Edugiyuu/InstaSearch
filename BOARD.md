@@ -18,6 +18,8 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Backlog
 
+- [ ] O `debate.test.ts` não roda: o Jest não carrega o `nanoid` (só ESM) que o `debate.ts` importa ("Must use import to load ES Module"); mapear o `nanoid` no Jest ou isolar as funções puras do debate
+
 - [ ] Ligar a tier list (`TIER_LIST_ON` em `formats.ts`) e, se quiser testar sem depender do debate, um jeito de começar uma série na tela Ideias (ADR 0036)
 - [ ] A personagem é achada por palavra, e "Todo" (Aoi Todo, de JJK) bate com "todo mundo" no tema de outros vídeos: hoje o vídeo da Makima conta como "o vídeo mais recente do Todo", e ele descansa sem motivo (talvez só nomes com maiúscula no tema, ou só no título; ADR 0028 e 0033)
 - [ ] Mostrar o gasto real de tokens: o log do Claude Code conta só a entrada fora do cache ("4 tokens de entrada"); somar o cache (lido e criado) e mostrar o total por debate e por vídeo, para saber quanto cada etapa gasta do plano
@@ -46,6 +48,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-19 · Brainstorm do debate sabe quais formatos estão bloqueados (só 2 de 12 ideias passaram: quase todas eram "opinião com provas", o formato de um dos 2 últimos vídeos) (ADR 0036)
 - [x] 2026-10-18 · Efeitos da cena na frente, etapa 1: na Revisão, movimento (com "parado"), entrada (a transição de cada corte: corte seco, flash branco ou preto, tremida, zoom rápido), zoom em (as áreas marcadas na imagem) e destaque ficam com as opções à vista, com prévia no player ao passar o mouse e "usar em todas as cenas"; imagem, fundo, som e figurinha em pop-up; o chat só troca uma escolha se o pedido cita a cena e fala do efeito, e fica numa barra que abre como gaveta ([ADR 0037](docs/decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md) e adendo)
 - [x] 2026-10-17 · Formatos de vídeo: opinião, X contra Y, E se…, mito ou verdade e antes e depois, cada um com a sua estrutura no roteiro e na revisão; o código não repete o formato dos 2 últimos vídeos. A tier list em série (quadro com S a D, um personagem por vídeo, animação na palavra "aqui", fileira na Revisão e no chat) ficou pronta, mas desligada por enquanto ([ADR 0036](docs/decisions/0036-formatos-de-video-e-tier-list.md))
 - [x] 2026-10-17 · Revisão do roteiro com até 3 reescritas (até 4 versões): a última crítica da Estrategista vira uma versão nova, em vez de só aparecer na Revisão ([adendo ao ADR 0034](docs/decisions/0034-revisao-do-roteiro-pelas-ias.md))

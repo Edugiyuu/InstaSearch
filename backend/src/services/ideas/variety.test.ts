@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
-import { aboveMedian, blockReason, formatReason, mentions, pickCandidates, revisitReason, sameWork, shuffle, varietyLines, type RecentVideo } from './variety.js'
+import { aboveMedian, blockReason, formatReason, freeFormats, mentions, pickCandidates, revisitReason, sameWork, shuffle, varietyLines, type RecentVideo } from './variety.js'
 import type { Trend } from './types.js'
 import type { VideoFormat } from '../shorts/types.js'
 
@@ -197,6 +197,11 @@ describe('formatos de vídeo e a tier list em série (ADR 0036)', () => {
     expect(formatReason({ format: 'tierlist', series: 'x', character: 'Garou' }, recent)).toMatch(/tier list/)
     expect(formatReason({}, recent)).toMatch(/opinião com provas/)
     expect(formatReason({ format: 'versus' }, recent)).toBeNull()
+  })
+
+  it('o brainstorm recebe só os formatos que passam (sem os dos 2 últimos nem os desligados)', () => {
+    const recent = [opm('Asuka ou Rei'), opm('E se a Rebecca vivesse', 'ese'), opm('Velho', 'versus')]
+    expect(freeFormats(recent)).toEqual(['versus', 'mito', 'antesdepois'])
   })
 
   it('a tier list está desligada por enquanto: o brainstorm não propõe e o código barra', () => {

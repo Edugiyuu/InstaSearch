@@ -15,7 +15,7 @@ import { askJsonMeta, MAX_SEARCHES } from '../shorts/llm.js'
 import { listProjects } from '../shorts/projects.js'
 import { listStyles } from '../shorts/styles.js'
 import { listTones } from '../shorts/tones.js'
-import { ACTIVE_FORMATS, TIER_LIST_ON } from '../shorts/formats.js'
+import { ACTIVE_FORMATS, FORMAT_NAME, TIER_LIST_ON } from '../shorts/formats.js'
 import type { ShortProject, VideoFormat } from '../shorts/types.js'
 import { buildRefs, cleanIdeas, commentLine, MAX_IDEAS, videoLine, type RawIdea } from './clean.js'
 import type { Idea, IdeaStatus } from './types.js'
@@ -117,6 +117,7 @@ const FORMAT_PROMPT: Record<VideoFormat, string> = {
  * - `recent`: os mais recentes, com obra e "em alta", para variar;
  * - `champions`: os títulos dos vídeos acima da mediana de visualizações, para a ideia de volta (ADR 0033);
  * - `series`: as tier lists do canal, com quem já foi ranqueado, para a próxima parte (ADR 0036);
+ * - `formats`: os formatos que passam no filtro agora (os ligados, menos os dos 2 últimos vídeos);
  * - `avoid`: as ideias que o filtro tirou numa tentativa anterior ou que caíram numa rodada anterior do debate, com o motivo.
  */
 export async function brainstormCandidates(
@@ -127,9 +128,12 @@ export async function brainstormCandidates(
     champions?: string[]
     series?: { series: string; ranked: string[] }[]
     avoid?: { theme: string; reason: string }[]
+    formats?: VideoFormat[]
   },
   count: number,
 ) {
+  const formats = input.formats?.length ? input.formats : ACTIVE_FORMATS
+  const blocked = ACTIVE_FORMATS.filter(f => !formats.includes(f))
   const list = (titles: string[]) => titles.map(t => `- ${t}`).join('\n')
   const note = [
     'Estas ideias vão ser debatidas por duas IAs, e a escolhida vira vídeo sozinha, sem o criador escolher o tema: traga ideias fortes e diferentes entre si.',
@@ -147,16 +151,20 @@ export async function brainstormCandidates(
 - "Em alta" é o TEMA, não a obra: só marque "alta" se o tema fala de algo que aconteceu nas últimas semanas (um episódio, capítulo, anúncio, design ou trend novo) e a pesquisa confirmou. Teste: se o tema funcionaria igual há um ano, ele é "atemporal", mesmo que a obra esteja em evidência (o passado do Gaara é atemporal, mesmo com Naruto voltando).
 - Fora isso, fique nas obras que o canal já fala. A exceção é UMA ideia de aposta ("bet": true): algo que está bombando agora no mesmo nicho do canal, mesmo numa obra que ele nunca tratou (uma trend de fãs, um meme, uma versão alternativa de personagem). Só se a pesquisa confirmou que está bombando, e nunca de outro nicho (nada de culinária num canal de anime).
 - Até UMA ideia de volta ("revisit": true): uma personagem de um vídeo do canal que ficou acima da mediana de visualizações, com um assunto NOVO (outra pergunta, outro recorte, nunca o mesmo vídeo com outro título). Nessa ideia, a obra e a janela de 3 vídeos não contam, mas a personagem não pode ser a do último vídeo, nem uma que já tem 3 dos últimos 8 vídeos, nem uma cujo vídeo mais recente ficou abaixo da mediana: ela descansa. Voltar é bom de vez em quando; sugar a personagem até a última gota, não.`,
-    `Formatos de vídeo (o app confere: o formato de um dos 2 últimos vídeos é descartado). Cada ideia tem um "format", e as 6 usam pelo menos 4 formatos diferentes, só destes:
-${ACTIVE_FORMATS.map(f => FORMAT_PROMPT[f]).join('\n')}${
-      !TIER_LIST_ON
+    `Formatos de vídeo. Cada ideia tem um "format", só destes, e as ${count} usam pelo menos ${Math.min(formats.length, 4)} formatos diferentes:
+${formats.map(f => FORMAT_PROMPT[f]).join('\n')}${
+      blocked.length
+        ? `\nNÃO use agora: ${blocked.map(f => `"${f}" (${FORMAT_NAME[f]})`).join(', ')}. Foi o formato de um dos 2 últimos vídeos, e o app descarta a ideia.`
+        : ''
+    }${
+      !TIER_LIST_ON || !formats.includes('tierlist')
         ? ''
         : input.series?.length
           ? `\nAs tier lists do canal (quem já foi ranqueado, com a fileira; não repita ninguém):\n${input.series.map(s => `- "${s.series}": ${s.ranked.join(', ')}`).join('\n')}`
           : '\nO canal ainda não tem nenhuma tier list.'
     }`,
     `Regras de apelo (os temas de antes saíam com cara de notícia, e o criador quer temas com "tchan"):
-- Cada tema é uma OPINIÃO FORTE que toma um lado e divide o público, do tipo que dá vontade de comentar para discordar: "A Hinata é a personagem mais desperdiçada de Naruto", "A Nami pós-time-skip é o melhor design de One Piece, e não é por acaso". Nada com cara de notícia ou de resenha: "o episódio X dividiu os fãs", "a recepção de Y no Japão", "a adaptação de Z está boa?". Uma novidade pode ser o gatilho, mas o tema é a opinião sobre ela, não a notícia.
+- Cada tema é uma OPINIÃO FORTE que toma um lado, em QUALQUER formato (não precisa ser o formato "opiniao": num versus a opinião é quem vence, num mito ou verdade é o que todo mundo acha e está errado), e divide o público, do tipo que dá vontade de comentar para discordar: "A Hinata é a personagem mais desperdiçada de Naruto", "A Nami pós-time-skip é o melhor design de One Piece, e não é por acaso". Nada com cara de notícia ou de resenha: "o episódio X dividiu os fãs", "a recepção de Y no Japão", "a adaptação de Z está boa?". Uma novidade pode ser o gatilho, mas o tema é a opinião sobre ela, não a notícia.
 - Pelo menos metade das ideias tem fanservice, de preferência com uma personagem mulher em destaque: beleza, design, visual novo, cenas marcantes dela, disputa de quem é a mais bonita ou a melhor, ship, versão alternativa. Sempre junto de uma opinião forte, nunca só "olha como ela é bonita". Só personagens adultas; nada sexual explícito.
 - PROIBIDA a fórmula "ela é mais que o visual / o corpo / a beleza / o fanservice" (e "é só beleza?", "não é só visual"): o canal já fez vários vídeos assim e cansou. Varie o ângulo: um ranking ("as 5 mais bonitas de Bleach"), uma comparação ("a Rebecca é melhor que a Lucy"), "quem venceria", um ship, o melhor e o pior design, um visual que a obra estragou, uma cena que a obra desperdiçou. Nunca use o mesmo ângulo de um dos últimos vídeos, mesmo com outra personagem.
 - O "hook" provoca: abre com a opinião ou com uma pergunta que a pessoa quer responder, nunca com o resumo de um fato.`,

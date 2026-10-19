@@ -18,7 +18,7 @@ import { buildRefs, commentLine, videoLine } from './clean.js'
 import { brainstormCandidates, listIdeas, storeIdea } from './ideas.js'
 import type { Debate, DebateMessage, DebateRound, Idea, RoundEnd, Speaker } from './types.js'
 import { FORMAT_NAME } from '../shorts/formats.js'
-import { aboveMedian, pickCandidates, seriesOf, varietyLines, type RecentVideo } from './variety.js'
+import { aboveMedian, freeFormats, pickCandidates, seriesOf, varietyLines, type RecentVideo } from './variety.js'
 
 /** No máximo 6 falas por rodada, 3 de cada (ADR 0027, 2A). */
 export const MAX_TURNS = 6
@@ -256,6 +256,8 @@ async function candidates(projects: ShortProject[], recent: RecentVideo[], refus
     // as tier lists do canal, para a próxima parte ranquear alguém novo (ADR 0036)
     series: seriesOf(recent).map(s => ({ series: s.series, ranked: s.entries.map(e => `${e.character} (${e.rank})`) })),
     avoid: refused,
+    // o brainstorm só propõe estes: o filtro descarta os formatos dos 2 últimos vídeos
+    formats: freeFormats(recent),
   }
   let picked = pickCandidates(await brainstormCandidates(input, BRAINSTORM), recent, CANDIDATES)
   if (picked.chosen.length < 2) {
