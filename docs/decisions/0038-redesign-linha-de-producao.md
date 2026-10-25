@@ -38,3 +38,7 @@ A implementação vai em **uma tarefa por tela**, cada uma com seu commit, nesta
 - **Ganhamos:** a home responde "o que falta em cada vídeo" e já tem o botão; criar fica numa caixa só; a Revisão diz o que impede publicar; o menu cai de 8 itens para 5.
 - **Perdemos / custa:** 8 tarefas de frontend. O Painel lê a etapa de cada vídeo de dados que hoje ficam espalhados (projeto, posts agendados, métricas), e um vídeo sem etapa clara cai na coluna errada. Quem estava acostumado com o menu lateral com nomes perde os rótulos grandes (o trilho tem rótulos pequenos). Estilos fica a um clique a mais.
 - **Revisar quando:** se o Painel ficar cheio demais (muitos publicados empurrando o resto), ou se o checklist esconder um ajuste que o usuário usava sempre.
+
+## Adendo (2026-10-25)
+
+O Painel ficou **sem a coluna Ideias**, a pedido do usuário, para sobrar espaço para os vídeos: as 5 colunas são Roteiro → Falta voz → Revisar → Agendado → Publicado. As ideias continuam a um clique, no item Ideias do trilho e nos atalhos da paleta de novo vídeo.

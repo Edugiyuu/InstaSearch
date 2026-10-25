@@ -73,7 +73,7 @@
 
 .board-cols {
   display: grid;
-  grid-template-columns: repeat(6, minmax(200px, 1fr));
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
   gap: 10px;
   flex: 1;
   min-height: 0;
@@ -153,8 +153,7 @@
   min-width: 0;
 }
 
-.board-title,
-.board-idea strong {
+.board-title {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
@@ -164,15 +163,6 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
-}
-
-.board-idea .board-sub {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  font-weight: 500;
-  line-height: 1.4;
 }
 
 .board-act {
