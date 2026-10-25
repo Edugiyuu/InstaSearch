@@ -54,6 +54,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-25 · Imagens leves: cada imagem da biblioteca ganha uma versão para o vídeo (cobre 1728×3072, o zoom máximo) e uma miniatura de 360 px para capas e grades; a original fica guardada. As 1.266 imagens antigas foram convertidas (`npm run migrate:images`): o Painel baixa 0,98 MB em vez de 16,1 MB
 - [x] 2026-10-25 · Painel sem a coluna Ideias, para sobrar espaço para os vídeos; as ideias ficam no trilho e na paleta (ADR 0038, adendo)
 - [x] 2026-10-25 · Redesign C, etapa 3: Novo vídeo como paleta (Ctrl K), com "Escrever o roteiro" e "Fazer tudo sozinho" (ADR 0038)
 - [x] 2026-10-25 · Redesign C, etapa 2: Painel, um quadro por etapa com o botão do próximo passo, no lugar do Início e dos Projetos (ADR 0038)

@@ -10,6 +10,7 @@ import { catalogImage } from './shortsAI.js'
 import { listSounds, soundIsType } from './sounds.js'
 import { normalize } from './text.js'
 import { imageSize } from './videoScenes.js'
+import { makeVariants } from './imageVariants.js'
 
 export { normalize }
 import type { Beat, LibraryImage, MediaKind, SoundItem, StickerLevel } from './types.js'
@@ -102,12 +103,18 @@ export async function addImage(
     : extensionFor(mimeType)
   const file = `${id}${ext}`
   await fs.writeFile(path.join(LIBRARY_FILES_DIR, file), data)
-  // o tamanho decide o enquadramento no vídeo (ADR 0020)
-  const size = await imageSize(path.join(LIBRARY_FILES_DIR, file)).catch(() => null)
+  // a versão leve para o vídeo e a miniatura; a original fica guardada. Sem elas, a imagem segue
+  // como veio: o tamanho decide o enquadramento no vídeo (ADR 0020)
+  const variants = await makeVariants(LIBRARY_FILES_DIR, file).catch(error => {
+    logger.warn(`⚠️ Imagem ${id} sem versão reduzida: ${error.message}`)
+    return null
+  })
+  const size = variants ? null : await imageSize(path.join(LIBRARY_FILES_DIR, file)).catch(() => null)
 
   const base: LibraryImage = {
     id,
     file,
+    ...(variants ?? {}),
     name: (hint.name || path.parse(originalName).name.replace(/[_-]+/g, ' ')).slice(0, 40) || 'imagem',
     kind: 'imagem',
     characters: hint.characters ?? [],
@@ -132,7 +139,9 @@ export async function addImage(
 
   if (hint.catalog !== false) {
     try {
-      const info = await catalogImage(data, MIME[ext] ?? mimeType)
+      // a IA olha a versão do vídeo: o que vai para a tela, e mais leve que a original
+      const seen = base.original ? await fs.readFile(path.join(LIBRARY_FILES_DIR, base.file)) : data
+      const info = await catalogImage(seen, MIME[path.extname(base.file)] ?? mimeType)
       Object.assign(base, info, { catalogued: true })
       if (kind) base.kind = kind
     } catch (error: any) {
@@ -196,7 +205,7 @@ export async function recatalog(id: string) {
   if (!img) return null
   if (img.kind === 'video') throw new AppError('Para catalogar o vídeo de novo, divida em cenas outra vez', 400, 'VALIDATION')
   // nas cenas, a IA olha a miniatura (o arquivo é o vídeo inteiro)
-  const file = img.thumb ?? img.file
+  const file = img.kind === 'cena' && img.thumb ? img.thumb : img.file
   const data = await fs.readFile(path.join(LIBRARY_FILES_DIR, file))
   const info = await catalogImage(data, MIME[path.extname(file)] ?? 'image/jpeg')
   return storage.save({ ...img, ...info, kind: img.kind === 'cena' ? 'cena' : info.kind, catalogued: true, cataloguing: false })
@@ -298,6 +307,7 @@ export async function deleteImage(id: string) {
     }
   }
   if (img.kind !== 'cena') await unlinkFile(img.file)
+  await unlinkFile(img.original)
   await unlinkFile(img.thumb)
   return storage.delete(id)
 }

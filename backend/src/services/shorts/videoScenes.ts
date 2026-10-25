@@ -275,6 +275,40 @@ export async function imageSize(file: string): Promise<{ width: number; height: 
   return width > 0 && height > 0 ? { width, height } : null
 }
 
+/** Tamanho e formato dos pixels (o `pix_fmt` diz se a imagem pode ter transparência). */
+export async function imageInfo(file: string): Promise<{ width: number; height: number; pixFmt: string } | null> {
+  const out = await run('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,pix_fmt', '-of', 'json', file])
+  const stream = JSON.parse(out).streams?.[0]
+  const width = Number(stream?.width)
+  const height = Number(stream?.height)
+  return width > 0 && height > 0 ? { width, height, pixFmt: String(stream?.pix_fmt ?? '') } : null
+}
+
+/**
+ * O menor valor do canal alfa (0 = algum pixel transparente, 255 = tudo opaco), olhando a imagem
+ * reduzida a 128×128. Muito PNG da web tem o canal alfa sem usar.
+ */
+export async function minAlpha(file: string): Promise<number> {
+  // o ffmpeg do Remotion não tem o filtro alphaextract: lê os pixels em RGBA e olha o 4º byte
+  let min = 255
+  let offset = 0
+  await run('ffmpeg', ['-v', 'error', '-i', file, '-vf', 'scale=128:128', '-frames:v', '1', '-pix_fmt', 'rgba', '-c:v', 'rawvideo', '-f', 'image2pipe', '-'], {
+    onStdout: chunk => {
+      for (const byte of chunk) {
+        if (offset % 4 === 3 && byte < min) min = byte
+        offset++
+      }
+    },
+  })
+  return min
+}
+
+/** Grava a imagem em outro tamanho: PNG mantém a transparência; JPEG com qualidade alta (q 3). */
+export async function resizeImage(input: string, output: string, width: number, height: number) {
+  const quality = output.endsWith('.png') ? ['-compression_level', '9'] : ['-q:v', '3']
+  await run('ffmpeg', ['-y', '-v', 'error', '-i', input, '-vf', `scale=${width}:${height}:flags=lanczos`, '-frames:v', '1', ...quality, output])
+}
+
 /** Converte um áudio para WAV mono de 16 kHz e 16 bits, o único formato que o Whisper lê. */
 export async function toWav16k(input: string, output: string) {
   await run('ffmpeg', ['-y', '-v', 'error', '-i', input, '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le', output])

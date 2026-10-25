@@ -338,9 +338,14 @@ export interface VideoProcessing {
 
 export interface LibraryImage {
   id: string
-  /** Arquivo da imagem; no vídeo e nas cenas, o vídeo (as cenas dividem o arquivo do vídeo). */
+  /**
+   * Arquivo da imagem; no vídeo e nas cenas, o vídeo (as cenas dividem o arquivo do vídeo).
+   * Numa imagem grande, é a versão do vídeo (reduzida), e a que veio fica em `original`.
+   */
   file: string
-  /** Miniatura (jpg) do vídeo e das cenas. */
+  /** A imagem como veio, quando `file` é a versão reduzida (guardada, sem uso no app hoje). */
+  original?: string
+  /** Miniatura (jpg; png com transparência) para capas e grades; no vídeo e nas cenas, um quadro. */
   thumb?: string
   /** Trecho do vídeo, em segundos (só nas cenas). */
   clip?: { start: number; end: number }

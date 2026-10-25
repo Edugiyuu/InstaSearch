@@ -363,9 +363,11 @@ export const WEB_SOURCE_LABEL: Record<WebImage['source'], string> = {
 
 export interface LibraryImage {
   id: string
-  /** Arquivo da imagem; no vídeo e nas cenas, o vídeo. */
+  /** Arquivo da imagem (numa imagem grande, a versão reduzida para o vídeo); no vídeo e nas cenas, o vídeo. */
   file: string
-  /** Miniatura do vídeo e das cenas. */
+  /** A imagem como veio, quando `file` é a versão reduzida. */
+  original?: string
+  /** Miniatura para capas e grades; no vídeo e nas cenas, um quadro. */
   thumb?: string
   /** Trecho do vídeo, em segundos (só nas cenas). */
   clip?: { start: number; end: number }

@@ -134,7 +134,7 @@ const libraryMedia = (img: LibraryImage): MediaProps => {
   const size = img.width && img.height ? { width: img.width, height: img.height } : {}
   return img.kind === 'cena' && img.clip
     ? { src: mediaUrl(img), regions: img.regions, clip: img.clip, poster: imageUrl(img), ...size }
-    : { src: imageUrl(img), regions: img.regions, ...size }
+    : { src: mediaUrl(img), regions: img.regions, ...size }
 }
 
 /**
@@ -185,7 +185,7 @@ export function buildTimeline(project: ShortProject, images: Map<string, Library
       from,
       frames,
       image: img ? libraryMedia(img) : undefined,
-      stickerSrc: sticker ? imageUrl(sticker) : undefined,
+      stickerSrc: sticker ? mediaUrl(sticker) : undefined,
       sfxSrc: sfx ? soundUrl(sfx) : undefined,
       wordStarts: starts && voice ? voice.beats[index].map(w => Math.max(0, Math.round(w.start * FPS) - starts[index])) : undefined,
     }

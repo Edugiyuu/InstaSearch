@@ -70,6 +70,8 @@ A IA de visão olha **6 sugestões por cena: 3 da web e 3 fanarts do Danbooru** 
 
 As imagens vêm **só da web** ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)): a montagem tira as que ela mesma pôs antes e busca de novo, e o chat busca as das cenas novas ou mudadas. Só a imagem que você escolheu fica travada. O arquivo baixado continua em `data/library/`, porque a prévia e o render precisam dele, mas não é oferecido a outro vídeo.
 
+Cada imagem vira três arquivos (`imageVariants.ts`): a **original**, como veio, guardada em `original` e sem uso hoje; a **versão do vídeo** (`file`), reduzida até cobrir 1728×3072 (1080×1920 com o zoom máximo de 1,6×), que o player, o render e a catalogação usam; e a **miniatura** (`thumb`, 360 px de largura), para capas e grades. Sai em JPEG, ou em PNG se a imagem tem transparência de verdade (o recorte de uma figurinha). GIF fica como está. As imagens antigas foram convertidas com `npm --prefix backend run migrate:images`, que pode rodar de novo sem refazer as convertidas.
+
 Depois das imagens, a montagem põe as **figurinhas** (pela etiqueta da reação, ex.: "chocado"; o vídeo não desenha emoji), os **efeitos sonoros** (pelo tipo de efeito e pelo nome do arquivo) e a **música** (pelo clima do estilo).
 
 ## Voz, legenda e cortes no tempo certo
