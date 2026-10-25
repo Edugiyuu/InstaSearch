@@ -65,4 +65,5 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0034](0034-revisao-do-roteiro-pelas-ias.md) | Revisão do roteiro pelas IAs antes da montagem | Aceita |
 | [0035](0035-piada-ligada-ao-tema.md) | Uma piada ligada ao tema no roteiro | Abandonada |
 | [0036](0036-formatos-de-video-e-tier-list.md) | Formatos de vídeo, com a tier list animada | Aceita |
-| [0037](0037-efeitos-da-cena-na-frente-e-chat-secundario.md) | Efeitos da cena na frente, chat secundário | Aceita |
+| [0037](0037-efeitos-da-cena-na-frente-e-chat-secundario.md) | Efeitos da cena na frente, chat secundário | Substituída em parte por 0038 |
+| [0038](0038-redesign-linha-de-producao.md) | Redesign do frontend: linha de produção | Aceita |

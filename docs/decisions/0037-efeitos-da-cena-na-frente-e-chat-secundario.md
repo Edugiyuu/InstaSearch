@@ -1,6 +1,6 @@
 # 0037 — Efeitos da cena na frente, chat secundário
 
-**Status:** Aceita · **Data:** 2026-10-17 · Substitui em parte o [0011](0011-editor-automatico.md) (a regra "sem painel por cena") e o ponto 3 do [0022](0022-imagens-da-web-e-controles-da-cena.md) (onde ficam os controles da cena)
+**Status:** Substituída em parte por [0038](0038-redesign-linha-de-producao.md) (onde ficam o chat e os avisos na Revisão) · **Data:** 2026-10-17 · Substitui em parte o [0011](0011-editor-automatico.md) (a regra "sem painel por cena") e o ponto 3 do [0022](0022-imagens-da-web-e-controles-da-cena.md) (onde ficam os controles da cena)
 
 ## Contexto
 

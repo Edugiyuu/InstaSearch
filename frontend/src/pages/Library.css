@@ -281,6 +281,63 @@
   margin-bottom: 18px !important;
 }
 
+/* Porta de entrada (ADR 0038): um cartão por coleção */
+.lib-hub {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.lib-hub-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 190px;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.lib-hub-card:hover {
+  border-color: var(--accent);
+  background: var(--panel-2);
+}
+
+.lib-hub-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: var(--panel-3);
+  font-size: 20px;
+  color: var(--accent);
+}
+
+.lib-hub-count {
+  position: absolute;
+  top: 34px;
+  right: 22px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.lib-hub-card strong {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.lib-hub-text {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .lib-tabs {
   display: flex;
   gap: 4px;

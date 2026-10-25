@@ -29,6 +29,18 @@
   flex: 1;
 }
 
+/* "← Biblioteca": volta para a tela de cima */
+.back-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.back-link:hover {
+  color: var(--text);
+}
+
 /* Rótulo em caixa alta (TEMA, ESTILO, MATERIAL...) */
 .label {
   display: block;

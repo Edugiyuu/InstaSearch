@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { errorMessage, imageUrl, LibraryImage, mediaUrl, shortsApi } from '../api/shorts'
 import { Spinner, useToast } from '../components/flow'
-import { useLibrary } from '../hooks/useShorts'
+import { useCatchphrases, useLibrary, useSounds, useStyles, useTones } from '../hooks/useShorts'
 import SoundLibrary from './SoundLibrary'
 import CatchphraseLibrary from './CatchphraseLibrary'
 import ToneLibrary from './ToneLibrary'
@@ -23,11 +23,17 @@ type Tab = (typeof TABS)[number]['id']
 
 function Library() {
   const [params, setParams] = useSearchParams()
-  const tab = (TABS.find(t => t.id === params.get('aba'))?.id ?? TABS[0].id) as Tab
+  const tab = TABS.find(t => t.id === params.get('aba'))?.id as Tab | undefined
+
+  // sem aba na URL: a porta de entrada (ADR 0038)
+  if (!tab) return <LibraryHub />
 
   return (
     <div className="page library">
       <div className="page-head lib-head">
+        <Link to="/biblioteca" className="back-link">
+          ← Biblioteca
+        </Link>
         <h1 className="page-title">Biblioteca</h1>
         <nav className="lib-tabs">
           {TABS.map(t => (
@@ -43,6 +49,47 @@ function Library() {
       {tab === 'musica' && <SoundLibrary key="musica" kind="musica" />}
       {tab === 'bordoes' && <CatchphraseLibrary />}
       {tab === 'tons' && <ToneLibrary />}
+    </div>
+  )
+}
+
+/** Porta de entrada: um cartão por coleção, com a contagem real (ou "…" enquanto carrega). */
+function LibraryHub() {
+  const { styles, loading: stylesLoading } = useStyles()
+  const { tones, loaded: tonesLoaded } = useTones()
+  const { images, loading: imagesLoading } = useLibrary()
+  const { sounds, loading: soundsLoading } = useSounds()
+  const { catchphrases, loaded: catchphrasesLoaded } = useCatchphrases()
+
+  const count = (ready: boolean, n: number) => (ready ? String(n) : '…')
+  const cards = [
+    { to: '/estilos', icon: '✦', title: 'Estilos', text: 'Ritmo, efeitos, legenda e música de cada tipo de vídeo', n: count(!stylesLoading, styles.length) },
+    { to: '/biblioteca?aba=tons', icon: '🎙', title: 'Tons', text: 'Como a IA fala no roteiro', n: count(tonesLoaded, tones.length) },
+    { to: '/biblioteca?aba=figurinhas', icon: '😮', title: 'Figurinhas', text: 'Reações no lugar dos emojis', n: count(!imagesLoading, images.filter(i => i.kind === 'figurinha').length) },
+    { to: '/biblioteca?aba=sfx', icon: '🔊', title: 'Efeitos sonoros', text: 'Whoosh, vine boom… ou o áudio de um Reel', n: count(!soundsLoading, sounds.filter(s => s.kind === 'sfx').length) },
+    { to: '/biblioteca?aba=musica', icon: '♪', title: 'Músicas', text: 'O fundo dos vídeos', n: count(!soundsLoading, sounds.filter(s => s.kind === 'musica').length) },
+    { to: '/biblioteca?aba=bordoes', icon: '▶', title: 'Bordões', text: 'Abertura e final: botão, áudio e o que aparece', n: count(catchphrasesLoaded, catchphrases.length) },
+    { to: '/biblioteca?aba=videos', icon: '🎞', title: 'Vídeos', text: 'Episódios divididos em cenas, para usar na troca de imagem', n: count(!imagesLoading, images.filter(i => i.kind === 'video').length) },
+  ]
+
+  return (
+    <div className="page library">
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">Biblioteca</h1>
+          <p className="page-sub">Os ingredientes que a IA usa para montar.</p>
+        </div>
+      </div>
+      <div className="lib-hub">
+        {cards.map(c => (
+          <Link key={c.to} to={c.to} className="lib-hub-card">
+            <span className="lib-hub-icon">{c.icon}</span>
+            <span className="lib-hub-count">{c.n}</span>
+            <strong>{c.title}</strong>
+            <span className="lib-hub-text">{c.text}</span>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }

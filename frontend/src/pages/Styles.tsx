@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   CAPTION_LABEL,
   EFFECTS_LABEL,
@@ -74,6 +74,9 @@ function Styles() {
   return (
     <div className="page styles-page">
       <div className="page-head">
+        <Link to="/biblioteca" className="back-link">
+          ← Biblioteca
+        </Link>
         <h1 className="page-title">Estilos</h1>
       </div>
 

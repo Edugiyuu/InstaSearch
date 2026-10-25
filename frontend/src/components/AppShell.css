@@ -3,173 +3,169 @@
   min-height: 100vh;
 }
 
-.side {
+/* Trilho de ícones (ADR 0038) */
+.rail {
   position: sticky;
   top: 0;
   display: flex;
   flex-direction: column;
-  width: 240px;
+  align-items: center;
+  width: 76px;
   height: 100vh;
   flex-shrink: 0;
-  padding: 22px 12px 20px;
+  padding: 18px 0 16px;
   background: var(--panel);
   border-right: 1px solid var(--border);
-  overflow-y: auto;
 }
 
-.side-brand {
-  display: flex;
-  flex-direction: column;
-  padding: 0 12px;
-  margin-bottom: 22px;
-}
-
-.side-logo {
-  font-size: 20px;
-  font-weight: 800;
+.rail-brand {
+  font-size: 18px;
+  font-weight: 900;
   color: var(--accent);
+  margin-bottom: 16px;
 }
 
-.side-tagline {
-  font-size: 11px;
-  color: var(--muted);
+.rail-new {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 22px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 24px;
+  font-weight: 800;
+  transition: filter 0.15s;
 }
 
-.side-new {
-  margin: 0 4px 20px;
+.rail-new:hover {
+  filter: brightness(1.08);
 }
 
-.side-nav {
+.rail-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
-.side-link {
+.rail-link {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  height: 36px;
-  padding: 0 16px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.side-link:hover {
-  background: var(--panel-2);
-}
-
-.side-link.active {
-  background: var(--panel-3);
-  font-weight: 600;
-}
-
-.side-icon {
-  width: 14px;
-  text-align: center;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.side-link.active .side-icon {
-  color: var(--text);
-}
-
-.side-divider {
+  justify-content: center;
+  gap: 4px;
+  width: 60px;
+  min-height: 56px;
+  padding: 6px 0;
   border: none;
-  border-top: 1px solid var(--border);
-  margin: 10px 4px;
-}
-
-.side-legacy-toggle {
-  margin-top: 18px;
-  padding: 0 16px;
+  border-radius: 12px;
   background: none;
-  border: none;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   color: var(--faint);
 }
 
-.side-legacy-toggle:hover {
-  color: var(--muted);
-}
-
-.side-link-sm {
-  height: 30px;
-  padding-left: 30px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.side-account {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: auto 4px 0;
-  padding: 10px;
-  border-radius: var(--radius-sm);
+.rail-link:hover {
   background: var(--panel-2);
+  color: var(--muted);
 }
 
-.side-account strong {
-  display: block;
+.rail-link.active {
+  background: var(--panel-3);
+  color: var(--text);
+}
+
+.rail-icon {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.rail-link.active .rail-icon {
+  color: var(--accent);
+}
+
+.rail-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.rail-foot .rail-link {
+  min-height: 44px;
+}
+
+.rail-legacy {
+  position: relative;
+}
+
+/* As ferramentas antigas abrem ao lado do trilho */
+.rail-flyout {
+  position: absolute;
+  left: 66px;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 12px 8px 8px;
+  border-radius: var(--radius-lg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.rail-flyout .label {
+  padding: 0 8px;
+  margin-bottom: 6px;
+}
+
+.rail-flyout a {
+  padding: 8px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
+  color: var(--muted);
 }
 
-.side-account small {
+.rail-flyout a:hover {
+  background: var(--panel-3);
+  color: var(--text);
+}
+
+.rail-account {
+  position: relative;
+  margin-top: 8px;
+}
+
+.rail-avatar {
   display: block;
-  font-size: 11px;
-}
-
-.side-avatar {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: #d94a8c;
   object-fit: cover;
-  flex-shrink: 0;
+}
+
+/* Ponto do Instagram: verde conectado, cinza desconectado */
+.rail-status {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--panel);
+  background: var(--faint);
+}
+
+.rail-status.on {
+  background: var(--success);
 }
 
 .shell-main {
   flex: 1;
   min-width: 0;
-}
-
-@media (max-width: 900px) {
-  .side {
-    width: 72px;
-    padding: 16px 8px;
-  }
-
-  .side-brand,
-  .side-legacy-toggle,
-  .side-link-sm,
-  .side-account span {
-    display: none;
-  }
-
-  .side .side-new {
-    padding: 0;
-    margin: 0 0 20px;
-    font-size: 0;
-  }
-
-  .side .side-new::before {
-    content: '+';
-    font-size: 20px;
-  }
-
-  .side-link {
-    justify-content: center;
-    padding: 0;
-    font-size: 0;
-  }
-
-  .side-icon {
-    font-size: 15px;
-  }
 }
