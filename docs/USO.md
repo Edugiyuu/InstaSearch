@@ -31,9 +31,11 @@ O caminho de um vídeo, tela por tela, as outras telas do app e um glossário do
 
 ### 2. Roteiro e voz
 
-- Cada cena tem a **legenda** (amarela), a **fala** e o que a imagem precisa mostrar. Tudo é editável; o ✕ tira a cena.
-- **Peça uma mudança** no topo ("gancho mais polêmico", "tira a parte do Kaido").
-- **Sua voz:** copie a narração, grave e suba o áudio. Dá para montar sem áudio e subir depois.
+- Abre em **modo foco**: tela cheia, sem o trilho, com o roteiro como um documento ([ADR 0038](decisions/0038-redesign-linha-de-producao.md)). "✕ Sair do foco" volta ao Painel.
+- Cada cena tem a **legenda** (amarela, pequena) e a **fala** (grande). Tudo é editável e salva ao sair do campo. Ao passar o mouse aparecem o que a imagem precisa mostrar (▣) e **✕ tirar**.
+- **Como a IA escreveu** (recolhido): qual IA, o que ela buscou na web, por que este tema e a revisão do roteiro.
+- **Peça uma mudança** embaixo das cenas ("gancho mais polêmico", "tira a parte do Kaido").
+- **A voz** fica numa barra fixa embaixo: arraste o áudio (ou clique), **⧉ Copiar texto** para gravar, e **Montar →** (ou **Montar sem voz →**, para subir depois).
 - Num vídeo já montado (inclusive um **🤖 criado sozinho**), o botão vira **Revisar o vídeo →**: a voz só ajusta o tempo da legenda e dos cortes. "↻ Montar de novo" continua ali, mas escolhe outra vez as imagens que não foram travadas.
 
 ### 3. Montagem

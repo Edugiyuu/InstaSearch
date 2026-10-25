@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { audioUrl, Beat, errorMessage, shortsApi } from '../api/shorts'
 import { WhyTopic } from '../components/WhyTopic'
 import { ScriptReviewNote } from '../components/ScriptReviewNote'
-import { AiBadge, copyText, SearchList, Spinner, Stepper, useToast } from '../components/flow'
+import { AiBadge, copyText, SearchList, Spinner, useToast } from '../components/flow'
 import { useProject } from '../hooks/useShorts'
 import './Script.css'
 
@@ -16,6 +16,10 @@ function measureAudio(src: string) {
   })
 }
 
+/**
+ * Roteiro em modo foco (ADR 0038): tela cheia, o texto como um documento, as ações da cena só
+ * no hover ou no foco e a voz numa barra fixa embaixo.
+ */
 function Script() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -26,6 +30,7 @@ function Script() {
   const [adjusting, setAdjusting] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [saved, setSaved] = useState(true)
 
   if (loading) return <div className="page"><Spinner /></div>
   if (!project) return <div className="page"><p className="form-error">{error}</p></div>
@@ -34,13 +39,16 @@ function Script() {
     setProject({ ...project, beats })
     try {
       setProject(await shortsApi.updateProject(project.id, { beats }))
+      setSaved(true)
     } catch (e) {
       toast.show(errorMessage(e))
     }
   }
 
-  const editBeat = (beatId: string, changes: Partial<Beat>) =>
+  const editBeat = (beatId: string, changes: Partial<Beat>) => {
+    setSaved(false)
     setProject({ ...project, beats: project.beats.map(b => (b.id === beatId ? { ...b, ...changes } : b)) })
+  }
 
   const askAdjust = async () => {
     if (!request.trim()) return
@@ -69,156 +77,149 @@ function Script() {
     }
   }
 
+  const copyNarration = async () => toast.show((await copyText(project.narration)) ? 'Narração copiada' : 'Não deu para copiar')
+
   const words = project.narration.split(/\s+/).filter(Boolean).length
   const lastReply = project.history[project.history.length - 1]
+  const built = project.status !== 'roteiro'
+  const auto = project.autopilot
 
   return (
-    <div className="page script">
-      <Stepper current={2} />
-      <div className="page-head">
-        <div>
-          <h1 className="page-title">{project.title}</h1>
-          <p className="page-sub">
-            {project.beats.length} cenas · ~{Math.round(words / 2.6)}s de fala · edite o texto direto ou peça para a IA
-          </p>
-          {project.ai?.script && (
-            <div className="sc-credits">
-              <AiBadge label="Roteiro" ai={project.ai.script} />
-              {lastReply?.ai && <AiBadge label="Última mudança" ai={lastReply.ai} />}
-            </div>
-          )}
-          <SearchList ai={project.ai?.script} />
-        </div>
-      </div>
+    <div className="sc-focus">
+      <header className="sc-top">
+        <Link to="/" className="sc-exit">✕ Sair do foco</Link>
+        <span className="sc-top-title">Roteiro · {project.title}</span>
+        <span className="sc-saved">{saved ? 'salvo ✓' : 'editando…'}</span>
+      </header>
 
-      <div className="sc-body">
-        <section>
-          <div className="sc-ask">
-            <span className="sc-ask-icon">✨</span>
-            <input
-              className="field"
-              value={request}
-              onChange={e => setRequest(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && askAdjust()}
-              placeholder="Peça uma mudança: “gancho mais polêmico”, “tira a parte do Kaido”…"
-              disabled={adjusting}
-            />
-            <button className="btn-g" onClick={askAdjust} disabled={adjusting || !request.trim()}>
-              {adjusting ? <Spinner /> : 'Mudar'}
-            </button>
-          </div>
-          {lastReply && <p className="sc-reply">✓ {lastReply.reply}</p>}
+      <main className="sc-doc">
+        <h1 className="sc-title">{project.title}</h1>
+        <p className="sc-meta">
+          {project.beats.length} cenas · ~{Math.round(words / 2.6)}s de fala · clique no texto para editar
+        </p>
 
-          <ol className="sc-beats">
-            {project.beats.map((b, i) => (
-              <li key={b.id} className="sc-beat">
-                <span className="sc-n">{i + 1}</span>
-                <div className="sc-beat-main">
-                  <input
-                    className="sc-caption"
-                    value={b.text}
-                    onChange={e => editBeat(b.id, { text: e.target.value })}
-                    onBlur={() => saveBeats(project.beats)}
-                    aria-label="Legenda na tela"
-                  />
-                  <textarea
-                    className="sc-say"
-                    value={b.say}
-                    rows={1}
-                    onChange={e => editBeat(b.id, { say: e.target.value })}
-                    onBlur={() => saveBeats(project.beats)}
-                    aria-label="Fala"
-                  />
-                  <span className="sc-query">▣ {b.query}</span>
+        {auto?.stage === 'pronto' && !project.audioFile && (
+          // ADR 0026: o resto foi feito sozinho; a voz é a parte do usuário
+          <p className="sc-auto">🤖 Criado sozinho: o roteiro, a montagem e as imagens estão prontos. Só falta a sua voz.</p>
+        )}
+
+        {/* o "como a IA escreveu" fica recolhido: quem quer conferir abre */}
+        {(project.ai?.script || auto?.why || auto?.review) && (
+          <details className="sc-how">
+            <summary>Como a IA escreveu</summary>
+            <div className="sc-how-body">
+              {project.ai?.script && (
+                <div className="sc-credits">
+                  <AiBadge label="Roteiro" ai={project.ai.script} />
+                  {lastReply?.ai && <AiBadge label="Última mudança" ai={lastReply.ai} />}
                 </div>
-                <button
-                  className="sc-remove"
-                  title="Tirar esta cena"
-                  onClick={() => saveBeats(project.beats.filter(x => x.id !== b.id))}
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <aside className="panel sc-voice">
-          <h2 className="panel-title">Sua voz</h2>
-          {project.autopilot?.stage === 'pronto' && !project.audioFile && (
-            // ADR 0026: o resto foi feito sozinho; a voz é a parte do usuário
-            <p className="sc-auto">🤖 Criado sozinho: o roteiro, a montagem e as imagens estão prontos. Só falta a sua voz.</p>
-          )}
-          {project.autopilot?.why && <WhyTopic autopilot={project.autopilot} />}
-          {project.autopilot?.review && <ScriptReviewNote autopilot={project.autopilot} />}
-          <p className="sc-voice-hint">Grave lendo o texto abaixo no celular ou no ElevenLabs e suba o áudio aqui.</p>
-
-          <div className="sc-narration">{project.narration}</div>
-          <button
-            className="act"
-            onClick={async () => toast.show((await copyText(project.narration)) ? 'Narração copiada' : 'Não deu para copiar')}
-          >
-            ⧉ Copiar narração
-          </button>
-
-          {project.audioFile ? (
-            <div className="sc-audio">
-              <audio controls src={audioUrl(project)} />
-              <span className="meta">
-                {project.audioDuration ? `${project.audioDuration.toFixed(1)}s` : ''}
-                <button className="act" onClick={() => audioInput.current?.click()}>
-                  Trocar áudio
-                </button>
-              </span>
-            </div>
-          ) : (
-            <div
-              className={`drop sc-drop ${dragOver ? 'over' : ''}`}
-              onClick={() => audioInput.current?.click()}
-              onDragOver={e => {
-                e.preventDefault()
-                setDragOver(true)
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={e => {
-                e.preventDefault()
-                setDragOver(false)
-                uploadAudio(e.dataTransfer.files[0])
-              }}
-            >
-              {uploading ? (
-                <Spinner />
-              ) : (
-                <>
-                  <strong>⭱ Subir áudio</strong>
-                  <span>mp3, wav ou m4a</span>
-                </>
               )}
+              <SearchList ai={project.ai?.script} />
+              {auto?.why && <WhyTopic autopilot={auto} />}
+              {auto?.review && <ScriptReviewNote autopilot={auto} />}
             </div>
-          )}
-          <input ref={audioInput} type="file" accept="audio/*" hidden onChange={e => uploadAudio(e.target.files?.[0])} />
+          </details>
+        )}
 
-          {project.status === 'roteiro' ? (
-            <>
-              <button className="btn-y btn-lg sc-next" onClick={() => navigate(`/projeto/${project.id}/montagem`)}>
-                Montar automaticamente →
-              </button>
-              {!project.audioFile && <p className="meta sc-next-note">Dá para montar sem áudio e subir depois.</p>}
-            </>
-          ) : (
-            // já montado (à mão ou sozinho): a voz só ajusta o tempo, então o caminho é revisar;
-            // montar de novo continua possível, mas escolhe outra vez as imagens que não foram travadas
-            <>
-              <button className="btn-y btn-lg sc-next" onClick={() => navigate(`/projeto/${project.id}`)}>
-                Revisar o vídeo →
-              </button>
-              <button className="act sc-next-note" onClick={() => navigate(`/projeto/${project.id}/montagem`)}>
-                ↻ Montar de novo
-              </button>
-            </>
-          )}
-        </aside>
-      </div>
+        <ol className="sc-beats">
+          {project.beats.map(b => (
+            <li key={b.id} className="sc-beat">
+              <div className="sc-beat-head">
+                <input
+                  className="sc-caption"
+                  value={b.text}
+                  onChange={e => editBeat(b.id, { text: e.target.value })}
+                  onBlur={() => saveBeats(project.beats)}
+                  aria-label="Legenda na tela"
+                />
+                <span className="sc-tools">
+                  <span title="O que a montagem busca na web para esta cena">▣ {b.query}</span>
+                  <button onClick={() => saveBeats(project.beats.filter(x => x.id !== b.id))}>✕ tirar</button>
+                </span>
+              </div>
+              <textarea
+                className="sc-say"
+                value={b.say}
+                rows={1}
+                onChange={e => editBeat(b.id, { say: e.target.value })}
+                onBlur={() => saveBeats(project.beats)}
+                aria-label="Fala"
+              />
+            </li>
+          ))}
+        </ol>
+
+        <div className="sc-ask">
+          <span>✨</span>
+          <input
+            value={request}
+            onChange={e => setRequest(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && askAdjust()}
+            placeholder="Peça uma mudança: “gancho mais polêmico”, “tira a parte do Kaido”…"
+            disabled={adjusting}
+          />
+          <button className="btn-g" onClick={askAdjust} disabled={adjusting || !request.trim()}>
+            {adjusting ? <Spinner /> : 'Mudar'}
+          </button>
+        </div>
+        {lastReply && <p className="sc-reply">✓ {lastReply.reply}</p>}
+      </main>
+
+      {/* a voz numa barra fixa: é o que falta para montar */}
+      <footer className="sc-voice">
+        <div className="sc-voice-label">
+          <strong>Voz</strong>
+          <span>{project.audioFile ? 'Enviada.' : built ? 'O vídeo já foi montado: a voz acerta o tempo.' : 'Falta só isso para montar.'}</span>
+        </div>
+
+        {project.audioFile ? (
+          <div className="sc-audio">
+            <audio controls src={audioUrl(project)} />
+            <span className="meta">
+              {project.audioDuration ? `${project.audioDuration.toFixed(1)}s · ` : ''}
+              <button className="act" onClick={() => audioInput.current?.click()}>Trocar áudio</button>
+            </span>
+          </div>
+        ) : (
+          <div
+            className={`drop sc-drop ${dragOver ? 'over' : ''}`}
+            onClick={() => audioInput.current?.click()}
+            onDragOver={e => {
+              e.preventDefault()
+              setDragOver(true)
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => {
+              e.preventDefault()
+              setDragOver(false)
+              uploadAudio(e.dataTransfer.files[0])
+            }}
+          >
+            {uploading ? <Spinner /> : <strong>⭱ Arraste o áudio ou clique (mp3, wav, m4a)</strong>}
+          </div>
+        )}
+        <input ref={audioInput} type="file" accept="audio/*" hidden onChange={e => uploadAudio(e.target.files?.[0])} />
+
+        <button className="btn-g" onClick={copyNarration} title="Para gravar no celular ou no ElevenLabs">⧉ Copiar texto</button>
+
+        <span className="spacer" />
+        {built ? (
+          // já montado (à mão ou sozinho): a voz só ajusta o tempo, então o caminho é revisar;
+          // montar de novo continua possível, mas escolhe outra vez as imagens que não foram travadas
+          <>
+            <button className="btn-o" onClick={() => navigate(`/projeto/${project.id}/montagem`)}>↻ Montar de novo</button>
+            <button className="btn-y btn-lg" onClick={() => navigate(`/projeto/${project.id}`)}>Revisar o vídeo →</button>
+          </>
+        ) : (
+          <button
+            className="btn-y btn-lg"
+            onClick={() => navigate(`/projeto/${project.id}/montagem`)}
+            title={project.audioFile ? undefined : 'Dá para montar sem áudio e subir depois'}
+          >
+            {project.audioFile ? 'Montar →' : 'Montar sem voz →'}
+          </button>
+        )}
+      </footer>
       {toast.node}
     </div>
   )

@@ -27,7 +27,6 @@ function App() {
           <Route path="/" element={<Board />} />
           {/* a paleta de novo vídeo abre por cima do Painel (AppShell, ADR 0038) */}
           <Route path="/novo" element={<Board />} />
-          <Route path="/projeto/:id/roteiro" element={<Script />} />
           <Route path="/projeto/:id/montagem" element={<Assembly />} />
           <Route path="/ideias" element={<Ideas />} />
           <Route path="/biblioteca" element={<Library />} />
@@ -36,7 +35,8 @@ function App() {
           <Route path="/configuracoes" element={<Settings />} />
         </Route>
 
-        {/* Tela cheia, sem menu lateral */}
+        {/* Tela cheia, sem o trilho (o roteiro em modo foco, ADR 0038) */}
+        <Route path="/projeto/:id/roteiro" element={<Script />} />
         <Route path="/projeto/:id" element={<Review />} />
         <Route path="/projeto/:id/imagens" element={<ReplaceImage />} />
 
