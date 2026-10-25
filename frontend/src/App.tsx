@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import AppShell from './components/AppShell'
 import Board from './pages/Board'
-import NewVideo from './pages/NewVideo'
 import Script from './pages/Script'
 import Assembly from './pages/Assembly'
 import Review from './pages/Review'
@@ -26,7 +25,8 @@ function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<Board />} />
-          <Route path="/novo" element={<NewVideo />} />
+          {/* a paleta de novo vídeo abre por cima do Painel (AppShell, ADR 0038) */}
+          <Route path="/novo" element={<Board />} />
           <Route path="/projeto/:id/roteiro" element={<Script />} />
           <Route path="/projeto/:id/montagem" element={<Assembly />} />
           <Route path="/ideias" element={<Ideas />} />

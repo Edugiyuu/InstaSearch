@@ -1,12 +1,13 @@
-import { ReactNode, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { ReactNode, useCallback, useEffect, useState } from 'react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useInstagram } from '../hooks/useInstagram'
+import NewVideoPalette, { PaletteStart } from './NewVideoPalette'
 import './AppShell.css'
 
 // Trilho de ícones do redesign "linha de produção" (ADR 0038). Estilos fica dentro da Biblioteca.
 // `match` diz quando o item fica aceso: Ideias e Números dividem a rota /ideias (a aba muda)
 const NAV = [
-  { to: '/', icon: '▦', label: 'Painel', match: (path: string) => path === '/' },
+  { to: '/', icon: '▦', label: 'Painel', match: (path: string) => path === '/' || path === '/novo' },
   { to: '/ideias', icon: '◎', label: 'Ideias', match: (path: string, aba: string | null) => path === '/ideias' && aba !== 'desempenho' },
   { to: '/calendario', icon: '▤', label: 'Agenda', match: (path: string) => path === '/calendario' },
   { to: '/ideias?aba=desempenho', icon: '↗', label: 'Números', match: (path: string, aba: string | null) => path === '/ideias' && aba === 'desempenho' },
@@ -28,7 +29,29 @@ function AppShell({ children }: { children?: ReactNode }) {
   const { account, connected, loading } = useInstagram()
   const [legacyOpen, setLegacyOpen] = useState(false)
   const { pathname, search } = useLocation()
+  const navigate = useNavigate()
   const aba = new URLSearchParams(search).get('aba')
+
+  // a paleta de novo vídeo abre por cima da tela atual (o + e o Ctrl K) ou pela rota /novo,
+  // que chega já preenchida das Ideias, dos Estilos e do Painel (ADR 0038)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const onNewRoute = pathname === '/novo'
+  const paletteStart: PaletteStart = onNewRoute ? Object.fromEntries(new URLSearchParams(search)) : {}
+  const closePalette = useCallback(() => {
+    setPaletteOpen(false)
+    if (onNewRoute) navigate('/')
+  }, [onNewRoute, navigate])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const accountLabel = loading
     ? 'Verificando o Instagram…'
@@ -43,9 +66,9 @@ function AppShell({ children }: { children?: ReactNode }) {
           IS
         </Link>
 
-        <Link to="/novo" className="rail-new" title="Novo vídeo" aria-label="Novo vídeo">
+        <button className="rail-new" onClick={() => setPaletteOpen(true)} title="Novo vídeo (Ctrl K)" aria-label="Novo vídeo">
           +
-        </Link>
+        </button>
 
         <nav className="rail-nav">
           {NAV.map(item => (
@@ -89,6 +112,8 @@ function AppShell({ children }: { children?: ReactNode }) {
       </aside>
 
       <main className="shell-main">{children ?? <Outlet />}</main>
+
+      {(paletteOpen || onNewRoute) && <NewVideoPalette key={onNewRoute ? search : 'atalho'} start={paletteStart} onClose={closePalette} />}
     </div>
   )
 }

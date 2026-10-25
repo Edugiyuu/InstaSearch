@@ -10,7 +10,6 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## A fazer
 
-- [ ] Redesign C, etapa 3: Novo vídeo como paleta (Ctrl K), com "Escrever o roteiro" e "Fazer tudo sozinho" (ADR 0038)
 - [ ] Redesign C, etapa 4: Roteiro em modo foco, com a voz numa barra fixa embaixo (ADR 0038)
 - [ ] Redesign C, etapa 5: Revisão como checklist "Antes de publicar", com o conserto de cada item no painel da direita e o chat no pé do checklist (ADR 0038)
 - [ ] Redesign C, etapa 6: Publicar com os horários sugeridos como botões (ADR 0038)
@@ -55,6 +54,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-25 · Redesign C, etapa 3: Novo vídeo como paleta (Ctrl K), com "Escrever o roteiro" e "Fazer tudo sozinho" (ADR 0038)
 - [x] 2026-10-25 · Redesign C, etapa 2: Painel, um quadro por etapa com o botão do próximo passo, no lugar do Início e dos Projetos (ADR 0038)
 - [x] 2026-10-25 · Redesign C, etapa 1: trilho de ícones no lugar do menu lateral e Biblioteca como porta de entrada, com Estilos dentro ([ADR 0038](docs/decisions/0038-redesign-linha-de-producao.md)); feita junto com a tarefa do Desempenho, a pedido do usuário
 - [x] 2026-10-19 · O formato não repete só o do último vídeo, e não mais o de um dos 2 últimos: com 2 bloqueados, sobravam só 3 formatos e poucas ideias passavam ([ADR 0036](docs/decisions/0036-formatos-de-video-e-tier-list.md), adendo)

@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getUpcomingPosts } from '../services/api'
 import type { Post } from '../types'
 import { BoardColumn, boardStep, ShortProject, shortsApi } from '../api/shorts'
@@ -31,11 +31,9 @@ function formatSlot(iso: string) {
 }
 
 function Board() {
-  const navigate = useNavigate()
   const { projects, loading, error, reload } = useProjects()
   const { byId } = useLibrary()
   const { ideas } = useIdeas()
-  const [theme, setTheme] = useState('')
   const [query, setQuery] = useState('')
   const [upcoming, setUpcoming] = useState<Post | null>(null)
   const [allPublished, setAllPublished] = useState(false)
@@ -45,11 +43,6 @@ function Board() {
       .then(list => setUpcoming(list[0] ?? null))
       .catch(() => setUpcoming(null))
   }, [])
-
-  const create = (e: FormEvent) => {
-    e.preventDefault()
-    navigate(theme.trim() ? `/novo?tema=${encodeURIComponent(theme.trim())}` : '/novo')
-  }
 
   // os projetos de cada coluna, já filtrados pela busca
   const byColumn = useMemo(() => {
@@ -75,10 +68,12 @@ function Board() {
     <div className="page board">
       <div className="board-head">
         <h1 className="page-title">Painel</h1>
-        <form className="board-create" onSubmit={create}>
+        {/* abre a paleta de novo vídeo (ADR 0038) */}
+        <Link to="/novo" className="board-create">
           <span className="board-create-plus">+</span>
-          <input value={theme} onChange={e => setTheme(e.target.value)} placeholder="Novo vídeo: escreva o tema e aperte Enter" />
-        </form>
+          <span className="board-create-text">Novo vídeo: escreva o tema</span>
+          <kbd>Ctrl K</kbd>
+        </Link>
         <input className="field board-search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar vídeo" />
         <span className="spacer" />
         {upcoming && (

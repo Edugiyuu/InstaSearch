@@ -22,10 +22,12 @@ O caminho de um vídeo, tela por tela, as outras telas do app e um glossário do
 
 ### 1. Novo vídeo
 
-- **Tema** ("Por que o Luffy nunca mata ninguém?"), **estilo** (Comentário de anime, Explicativo, Curiosidades, História, Ranking, Edit, POV ou um seu), **duração** (15 a 40 s) e **tom**.
+- Abre como uma **paleta** por cima da tela: o **+** do trilho, **Ctrl K** em qualquer tela, a caixa "Novo vídeo" do Painel ou "Criar" numa ideia ([ADR 0038](decisions/0038-redesign-linha-de-producao.md)). **Esc** fecha.
+- **Tema** ("Por que o Luffy nunca mata ninguém?"), **estilo** (Comentário de anime, Explicativo, Curiosidades, História, Ranking, Edit, POV ou um seu), **duração** (15 a 40 s) e **tom**, numa linha só: clique para trocar. O padrão é o do último vídeo que você criou. Embaixo, as ideias novas e guardadas: clicar numa preenche tudo.
 - **Tons** são o jeito de falar do roteiro: vêm *Polêmico*, *Curioso*, *Mistério* e *Papo reto*, e você cria os seus (à mão ou descrevendo para a IA) em **Biblioteca → Tons** ([ADR 0019](decisions/0019-roteiro-com-argumento-e-tons-proprios.md)). Todos se editam ali mesmo, sem cópia, inclusive os 4 que vêm com o app, que só não podem ser apagados ([ADR 0031](decisions/0031-tons-editados-no-lugar.md)).
-- Já tem o texto? Marque **"Já tenho o texto da narração"**: a IA só divide em cenas, sem mudar nada.
-- **Gerar roteiro**: a IA faz até **4 buscas na web** atrás de provas e escreve na estrutura *gancho → tese → provas concretas → conclusão → chamada para comentar*. A tela mostra o que ela buscou e **qual IA escreveu** (selo azul = Gemini, laranja = Claude).
+- Já tem o texto? Troque **Texto** para "o meu" e cole a narração: a IA só divide em cenas, sem mudar nada.
+- **Fazer tudo sozinho** (Shift Enter), a partir de uma ideia: roteiro, montagem e imagens sem você, até "falta gravar a voz"; o andamento aparece em Ideias ([ADR 0026](decisions/0026-criacao-autonoma-de-videos.md)).
+- **Escrever o roteiro** (Enter): a IA faz até **4 buscas na web** atrás de provas e escreve na estrutura *gancho → tese → provas concretas → conclusão → chamada para comentar*. A tela mostra o que ela buscou e **qual IA escreveu** (selo azul = Gemini, laranja = Claude).
 
 ### 2. Roteiro e voz
 

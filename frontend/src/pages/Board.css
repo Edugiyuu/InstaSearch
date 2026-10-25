@@ -25,10 +25,6 @@
   transition: border-color 0.15s;
 }
 
-.board-create:focus-within {
-  border-color: var(--accent);
-}
-
 .board-create-plus {
   margin-right: 10px;
   font-size: 18px;
@@ -36,17 +32,24 @@
   color: var(--accent);
 }
 
-.board-create input {
-  flex: 1;
-  border: none;
-  background: none;
-  outline: none;
-  font-size: 15px;
-  color: var(--text);
+.board-create:hover {
+  border-color: var(--faint);
 }
 
-.board-create input::placeholder {
+.board-create-text {
+  flex: 1;
+  font-size: 15px;
   color: var(--faint);
+}
+
+.board-create kbd {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--panel-3);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
 }
 
 .board-search {
