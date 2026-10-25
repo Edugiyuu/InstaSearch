@@ -6,7 +6,7 @@ import './AppShell.css'
 // Trilho de ícones do redesign "linha de produção" (ADR 0038). Estilos fica dentro da Biblioteca.
 // `match` diz quando o item fica aceso: Ideias e Números dividem a rota /ideias (a aba muda)
 const NAV = [
-  { to: '/', icon: '▦', label: 'Painel', match: (path: string) => path === '/' || path === '/projetos' },
+  { to: '/', icon: '▦', label: 'Painel', match: (path: string) => path === '/' },
   { to: '/ideias', icon: '◎', label: 'Ideias', match: (path: string, aba: string | null) => path === '/ideias' && aba !== 'desempenho' },
   { to: '/calendario', icon: '▤', label: 'Agenda', match: (path: string) => path === '/calendario' },
   { to: '/ideias?aba=desempenho', icon: '↗', label: 'Números', match: (path: string, aba: string | null) => path === '/ideias' && aba === 'desempenho' },

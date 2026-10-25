@@ -1,12 +1,11 @@
 import { BrowserRouter as Router, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import AppShell from './components/AppShell'
-import Home from './pages/Home'
+import Board from './pages/Board'
 import NewVideo from './pages/NewVideo'
 import Script from './pages/Script'
 import Assembly from './pages/Assembly'
 import Review from './pages/Review'
 import ReplaceImage from './pages/ReplaceImage'
-import Projects from './pages/Projects'
 import Ideas from './pages/Ideas'
 import Library from './pages/Library'
 import Styles from './pages/Styles'
@@ -26,11 +25,10 @@ function App() {
     <Router>
       <Routes>
         <Route element={<AppShell />}>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Board />} />
           <Route path="/novo" element={<NewVideo />} />
           <Route path="/projeto/:id/roteiro" element={<Script />} />
           <Route path="/projeto/:id/montagem" element={<Assembly />} />
-          <Route path="/projetos" element={<Projects />} />
           <Route path="/ideias" element={<Ideas />} />
           <Route path="/biblioteca" element={<Library />} />
           <Route path="/estilos" element={<Styles />} />
@@ -60,6 +58,7 @@ function App() {
           <Route path="/video-publish" element={<VideoPublish />} />
         </Route>
 
+        <Route path="/projetos" element={<Navigate to="/" replace />} />
         <Route path="/calendar" element={<Navigate to="/calendario" replace />} />
         <Route path="/settings" element={<Navigate to="/configuracoes" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
