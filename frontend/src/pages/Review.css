@@ -41,11 +41,11 @@
   font-weight: 700;
 }
 
-/* Layout (ADR 0037): o vídeo à esquerda; no centro, as cenas, os efeitos da cena e o chat numa barra */
+/* Layout (ADR 0038): o checklist à esquerda, o vídeo no meio e o conserto do item aberto à direita */
 .rv-body {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  grid-template-columns: 300px auto minmax(0, 1fr);
   gap: 20px;
   padding: 18px 24px;
   align-items: start;
@@ -54,17 +54,174 @@
 .rv-video {
   display: flex;
   flex-direction: column;
-  /* o player cabe na altura da tela (o topo e a linha de ajustes embaixo dele) */
-  --rv-w: min(100%, calc((100vh - 200px) * 9 / 16));
+  gap: 12px;
+  /* o player cabe na altura da tela (o topo e a faixa de cenas embaixo dele) */
+  --rv-w: min(340px, calc((100vh - 260px) * 9 / 16));
+  width: var(--rv-w);
 }
 
 .rv-player {
   width: var(--rv-w);
-  margin: 0 auto;
 }
 
-.rv-video .rv-card {
-  margin-top: 14px;
+/* O checklist "Antes de publicar" */
+.rv-check {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rv-check-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.rv-check-count {
+  margin-top: -6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.rv-check-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--panel-3);
+  overflow: hidden;
+}
+
+.rv-check-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+
+.rv-check-bar span.ok {
+  background: var(--success);
+}
+
+.rv-check-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rv-check-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--panel);
+  text-align: left;
+  color: var(--text);
+}
+
+.rv-check-item:hover {
+  border-color: var(--faint);
+}
+
+.rv-check-item.on {
+  border-color: var(--accent);
+  background: var(--panel-2);
+}
+
+.rv-check-mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--danger);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.rv-check-item.ok .rv-check-mark {
+  border-color: var(--success);
+  background: var(--success);
+  color: var(--accent-ink);
+}
+
+.rv-check-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rv-check-text strong {
+  font-size: 14px;
+}
+
+.rv-check-text span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.rv-check-item.todo .rv-check-text span {
+  color: var(--danger);
+}
+
+/* O conserto do item aberto */
+.rv-fix {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+  min-width: 0;
+}
+
+.rv-fix-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.rv-fix-head strong {
+  flex-shrink: 0;
+  font-size: 17px;
+  color: var(--text);
+}
+
+.rv-fix-head .act {
+  flex-shrink: 0;
+}
+
+.rv-fix-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rv-fix-rows {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 14px;
+  justify-items: start;
+}
+
+.rv-fix-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.rv-fix-rows .rv-vol {
+  width: 100%;
+  padding: 0;
 }
 
 .rv-label {
@@ -96,32 +253,7 @@
   margin-top: 12px;
 }
 
-.rv-main {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
-
 /* Faixa de cenas: miniatura, transição, miniatura… */
-.rv-scenes {
-  padding: 14px 16px;
-}
-
-.rv-scenes-head {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin: 0 0 10px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.rv-scenes-head strong {
-  font-size: 15px;
-  color: var(--text);
-}
-
 .rv-strip {
   display: flex;
   align-items: center;
@@ -228,24 +360,6 @@
   color: var(--accent-ink);
 }
 
-/* Os efeitos da cena aberta */
-.rv-fx {
-  padding: 14px 16px 16px;
-}
-
-.rv-fx-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  font-size: 13px;
-}
-
-.rv-fx-head strong {
-  flex-shrink: 0;
-  font-size: 15px;
-}
-
 .rv-fx-say {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -253,15 +367,10 @@
   color: var(--muted);
 }
 
-.rv-fx-head .act {
-  flex-shrink: 0;
-}
-
 .rv-fx-rows {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 14px;
 }
 
 .rv-fx-more {
@@ -269,7 +378,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--border);
 }
@@ -282,7 +390,7 @@
 }
 
 .rv-fx-hint {
-  margin: 14px 0 0;
+  margin: 0;
   font-size: 12px;
   color: var(--muted);
 }
@@ -357,13 +465,24 @@
   color: var(--muted);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1100px) {
+  .rv-body {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+
+  .rv-fix {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
   .rv-body {
     grid-template-columns: 1fr;
   }
 
   .rv-video {
     --rv-w: min(100%, 320px);
+    margin: 0 auto;
   }
 }
 
@@ -448,6 +567,16 @@
   height: 48px;
 }
 
+/* no pé do checklist a coluna é estreita: o campo fica com o espaço, o botão encolhe */
+.rv-check .rv-input .field {
+  min-width: 0;
+  font-size: 13px;
+}
+
+.rv-check .rv-input .btn-y {
+  padding: 0 12px;
+}
+
 .rv-undo {
   align-self: flex-start;
 }
@@ -470,21 +599,10 @@
   font-size: 14px;
 }
 
-.rv-need {
-  border-color: rgba(240, 69, 69, 0.45);
-  background: linear-gradient(180deg, var(--danger-soft), transparent 70%), var(--panel);
-}
-
-.rv-need-title {
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 12px;
-}
-
 .rv-need-thumbs {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 14px;
 }
 
 .rv-need-thumbs button {
@@ -506,10 +624,6 @@
   opacity: 0.6;
 }
 
-.rv-need-btn {
-  width: 100%;
-}
-
 .rv-saved {
   font-size: 13px;
   font-weight: 600;
@@ -526,10 +640,6 @@
 .rv-msg .ai-badge {
   align-self: flex-start;
   margin-top: -2px;
-}
-
-.rv-need-btn + .rv-need-btn {
-  margin-top: 8px;
 }
 
 /* largura para o controle de volume não ficar curto demais */

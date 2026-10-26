@@ -10,7 +10,6 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## A fazer
 
-- [ ] Redesign C, etapa 5: Revisão como checklist "Antes de publicar", com o conserto de cada item no painel da direita e o chat no pé do checklist (ADR 0038)
 - [ ] Redesign C, etapa 6: Publicar com os horários sugeridos como botões (ADR 0038)
 - [ ] Redesign C, etapa 7: Ideias em cartões, com o debate ao lado (ADR 0038)
 - [ ] Redesign C, etapa 8: Números, o desempenho em tela própria, cada vídeo numa barra contra a mediana (ADR 0038)
@@ -53,6 +52,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-25 · Redesign C, etapa 5: Revisão como checklist "Antes de publicar", com o conserto de cada item no painel da direita e o chat no pé do checklist (ADR 0038)
 - [x] 2026-10-25 · Redesign C, etapa 4: Roteiro em modo foco, com a voz numa barra fixa embaixo (ADR 0038)
 - [x] 2026-10-25 · Imagens leves: cada imagem da biblioteca ganha uma versão para o vídeo (cobre 1728×3072, o zoom máximo) e uma miniatura de 360 px para capas e grades; a original fica guardada. As 1.266 imagens antigas foram convertidas (`npm run migrate:images`): o Painel baixa 0,98 MB em vez de 16,1 MB
 - [x] 2026-10-25 · Painel sem a coluna Ideias, para sobrar espaço para os vídeos; as ideias ficam no trilho e na paleta (ADR 0038, adendo)
