@@ -135,12 +135,6 @@
   color: var(--info);
 }
 
-.cal-post.suggested {
-  background: transparent;
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
 .cal-list {
   display: flex;
   flex-direction: column;

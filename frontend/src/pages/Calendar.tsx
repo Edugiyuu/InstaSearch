@@ -66,14 +66,6 @@ function Calendar() {
     return cells
   }, [month])
 
-  // Primeiro fim de semana livre a partir de hoje: é onde aparece o horário sugerido.
-  const suggestedDay = useMemo(
-    () =>
-      days.find(
-        d => d >= today && [0, 5, 6].includes(d.getDay()) && !posts.some(p => sameDay(postDate(p), d)),
-      ),
-    [days, posts],
-  )
 
   const handleSchedule = async (data: ScheduleData) => {
     await schedulePost(data)
@@ -190,11 +182,6 @@ function Calendar() {
                     {chip(post)}
                   </button>
                 ))}
-                {suggestedDay && sameDay(day, suggestedDay) && (
-                  <button className="cal-post suggested" onClick={() => openScheduleAt(day)}>
-                    19:30 · sugerido ✨
-                  </button>
-                )}
               </div>
             )
           })}
@@ -220,7 +207,6 @@ function Calendar() {
         <span className="status c-scheduled">Agendado</span>
         <span className="status c-success">Publicado</span>
         <span className="status c-danger">Falhou</span>
-        <span className="c-muted">○ Horário sugerido pelos seus insights</span>
         <span className="c-muted">⚠ O backend precisa estar rodando no horário agendado</span>
         <span className="c-muted">· Clique duas vezes num dia para agendar</span>
       </div>
