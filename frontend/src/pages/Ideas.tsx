@@ -13,6 +13,10 @@ import { useStyles, useTones } from '../hooks/useShorts'
 import './Ideas.css'
 
 type Filter = 'todos' | Platform
+/** As prateleiras do banco de ideias (ADR 0038): uma por vez, em vez de quatro seções empilhadas. */
+type Shelf = IdeaStatus
+/** Quantas provas aparecem no cartão antes do "+ N provas". */
+const EVIDENCE_SHOWN = 2
 type Sort = 'recentes' | 'melhores'
 
 const BUCKET_LABEL = { 1: '1 dia', 7: '7 dias', 28: '28 dias' } as const
@@ -251,7 +255,10 @@ function IdeaCard({
 }) {
   const [discarding, setDiscarding] = useState(false)
   const [reason, setReason] = useState('')
+  const [allEvidence, setAllEvidence] = useState(false)
   const open = idea.status === 'nova' || idea.status === 'guardada'
+  // as provas ficam no cartão (ADR 0021); as 2 primeiras à vista, o resto ao clicar
+  const evidence = allEvidence ? idea.evidence : idea.evidence.slice(0, EVIDENCE_SHOWN)
 
   return (
     <div className={`panel id-idea ${idea.status}`}>
@@ -270,9 +277,16 @@ function IdeaCard({
       {idea.why && <p className="id-idea-why">{idea.why}</p>}
       {idea.evidence.length > 0 ? (
         <ul className="id-evidence">
-          {idea.evidence.map((e, i) => (
+          {evidence.map((e, i) => (
             <Evidence key={i} item={e} />
           ))}
+          {evidence.length < idea.evidence.length && (
+            <li>
+              <button className="act" onClick={() => setAllEvidence(true)}>
+                + {idea.evidence.length - evidence.length} {idea.evidence.length - evidence.length === 1 ? 'prova' : 'provas'}
+              </button>
+            </li>
+          )}
         </ul>
       ) : (
         <p className="meta">Sem um vídeo ou comentário seu por trás: veio só da pesquisa e do seu pedido.</p>
@@ -351,18 +365,20 @@ function AutoCreate({ autopilot }: { autopilot: ReturnType<typeof useAutopilot> 
   return (
     <div className="panel panel-pad id-auto">
       <div className="id-auto-head">
-        <div>
-          <span className="label">Criar sozinho</span>
-          <p className="meta">
+        <strong>🗣️ Debate antes de criar</strong>
+        <p className="meta">Duas IAs escolhem o tema com os dados do canal e criam o vídeo, até “falta gravar a voz”.</p>
+      </div>
+      <button className="btn-y" onClick={() => start()}>🗣️ Debater e criar um vídeo</button>
+      <details className="id-auto-how">
+        <summary>Como funciona</summary>
+        <p className="meta">
             Duas IAs (a Estrategista, que olha os números do canal, e a Roteirista, que olha o gancho e o argumento) debatem 4 temas de um
             brainstorm delas, nas obras que o seu canal já fala, e criticam uma à outra até aceitarem o mesmo, em no máximo {MAX_TURNS}{' '}
             falas. Se nenhum dos 4 servir, vêm 4 novos, até {MAX_ROUNDS} rodadas. Quando as duas concordam, você tem {VETO_SECONDS} s para
             vetar o tema; elas seguem debatendo os outros. Com acordo, elas escrevem o roteiro, montam e procuram as imagens, e explicam por
             que o tema é bom. Para em “falta gravar a voz”: a voz é sua. Nunca publica.
-          </p>
-        </div>
-        <button className="btn-y" onClick={() => start()}>🗣️ Debater e criar um vídeo</button>
-      </div>
+        </p>
+      </details>
       {error && <p className="form-error">{error}</p>}
 
       {debateError && <p className="form-error">{debateError}</p>}
@@ -411,6 +427,8 @@ function Brainstorm({ metrics }: { metrics: Metrics }) {
   const { tones } = useTones()
   const [seed, setSeed] = useState('')
   const [request, setRequest] = useState('')
+  // a prateleira escolhida; null = a primeira que tem ideia
+  const [shelf, setShelf] = useState<Shelf | null>(null)
 
   const batch = ideas.filter(i => i.status === 'nova').sort((a, b) => a.position - b.position)
   const kept = ideas.filter(i => i.status === 'guardada')
@@ -436,103 +454,94 @@ function Brainstorm({ metrics }: { metrics: Metrics }) {
     />
   )
 
+  const shelves: Record<Shelf, Idea[]> = { nova: batch, guardada: kept, feita: done, descartada: discarded }
+  const shelfNames: Record<Shelf, string> = { nova: 'Novas', guardada: 'Guardadas', feita: 'Viraram vídeo', descartada: 'Descartadas' }
+  const shelfLabels = Object.fromEntries(
+    (Object.keys(shelfNames) as Shelf[]).map(k => [k, `${shelfNames[k]} ${shelves[k].length}`]),
+  ) as Record<Shelf, string>
+  const active: Shelf = shelf ?? (Object.keys(shelves) as Shelf[]).find(k => shelves[k].length > 0) ?? 'nova'
+  const list = shelves[active]
+
   return (
-    <>
-      <div className="panel panel-pad id-brainstorm">
-        <span className="label">Brainstorm</span>
-        <div className="id-brainstorm-row">
-          <input
-            className="field"
-            value={seed}
-            onChange={e => setSeed(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !thinking && brainstorm({ seed })}
-            placeholder="Sobre o quê? (opcional) Ex.: algo de Chainsaw Man, o episódio de domingo"
-            disabled={thinking}
-          />
-          <button className="btn-y" onClick={() => brainstorm({ seed })} disabled={thinking}>
-            {thinking ? 'Pensando…' : batch.length ? 'Gerar outras' : 'Gerar ideias'}
-          </button>
-        </div>
-        <p className="meta">
-          {videos.length
-            ? `A IA lê ${videos.length} vídeo(s) seu(s) (${measured} já com foto de 1, 7 ou 28 dias), ${comments} comentário(s) do público e as ideias que você já guardou ou descartou, e pesquisa na web o que está acontecendo agora.`
-            : 'Ainda não há métricas dos seus vídeos (veja a aba Desempenho): as ideias vêm só da pesquisa na web e do que você pedir.'}
-        </p>
-        {thinking && (
-          <p className="id-thinking">
-            <Spinner /> Olhando seus vídeos, lendo os comentários e pesquisando o que está acontecendo… (pode levar um minuto)
+    <div className="id-layout">
+      <div className="id-left">
+        <div className="panel id-brainstorm">
+          <div className="id-brainstorm-row">
+            <input
+              className="field"
+              value={seed}
+              onChange={e => setSeed(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !thinking && brainstorm({ seed }).then(ok => ok && setShelf('nova'))}
+              placeholder="Sobre o quê? (opcional) Ex.: algo de Chainsaw Man, o episódio de domingo"
+              disabled={thinking}
+            />
+            <button className="btn-y" onClick={() => brainstorm({ seed }).then(ok => ok && setShelf('nova'))} disabled={thinking}>
+              {thinking ? 'Pensando…' : batch.length ? '✨ Gerar outras' : '✨ Gerar ideias'}
+            </button>
+          </div>
+          <p className="meta">
+            {videos.length
+              ? `A IA lê ${videos.length} vídeo(s) seu(s) (${measured} já com foto de 1, 7 ou 28 dias), ${comments} comentário(s) do público e as ideias que você já guardou ou descartou, e pesquisa na web o que está acontecendo agora.`
+              : 'Ainda não há métricas dos seus vídeos (veja a aba Desempenho): as ideias vêm só da pesquisa na web e do que você pedir.'}
           </p>
+          {thinking && (
+            <p className="id-thinking">
+              <Spinner /> Olhando seus vídeos, lendo os comentários e pesquisando o que está acontecendo… (pode levar um minuto)
+            </p>
+          )}
+        </div>
+
+        <div className="id-shelf-bar">
+          <Segmented value={active} options={shelfLabels} onChange={setShelf} />
+          {active === 'nova' && batch.length > 0 && (
+            <>
+              {batch[0].seed && <span className="meta">sobre “{batch[0].seed}”</span>}
+              {batch[0].request && <span className="meta">ajuste: “{batch[0].request}”</span>}
+              <span className="spacer" />
+              <AiBadge label="Ideias" ai={batch[0].ai} compact />
+            </>
+          )}
+        </div>
+
+        {error && <p className="form-error">{error}</p>}
+        {loading && <Spinner />}
+
+        {active === 'nova' && batch.length > 0 && <SearchList ai={batch[0].ai} />}
+        <div className="id-ideas">{list.map(idea => card(idea, active === 'nova' ? idea.position : undefined))}</div>
+
+        {active === 'nova' && batch.length > 0 && (
+          <>
+            <div className="id-adjust">
+              <input
+                className="field"
+                value={request}
+                onChange={e => setRequest(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && request.trim() && !thinking && brainstorm({ request, seed: batch[0].seed }).then(ok => ok && setRequest(''))}
+                placeholder="✨ Peça um ajuste: mais polêmicas, só de Chainsaw Man, junta a 2 com a 5…"
+                disabled={thinking}
+              />
+              <button
+                className="btn-o"
+                disabled={thinking || !request.trim()}
+                onClick={() => brainstorm({ request, seed: batch[0].seed }).then(ok => ok && setRequest(''))}
+              >
+                Ajustar
+              </button>
+            </div>
+            <p className="meta">As ideias novas que você não guardar são trocadas no próximo brainstorm.</p>
+          </>
+        )}
+
+        {!loading && !thinking && list.length === 0 && (
+          <p className="c-muted">{ideas.length === 0 ? 'Nenhuma ideia ainda. Clique em “Gerar ideias”.' : `Nada em ${shelfNames[active]}.`}</p>
         )}
       </div>
 
-      <AutoCreate autopilot={autopilot} />
-
-      {error && <p className="form-error">{error}</p>}
-      {loading && <Spinner />}
-
-      {batch.length > 0 && (
-        <section className="id-section">
-          <div className="id-section-head">
-            <h2>Ideias novas</h2>
-            {batch[0].seed && <span className="meta">sobre “{batch[0].seed}”</span>}
-            {batch[0].request && <span className="meta">ajuste: “{batch[0].request}”</span>}
-            <span className="spacer" />
-            <AiBadge label="Ideias" ai={batch[0].ai} compact />
-          </div>
-          <SearchList ai={batch[0].ai} />
-          <div className="id-ideas">{batch.map(idea => card(idea, idea.position))}</div>
-          <div className="id-adjust">
-            <input
-              className="field"
-              value={request}
-              onChange={e => setRequest(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && request.trim() && !thinking && brainstorm({ request, seed: batch[0].seed }).then(ok => ok && setRequest(''))}
-              placeholder="Peça um ajuste: mais polêmicas, só de Chainsaw Man, junta a 2 com a 5…"
-              disabled={thinking}
-            />
-            <button
-              className="btn-o"
-              disabled={thinking || !request.trim()}
-              onClick={() => brainstorm({ request, seed: batch[0].seed }).then(ok => ok && setRequest(''))}
-            >
-              Ajustar
-            </button>
-          </div>
-          <p className="meta">As ideias novas que você não guardar são trocadas no próximo brainstorm.</p>
-        </section>
-      )}
-
-      {kept.length > 0 && (
-        <section className="id-section">
-          <div className="id-section-head">
-            <h2>Guardadas</h2>
-            <span className="c-muted">{kept.length}</span>
-          </div>
-          <div className="id-ideas">{kept.map(idea => card(idea))}</div>
-        </section>
-      )}
-
-      {done.length > 0 && (
-        <section className="id-section">
-          <div className="id-section-head">
-            <h2>Viraram vídeo</h2>
-            <span className="c-muted">{done.length}</span>
-          </div>
-          <div className="id-ideas">{done.map(idea => card(idea))}</div>
-        </section>
-      )}
-
-      {discarded.length > 0 && (
-        <details className="id-section">
-          <summary>
-            Descartadas <span className="c-muted">{discarded.length}</span>
-          </summary>
-          <div className="id-ideas">{discarded.map(idea => card(idea))}</div>
-        </details>
-      )}
-
-      {!loading && !thinking && ideas.length === 0 && <p className="c-muted">Nenhuma ideia ainda. Clique em “Gerar ideias”.</p>}
-    </>
+      {/* o debate fica ao lado da lista, sem empurrar as ideias para baixo (ADR 0038) */}
+      <aside className="id-right">
+        <AutoCreate autopilot={autopilot} />
+      </aside>
+    </div>
   )
 }
 

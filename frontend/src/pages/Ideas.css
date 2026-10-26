@@ -152,39 +152,81 @@
   }
 }
 
-/* Aba Ideias: brainstorm e banco de ideias */
+/* Aba Ideias (ADR 0038): a lista à esquerda, o debate fixo à direita */
+.id-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 24px;
+  align-items: start;
+}
+
+.id-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* o debate pode ser longo: rola dentro da própria coluna, que fica parada ao lado da lista */
+.id-right {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
 
 .id-brainstorm {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 28px;
+  padding: 16px;
 }
 
-.id-brainstorm .label {
-  margin-bottom: 0;
+.id-shelf-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-/* Criar sozinho (ADR 0026) */
+@media (max-width: 1100px) {
+  .id-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .id-right {
+    position: static;
+    max-height: none;
+  }
+}
+
+/* Criar sozinho (ADR 0026), com o debate (ADR 0027) */
 .id-auto {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 28px;
 }
 
 .id-auto-head {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.id-auto-head .label {
-  margin-bottom: 4px;
+.id-auto-head strong {
+  font-size: 16px;
 }
 
-.id-auto-head .btn-y {
-  flex-shrink: 0;
+.id-auto-how summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.id-auto-how .meta {
+  margin-top: 8px;
+  line-height: 1.5;
 }
 
 .id-jobs {
@@ -211,12 +253,6 @@
   font-weight: 600;
 }
 
-@media (max-width: 640px) {
-  .id-auto-head {
-    flex-direction: column;
-  }
-}
-
 .id-brainstorm-row,
 .id-adjust {
   display: flex;
@@ -237,33 +273,10 @@
   color: var(--accent);
 }
 
-.id-section {
-  margin-bottom: 32px;
-}
-
-.id-section-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.id-section-head h2,
-details.id-section summary {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-details.id-section summary {
-  cursor: pointer;
-  margin-bottom: 12px;
-}
-
 .id-ideas {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 14px;
-  margin-bottom: 14px;
 }
 
 .id-idea {

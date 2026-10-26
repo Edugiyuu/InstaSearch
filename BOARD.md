@@ -10,7 +10,6 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## A fazer
 
-- [ ] Redesign C, etapa 7: Ideias em cartões, com o debate ao lado (ADR 0038)
 - [ ] Redesign C, etapa 8: Números, o desempenho em tela própria, cada vídeo numa barra contra a mediana (ADR 0038)
 
 - [ ] Clipes do YouTube nos momentos marcantes: o roteiro marca 1 ou 2 cenas, a montagem busca, baixa e escolhe o trecho com visão (ADR 0029)
@@ -52,6 +51,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-26 · Redesign C, etapa 7: Ideias em cartões, com o debate ao lado (ADR 0038)
 - [x] 2026-10-26 · Calendário sem o "19:30 · sugerido ✨" inventado: era fixo no código (o primeiro fim de semana livre) e a legenda dizia "pelos seus insights" (ADR 0011, sem dados de mentira)
 - [x] 2026-10-25 · Painel desfeito a pedido do usuário: o Início e os Projetos voltam, com os dois itens no trilho; o resto do redesign continua (ADR 0038, adendo)
 - [x] 2026-10-25 · Redesign C, etapa 5: Revisão como checklist "Antes de publicar", com o conserto de cada item no painel da direita e o chat no pé do checklist (ADR 0038)
