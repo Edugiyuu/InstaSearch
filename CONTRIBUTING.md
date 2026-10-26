@@ -28,7 +28,7 @@ Os princípios, o estado do projeto e o jeito de trabalhar. O código em si est�
 | Formatos de vídeo (opinião, tier list, X contra Y, E se…, mito ou verdade, antes e depois), sem repetir o do último | ✅ Funciona; a tier list em série (quadro e animação no próprio vídeo) está pronta, mas desligada por enquanto ([ADR 0036](docs/decisions/0036-formatos-de-video-e-tier-list.md)) |
 | Debate em rodadas (até 3, com temas novos), 5 s para vetar o tema aceito e "Parar debate" | ✅ Funciona ([ADR 0030](docs/decisions/0030-debate-em-rodadas-com-veto.md)) |
 | Imagens só da web, sem a aba Imagens | ✅ Funciona ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
-| Redesign "linha de produção": trilho de ícones, Biblioteca como porta de entrada, paleta de novo vídeo (Ctrl K), roteiro em modo foco, Revisão em checklist "Antes de publicar" e Ideias com o debate ao lado | 🚧 Etapa 7 de 8 ([ADR 0038](docs/decisions/0038-redesign-linha-de-producao.md)); o Painel foi desfeito, e o Início e os Projetos voltaram; o Publicar com agendamento (etapa 6) foi para o Backlog. Números vem na próxima |
+| Redesign "linha de produção": trilho de ícones, Biblioteca como porta de entrada, paleta de novo vídeo (Ctrl K), roteiro em modo foco, Revisão em checklist "Antes de publicar", Ideias com o debate ao lado e Números em tela própria | ✅ Etapas 1 a 5, 7 e 8 ([ADR 0038](docs/decisions/0038-redesign-linha-de-producao.md)); o Painel foi desfeito, e o Início e os Projetos voltaram; o Publicar com agendamento (etapa 6) foi para o Backlog |
 | Ferramentas antigas (perfis, análises, gerador de prompts) | ⚠️ Legado, quase tudo *stub* |
 
 O dia a dia está no [BOARD.md](BOARD.md). Para onde o projeto vai depois:

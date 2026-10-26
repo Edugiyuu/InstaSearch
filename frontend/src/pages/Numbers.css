@@ -1,0 +1,264 @@
+/* Números (ADR 0038): o desempenho dos vídeos publicados (ADR 0021), em tela própria */
+
+.nb-last {
+  white-space: nowrap;
+}
+
+.nb-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.nb-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 20px;
+}
+
+.nb-kpi strong {
+  font-size: 28px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.nb-kpi span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.nb-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 22px;
+  align-items: start;
+}
+
+.nb-right {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.nb-platform-card {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.nb-platform-card .label {
+  margin-bottom: 2px;
+}
+
+.nb-top {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+}
+
+.nb-top .label {
+  margin-bottom: 2px;
+}
+
+.nb-top-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.nb-top-row a:hover {
+  color: var(--accent);
+}
+
+.nb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.nb-toolbar .filter-tabs {
+  margin-bottom: 0;
+}
+
+.nb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nb-row {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.nb-thumb {
+  width: 54px;
+  height: 96px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-3);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: var(--faint);
+}
+
+.nb-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nb-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nb-title {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nb-title a:hover {
+  color: var(--accent);
+}
+
+.nb-platform {
+  font-weight: 600;
+}
+
+.nb-platform.instagram {
+  color: #e1306c;
+}
+
+.nb-platform.youtube {
+  color: #ff4e45;
+}
+
+/* a barra contra a mediana: o risco é a mediana, a barra é o vídeo */
+.nb-compare {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.nb-bar {
+  position: relative;
+  width: 220px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--panel-3);
+}
+
+.nb-bar.empty {
+  opacity: 0.4;
+}
+
+.nb-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+}
+
+.nb-bar-fill.up {
+  background: var(--success);
+}
+
+.nb-bar-fill.down {
+  background: var(--danger);
+}
+
+.nb-bar-median {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--text);
+}
+
+.nb-ratio {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nb-ratio.good {
+  color: var(--success);
+}
+
+.nb-ratio.bad {
+  color: var(--danger);
+}
+
+.nb-numbers {
+  display: grid;
+  grid-template-columns: repeat(5, 92px);
+  gap: 8px;
+  margin: 0;
+  /* rótulo de duas linhas não desalinha os números */
+  align-items: end;
+}
+
+.nb-numbers div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nb-numbers dt {
+  font-size: 10px;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.nb-numbers dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1300px) {
+  .nb-row {
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .nb-numbers {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .nb-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nb-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .nb-right {
+    position: static;
+  }
+}

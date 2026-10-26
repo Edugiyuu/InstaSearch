@@ -7,6 +7,7 @@ import Review from './pages/Review'
 import ReplaceImage from './pages/ReplaceImage'
 import Projects from './pages/Projects'
 import Ideas from './pages/Ideas'
+import Numbers from './pages/Numbers'
 import Library from './pages/Library'
 import Styles from './pages/Styles'
 import Calendar from './pages/Calendar'
@@ -30,6 +31,7 @@ function App() {
           <Route path="/novo" element={<Home />} />
           <Route path="/projeto/:id/montagem" element={<Assembly />} />
           <Route path="/ideias" element={<Ideas />} />
+          <Route path="/numeros" element={<Numbers />} />
           <Route path="/biblioteca" element={<Library />} />
           <Route path="/estilos" element={<Styles />} />
           <Route path="/calendario" element={<Calendar />} />

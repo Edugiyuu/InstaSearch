@@ -5,13 +5,13 @@ import NewVideoPalette, { PaletteStart } from './NewVideoPalette'
 import './AppShell.css'
 
 // Trilho de ícones do redesign "linha de produção" (ADR 0038). Estilos fica dentro da Biblioteca.
-// `match` diz quando o item fica aceso: Ideias e Números dividem a rota /ideias (a aba muda)
+// `match` diz quando o item fica aceso (Estilos acende a Biblioteca, a rota /novo acende o Início)
 const NAV = [
   { to: '/', icon: '⌂', label: 'Início', match: (path: string) => path === '/' || path === '/novo' },
   { to: '/projetos', icon: '▦', label: 'Projetos', match: (path: string) => path === '/projetos' },
-  { to: '/ideias', icon: '◎', label: 'Ideias', match: (path: string, aba: string | null) => path === '/ideias' && aba !== 'desempenho' },
+  { to: '/ideias', icon: '◎', label: 'Ideias', match: (path: string) => path === '/ideias' },
   { to: '/calendario', icon: '▤', label: 'Agenda', match: (path: string) => path === '/calendario' },
-  { to: '/ideias?aba=desempenho', icon: '↗', label: 'Números', match: (path: string, aba: string | null) => path === '/ideias' && aba === 'desempenho' },
+  { to: '/numeros', icon: '↗', label: 'Números', match: (path: string) => path === '/numeros' },
   { to: '/biblioteca', icon: '▣', label: 'Biblioteca', match: (path: string) => path === '/biblioteca' || path === '/estilos' },
 ]
 
@@ -31,7 +31,6 @@ function AppShell({ children }: { children?: ReactNode }) {
   const [legacyOpen, setLegacyOpen] = useState(false)
   const { pathname, search } = useLocation()
   const navigate = useNavigate()
-  const aba = new URLSearchParams(search).get('aba')
 
   // a paleta de novo vídeo abre por cima da tela atual (o + e o Ctrl K) ou pela rota /novo,
   // que chega já preenchida das Ideias, dos Estilos e do Início (ADR 0038)
@@ -73,7 +72,7 @@ function AppShell({ children }: { children?: ReactNode }) {
 
         <nav className="rail-nav">
           {NAV.map(item => (
-            <Link key={item.label} to={item.to} className={`rail-link${item.match(pathname, aba) ? ' active' : ''}`}>
+            <Link key={item.label} to={item.to} className={`rail-link${item.match(pathname) ? ' active' : ''}`}>
               <span className="rail-icon">{item.icon}</span>
               {item.label}
             </Link>
