@@ -732,40 +732,6 @@ export function projectStatus(p: ShortProject) {
   return { text: STATUS_LABEL[p.status], cls: p.status === 'publicado' ? 'c-success' : 'c-scheduled' }
 }
 
-/** As colunas do Painel (ADR 0038), na ordem da produção. */
-export type BoardColumn = 'roteiro' | 'voz' | 'revisar' | 'agendado' | 'publicado'
-
-export interface BoardStep {
-  column: BoardColumn
-  /** O que falta, numa linha. */
-  text: string
-  cls: string
-  /** O botão do próximo passo; `primary` quando ele é o que destrava o vídeo. */
-  action: { label: string; to: string; primary: boolean }
-}
-
-/**
- * Em que coluna do Painel o vídeo fica e qual é o próximo passo. A coluna sai do próprio projeto
- * (não se arrasta cartão), com as mesmas regras do `projectStatus`.
- */
-export function boardStep(p: ShortProject): BoardStep {
-  const home = projectHome(p)
-  const st = projectStatus(p)
-  const pending = beatsNeedingImage(p).length
-  if (p.autopilot?.error) return { column: 'roteiro', ...st, action: { label: 'Continuar', to: home, primary: true } }
-  if (p.autopilot && p.autopilot.stage !== 'pronto') return { column: 'roteiro', ...st, action: { label: 'Ver', to: home, primary: false } }
-  if (p.status === 'roteiro' && p.audioFile) return { column: 'roteiro', ...st, action: { label: 'Montar', to: home, primary: true } }
-  if (p.status === 'roteiro' || (p.status === 'revisao' && p.autopilot && !p.audioFile)) {
-    return { column: 'voz', text: 'Falta gravar a voz', cls: 'c-warning', action: { label: 'Subir voz', to: home, primary: true } }
-  }
-  if (p.status === 'revisao' && pending) return { column: 'revisar', ...st, action: { label: 'Resolver', to: `/projeto/${p.id}/imagens`, primary: true } }
-  if (p.status === 'revisao' || p.status === 'salvo') return { column: 'revisar', ...st, action: { label: 'Publicar', to: home, primary: true } }
-  if (p.status === 'agendado') return { column: 'agendado', ...st, action: { label: 'Ver', to: home, primary: false } }
-  const at = p.published?.instagram?.at ?? p.published?.youtube?.at
-  const text = at ? `Publicado em ${new Date(at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}` : st.text
-  return { column: 'publicado', text, cls: 'c-success', action: { label: 'Números', to: '/ideias?aba=desempenho', primary: false } }
-}
-
 /** Para onde levar o usuário ao abrir um projeto. */
 export const projectHome = (p: ShortProject) =>
   // o criado sozinho já vem montado, mas a voz se grava na tela do roteiro

@@ -52,6 +52,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-25 · Painel desfeito a pedido do usuário: o Início e os Projetos voltam, com os dois itens no trilho; o resto do redesign continua (ADR 0038, adendo)
 - [x] 2026-10-25 · Redesign C, etapa 5: Revisão como checklist "Antes de publicar", com o conserto de cada item no painel da direita e o chat no pé do checklist (ADR 0038)
 - [x] 2026-10-25 · Redesign C, etapa 4: Roteiro em modo foco, com a voz numa barra fixa embaixo (ADR 0038)
 - [x] 2026-10-25 · Imagens leves: cada imagem da biblioteca ganha uma versão para o vídeo (cobre 1728×3072, o zoom máximo) e uma miniatura de 360 px para capas e grades; a original fica guardada. As 1.266 imagens antigas foram convertidas (`npm run migrate:images`): o Painel baixa 0,98 MB em vez de 16,1 MB

@@ -28,7 +28,7 @@ Os princípios, o estado do projeto e o jeito de trabalhar. O código em si est�
 | Formatos de vídeo (opinião, tier list, X contra Y, E se…, mito ou verdade, antes e depois), sem repetir o do último | ✅ Funciona; a tier list em série (quadro e animação no próprio vídeo) está pronta, mas desligada por enquanto ([ADR 0036](docs/decisions/0036-formatos-de-video-e-tier-list.md)) |
 | Debate em rodadas (até 3, com temas novos), 5 s para vetar o tema aceito e "Parar debate" | ✅ Funciona ([ADR 0030](docs/decisions/0030-debate-em-rodadas-com-veto.md)) |
 | Imagens só da web, sem a aba Imagens | ✅ Funciona ([ADR 0022](docs/decisions/0022-imagens-da-web-e-controles-da-cena.md)) |
-| Redesign "linha de produção": trilho de ícones, Biblioteca como porta de entrada, Painel (quadro por etapa, no lugar do Início e dos Projetos) a paleta de novo vídeo (Ctrl K) o roteiro em modo foco e a Revisão em checklist "Antes de publicar" | 🚧 Etapa 5 de 8 ([ADR 0038](docs/decisions/0038-redesign-linha-de-producao.md)); Publicar, Ideias e Números vêm nas próximas |
+| Redesign "linha de produção": trilho de ícones, Biblioteca como porta de entrada, paleta de novo vídeo (Ctrl K), roteiro em modo foco e Revisão em checklist "Antes de publicar" | 🚧 Etapa 5 de 8 ([ADR 0038](docs/decisions/0038-redesign-linha-de-producao.md)); o Painel foi desfeito, e o Início e os Projetos voltaram. Publicar, Ideias e Números vêm nas próximas |
 | Ferramentas antigas (perfis, análises, gerador de prompts) | ⚠️ Legado, quase tudo *stub* |
 
 O dia a dia está no [BOARD.md](BOARD.md). Para onde o projeto vai depois:

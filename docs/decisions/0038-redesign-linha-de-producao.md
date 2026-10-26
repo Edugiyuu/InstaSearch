@@ -42,3 +42,7 @@ A implementação vai em **uma tarefa por tela**, cada uma com seu commit, nesta
 ## Adendo (2026-10-25)
 
 O Painel ficou **sem a coluna Ideias**, a pedido do usuário, para sobrar espaço para os vídeos: as 5 colunas são Roteiro → Falta voz → Revisar → Agendado → Publicado. As ideias continuam a um clique, no item Ideias do trilho e nos atalhos da paleta de novo vídeo.
+
+## Adendo: o Painel foi desfeito (2026-10-25)
+
+Depois de usar, o usuário achou que o Painel "ficou ruim" e pediu para desfazer só ele. O **Início** e os **Projetos** voltam como eram antes da etapa 2, e o trilho ganha os dois itens (Início e Projetos) no lugar do Painel. O resto do redesign continua: o trilho, a Biblioteca como porta de entrada, a paleta (o "Começar →" do Início abre a paleta já preenchida), o roteiro em modo foco e a Revisão em checklist. O ponto 2 da decisão (o Painel) e o adendo anterior (a coluna Ideias) deixam de valer.

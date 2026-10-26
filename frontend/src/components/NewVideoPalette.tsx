@@ -14,7 +14,7 @@ const IDEA_SHORTCUTS = 4
 
 type Picker = 'estilo' | 'duracao' | 'tom' | null
 
-/** O que chega pela URL (/novo?tema=…&estilo=…): Ideias, Estilos e o Painel abrem a paleta já preenchida. */
+/** O que chega pela URL (/novo?tema=…&estilo=…): Ideias, Estilos e o Início abrem a paleta já preenchida. */
 export interface PaletteStart {
   tema?: string
   estilo?: string

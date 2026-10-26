@@ -314,7 +314,7 @@ function Review() {
   const saveForLater = async () => {
     try {
       setProject(await shortsApi.updateProject(project.id, { status: 'salvo' }))
-      toast.show('Salvo. Ele fica no Painel, em Revisar, até você publicar.')
+      toast.show('Salvo em Projetos. Publique quando quiser.')
     } catch (e) {
       toast.show(errorMessage(e))
     }
@@ -513,7 +513,7 @@ function Review() {
   return (
     <div className="review">
       <header className="rv-top">
-        <Link to="/" className="rv-back">← Painel</Link>
+        <Link to="/projetos" className="rv-back">← Projetos</Link>
         <strong className="rv-title">{project.title}</strong>
         <span className="meta">{style?.name ?? project.styleId} · {seconds}s</span>
         {project.autopilot && <span className="meta" title="Roteiro, montagem e imagens feitos sozinhos (ADR 0026)">🤖 criado sozinho</span>}
