@@ -372,3 +372,308 @@
   font-size: 13px;
   line-height: 1.5;
 }
+
+/* Palco do debate (ADR 0038, adendo): em tela cheia, o placar | a conversa | os bastidores */
+.ds {
+  --dc-estrategista: var(--info);
+  --dc-roteirista: var(--scheduled);
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.ds-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 64px;
+  flex-shrink: 0;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.ds-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+/* os dois avatares, um por cima do outro, como o elenco do palco */
+.ds-cast {
+  display: flex;
+}
+
+.ds-cast .ds-avatar + .ds-avatar {
+  margin-left: -10px;
+}
+
+.ds-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--panel);
+  background: var(--panel-3);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--bg);
+}
+
+/* as cores direto (e não as variáveis do palco): o cartão da tela Ideias usa os avatares fora do palco */
+.ds-avatar.estrategista,
+.ds-msg.estrategista .ds-avatar {
+  background: var(--info);
+}
+
+.ds-avatar.roteirista,
+.ds-msg.roteirista .ds-avatar {
+  background: var(--scheduled);
+}
+
+.ds-live {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--danger);
+  animation: ds-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ds-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.ds-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr) 320px;
+}
+
+.ds-board,
+.ds-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--panel);
+}
+
+.ds-board {
+  border-right: 1px solid var(--border);
+}
+
+.ds-side {
+  border-left: 1px solid var(--border);
+}
+
+.ds-board .label,
+.ds-side .label {
+  margin-bottom: 0;
+}
+
+/* no placar, o tema ocupa a linha toda e os votos descem para a linha de baixo */
+.ds-board .dc-topic {
+  flex-basis: calc(100% - 30px);
+  min-width: 0;
+}
+
+.ds-board .dc-voter {
+  margin-left: 30px;
+}
+
+.ds-board .dc-voter + .dc-voter {
+  margin-left: 0;
+}
+
+/* a revisão do roteiro, dentro do palco, rola junto com a conversa e em letra maior */
+.ds-chat .dc-chat {
+  max-height: none;
+  overflow: visible;
+}
+
+.ds-chat .dc-msg {
+  max-width: 82%;
+}
+
+.ds-chat .dc-msg p,
+.ds-chat .dc-problems {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.ds-stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* a conversa ocupa o centro, numa coluna de leitura de até 820px */
+.ds-chat {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px max(24px, calc((100% - 820px) / 2));
+}
+
+.ds-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 82%;
+}
+
+.ds-msg.estrategista {
+  align-self: flex-start;
+}
+
+.ds-msg.roteirista {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.ds-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+}
+
+.ds-msg.estrategista .ds-bubble {
+  border-top-left-radius: 4px;
+  border-color: color-mix(in srgb, var(--dc-estrategista) 35%, var(--border));
+}
+
+.ds-msg.roteirista .ds-bubble {
+  border-top-right-radius: 4px;
+  border-color: color-mix(in srgb, var(--dc-roteirista) 35%, var(--border));
+}
+
+.ds-msg.estrategista .dc-who {
+  color: var(--dc-estrategista);
+}
+
+.ds-msg.roteirista .dc-who {
+  color: var(--dc-roteirista);
+}
+
+.ds-bubble p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.ds-vote {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ds-msg.estrategista .ds-vote.on {
+  color: var(--dc-estrategista);
+  font-weight: 700;
+}
+
+.ds-msg.roteirista .ds-vote.on {
+  color: var(--dc-roteirista);
+  font-weight: 700;
+}
+
+/* "digitando": três pontos que pulam */
+.ds-dots {
+  display: inline-flex;
+  gap: 5px;
+  padding: 6px 0;
+}
+
+.ds-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: ds-dot 1.2s ease-in-out infinite;
+}
+
+.ds-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.ds-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes ds-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+
+.ds-chat .dc-result,
+.ds-chat .dc-review {
+  font-size: 15px;
+}
+
+/* o veto fica preso embaixo da conversa */
+.ds-veto {
+  flex-shrink: 0;
+  padding: 14px max(24px, calc((100% - 820px) / 2));
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+}
+
+/* as rodadas passadas, no placar, em tamanho menor */
+.ds-past-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ds-past-chat .ds-msg {
+  max-width: 100%;
+}
+
+.ds-past-chat .ds-avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+}
+
+.ds-past-chat .ds-bubble p {
+  font-size: 13px;
+}
+
+@media (max-width: 1200px) {
+  .ds-body {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .ds-board,
+  .ds-side,
+  .ds-chat {
+    overflow: visible;
+    border: none;
+  }
+}

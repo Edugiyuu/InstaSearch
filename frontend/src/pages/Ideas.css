@@ -11,27 +11,12 @@
   color: #ff4e45;
 }
 
-/* Aba Ideias (ADR 0038): a lista à esquerda, o debate fixo à direita */
-.id-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 400px;
-  gap: 24px;
-  align-items: start;
-}
-
+/* Aba Ideias (ADR 0038): as ideias em largura total; o debate é um cartão que abre o palco */
 .id-left {
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-}
-
-/* o debate pode ser longo: rola dentro da própria coluna, que fica parada ao lado da lista */
-.id-right {
-  position: sticky;
-  top: 24px;
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
 }
 
 .id-brainstorm {
@@ -48,34 +33,46 @@
   gap: 12px;
 }
 
-@media (max-width: 1100px) {
-  .id-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .id-right {
-    position: static;
-    max-height: none;
-  }
+/* O cartão do debate (ADR 0026 e 0027): o status numa linha e a porta para o palco */
+.id-debate {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-color: color-mix(in srgb, var(--scheduled) 30%, var(--border));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--info) 10%, transparent), color-mix(in srgb, var(--scheduled) 10%, transparent) 60%, transparent), var(--panel);
 }
 
-/* Criar sozinho (ADR 0026), com o debate (ADR 0027) */
-.id-auto {
+.id-debate.live {
+  border-color: var(--danger);
+}
+
+.id-debate-text {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 2px;
+  min-width: 0;
 }
 
-.id-auto-head {
+.id-debate-text strong {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
 }
 
-.id-auto-head strong {
-  font-size: 16px;
+.id-debate-text .meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+.id-debate .btn-y,
+.id-debate .btn-g {
+  flex-shrink: 0;
+}
+
+/* a fila e o "como funciona", nos bastidores do palco */
 .id-auto-how summary {
   cursor: pointer;
   font-size: 12px;
@@ -99,17 +96,33 @@
 
 .id-job {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px 10px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
+  border: 1px solid transparent;
   background: var(--panel-2);
   font-size: 13px;
 }
 
+.id-job.on {
+  border-color: var(--scheduled);
+}
+
 .id-job-title {
   font-weight: 600;
+}
+
+.id-job-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+@media (max-width: 900px) {
+  .id-debate {
+    flex-wrap: wrap;
+  }
 }
 
 .id-brainstorm-row,

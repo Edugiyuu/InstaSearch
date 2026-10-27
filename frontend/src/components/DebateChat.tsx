@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Debate, debateStoppable, DebateMessage, Idea, MAX_ROUNDS, MAX_TURNS, RoundEnd, Speaker, SPEAKER_FOCUS, SPEAKER_NAME, VETO_SECONDS } from '../api/ideas'
 import { FORMAT_NAME, type ScriptReview } from '../api/shorts'
@@ -73,19 +73,6 @@ function Topics({ ideas, messages, chosen, vetoed = [] }: { ideas: Idea[]; messa
         )
       })}
     </ol>
-  )
-}
-
-function Message({ m }: { m: DebateMessage }) {
-  if (m.speaker === 'criador') return <p className="dc-veto-note">✋ Você {m.text}. As duas seguem debatendo os outros.</p>
-  return (
-    <div className={`dc-msg ${m.speaker}`}>
-      <span className="dc-who">
-        {SPEAKER_NAME[m.speaker]} <span className="meta">· {SPEAKER_FOCUS[m.speaker]}</span>
-      </span>
-      <p>{m.text}</p>
-      <span className="dc-vote">{m.vote ? `aceita o tema ${m.vote}` : 'ainda não aceita nenhum'}</span>
-    </div>
   )
 }
 
@@ -195,135 +182,207 @@ function VetoBar({ debate, onVeto }: { debate: Debate; onVeto: () => void }) {
   )
 }
 
+/** A primeira letra de cada IA, no avatar do palco. */
+const SPEAKER_INITIAL: Record<Speaker, string> = { estrategista: 'E', roteirista: 'R' }
+
+/** O status do debate numa linha, para o cartão da tela Ideias. */
+export function debateSummary(debate: Debate) {
+  const round = debate.round ?? 1
+  const turns = debate.messages.filter(m => m.speaker !== 'criador').length
+  return `${STATUS[debate.status]} · rodada ${round} de ${MAX_ROUNDS}${turns > 0 ? ` · fala ${turns} de ${MAX_TURNS}` : ''}`
+}
+
+/** O debate ainda está acontecendo (para o ponto "ao vivo"). */
+export const debateLive = (debate: Debate) => ['brainstorm', 'debatendo', 'aguardando', 'resumindo'].includes(debate.status)
+
+function StageMessage({ m }: { m: DebateMessage }) {
+  if (m.speaker === 'criador') return <p className="dc-veto-note">✋ Você {m.text}. As duas seguem debatendo os outros.</p>
+  return (
+    <div className={`ds-msg ${m.speaker}`}>
+      <span className="ds-avatar" title={SPEAKER_NAME[m.speaker]}>{SPEAKER_INITIAL[m.speaker]}</span>
+      <div className="ds-bubble">
+        <span className="dc-who">
+          {SPEAKER_NAME[m.speaker]} <span className="meta">· {SPEAKER_FOCUS[m.speaker]}</span>
+        </span>
+        <p>{m.text}</p>
+        <span className={`ds-vote ${m.vote ? 'on' : ''}`}>{m.vote ? `✓ aceita o tema ${m.vote}` : 'ainda não aceita nenhum'}</span>
+      </div>
+    </div>
+  )
+}
+
 /**
- * O debate das IAs como um chat (ADR 0027): os temas em cima, as falas uma a uma (a Estrategista à
- * esquerda, a Roteirista à direita), com o voto de cada uma, e no fim o tema aceito e o porquê. As
- * rodadas que acabaram sem vídeo ficam fechadas em cima; depois do acordo, 5 s para vetar (ADR 0030).
+ * O palco do debate (ADR 0038, adendo): em tela cheia, como uma transmissão. À esquerda o placar
+ * (os temas, com o voto de cada IA), no centro a conversa grande e, embaixo dela, o veto, o
+ * resultado e a revisão do roteiro; à direita os bastidores (`side`: a fila e as rodadas passadas).
+ * As regras são as mesmas do chat de antes (ADR 0027, 0030 e 0034).
  */
-export function DebateChat({
+export function DebateStage({
   debate,
+  error,
   creating,
   stopping,
   onVeto,
   onStop,
+  onClose,
+  side,
 }: {
-  debate: Debate
+  /** null enquanto o debate recém-pedido ainda não chegou */
+  debate: Debate | null
+  error?: string | null
   /** o vídeo do debate ainda está na fila */
   creating: boolean
   /** o criador pediu para parar; vale depois da fala em andamento */
   stopping: boolean
   onVeto: () => void
   onStop: () => void
+  onClose: () => void
+  /** a coluna da direita: a fila dos vídeos e o "como funciona" */
+  side: ReactNode
 }) {
   const end = useRef<HTMLDivElement>(null)
   useEffect(() => {
     end.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [debate.messages.length, debate.thinking])
+  }, [debate?.messages.length, debate?.thinking, debate?.status])
 
-  const round = debate.round ?? 1
-  const turns = debate.messages.filter(m => m.speaker !== 'criador').length
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const round = debate?.round ?? 1
 
   return (
-    <div className="dc">
-      <div className="dc-head">
-        <strong>🗣️ Debate das IAs</strong>
-        <span className={`dc-status ${debate.status}`}>{STATUS[debate.status]}</span>
-        <span className="meta">
-          rodada {round} de {MAX_ROUNDS}
-          {turns > 0 && ` · fala ${turns} de ${MAX_TURNS}`}
+    <div className="ds" role="dialog" aria-modal="true" aria-label="Palco do debate">
+      <header className="ds-top">
+        <span className="ds-cast">
+          <span className="ds-avatar estrategista">E</span>
+          <span className="ds-avatar roteirista">R</span>
         </span>
-        {debateStoppable(debate) && (
-          <button className="act dc-stop" disabled={stopping} onClick={onStop} title="Para depois da fala em andamento, sem criar vídeo">
+        <strong className="ds-title">Palco do debate</strong>
+        {debate && (
+          <>
+            {debateLive(debate) && <span className="ds-live">● ao vivo</span>}
+            <span className={`dc-status ${debate.status}`}>{STATUS[debate.status]}</span>
+            <span className="meta">{debateSummary(debate).split(' · ').slice(1).join(' · ')}</span>
+          </>
+        )}
+        <span className="spacer" />
+        {debate && debateStoppable(debate) && (
+          <button className="btn-o" disabled={stopping} onClick={onStop} title="Para depois da fala em andamento, sem criar vídeo">
             {stopping ? 'Parando depois desta fala…' : '■ Parar debate'}
           </button>
         )}
-      </div>
+        <button className="btn-g" onClick={onClose} title="Esc">Fechar ✕</button>
+      </header>
 
-      {debate.past?.map((r, i) => (
-        <details key={i} className="dc-past">
-          <summary>
-            Rodada {i + 1}: {ROUND_END[r.end]} <span className="meta">· {r.ideas.length} temas, {r.messages.filter(m => m.speaker !== 'criador').length} falas</span>
-          </summary>
-          <Topics ideas={r.ideas} messages={r.messages} vetoed={r.vetoed} />
-          <div className="dc-chat">
-            {r.messages.map((m, j) => (
-              <Message key={j} m={m} />
-            ))}
-          </div>
-        </details>
-      ))}
-
-      {debate.ideas.length > 0 && <Topics ideas={debate.ideas} messages={debate.messages} chosen={debate.chosen} vetoed={debate.vetoed} />}
-      {!!debate.rejected?.length && (
-        <details className="dc-rejected">
-          <summary>
-            {debate.rejected.length} ideia(s) do brainstorm ficaram fora pela variedade
-          </summary>
-          <ul>
-            {debate.rejected.map((r, i) => (
-              <li key={i}>
-                {r.theme} <span className="meta">· {r.reason}</span>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-
-      <div className="dc-chat">
-        {debate.status === 'brainstorm' && (
-          <p className="dc-note">
-            <Spinner />{' '}
-            {round > 1
-              ? `Nenhum tema da rodada ${round - 1} passou. Gerando temas novos, sem repetir os que caíram…`
-              : 'Pesquisando o que está acontecendo nas obras do canal e no nicho, e gerando os temas…'}
-          </p>
-        )}
-        {debate.messages.map((m, i) => (
-          <Message key={i} m={m} />
-        ))}
-        {debate.thinking && (
-          <div className={`dc-msg ${debate.thinking} typing`}>
-            <span className="dc-who">{SPEAKER_NAME[debate.thinking]}</span>
-            <p>
-              <Spinner /> pensando…
-            </p>
-          </div>
-        )}
-        <div ref={end} />
-      </div>
-
-      {debate.status === 'aguardando' && <VetoBar key={`${round}-${debate.chosen}-${debate.vetoUntil}`} debate={debate} onVeto={onVeto} />}
-      {debate.status === 'resumindo' && (
-        <p className="dc-note">
-          <Spinner /> As duas aceitaram o tema {debate.chosen}. Escrevendo por que ele é bom…
-        </p>
-      )}
-      {debate.status === 'acordo' && (
-        <div className="dc-result">
-          <strong>✓ As duas aceitaram o tema {debate.chosen}</strong>
-          {debate.why && <p>{debate.why}</p>}
-          {debate.projectId ? (
-            <Link to={`/projeto/${debate.projectId}/roteiro`} className="act">Abrir o vídeo →</Link>
+      <div className="ds-body">
+        {/* o placar: os temas da rodada e quem aceita cada um agora */}
+        <aside className="ds-board">
+          <span className="label">Placar · rodada {round}</span>
+          {debate?.ideas.length ? (
+            <Topics ideas={debate.ideas} messages={debate.messages} chosen={debate.chosen} vetoed={debate.vetoed} />
           ) : (
-            creating && (
-              <span className="meta">
-                <Spinner /> criando o vídeo: roteiro, montagem e imagens…
-              </span>
-            )
+            <p className="dc-note"><Spinner /> Gerando os temas…</p>
           )}
-        </div>
-      )}
-      {debate.review && <ReviewChat review={debate.review} />}
-      {debate.status === 'sem-acordo' && (
-        <p className="dc-result fail">
-          {debate.past?.length
-            ? `As duas não chegaram a um acordo em ${round} rodadas de temas, então nenhum vídeo foi criado.`
-            : `As duas não chegaram a um acordo em ${MAX_TURNS} falas, então nenhum vídeo foi criado.`}{' '}
-          Dá para debater de novo ou usar o “🤖 Criar sozinho” de uma ideia.
-        </p>
-      )}
-      {debate.status === 'parado' && <p className="dc-result fail">Você parou o debate, então nenhum vídeo foi criado.</p>}
-      {debate.status === 'erro' && <p className="form-error">O debate parou: {debate.error}</p>}
+          {!!debate?.rejected?.length && (
+            <details className="dc-rejected">
+              <summary>{debate.rejected.length} ideia(s) do brainstorm ficaram fora pela variedade</summary>
+              <ul>
+                {debate.rejected.map((r, i) => (
+                  <li key={i}>
+                    {r.theme} <span className="meta">· {r.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {debate?.past?.map((r, i) => (
+            <details key={i} className="dc-past">
+              <summary>
+                Rodada {i + 1}: {ROUND_END[r.end]} <span className="meta">· {r.ideas.length} temas, {r.messages.filter(m => m.speaker !== 'criador').length} falas</span>
+              </summary>
+              <Topics ideas={r.ideas} messages={r.messages} vetoed={r.vetoed} />
+              <div className="ds-past-chat">
+                {r.messages.map((m, j) => (
+                  <StageMessage key={j} m={m} />
+                ))}
+              </div>
+            </details>
+          ))}
+        </aside>
+
+        {/* a conversa, grande, no centro */}
+        <main className="ds-stage">
+          <div className="ds-chat">
+            {error && <p className="form-error">{error}</p>}
+            {!debate && !error && <p className="dc-note"><Spinner /> Começando o debate…</p>}
+            {debate?.status === 'brainstorm' && (
+              <p className="dc-note">
+                <Spinner />{' '}
+                {round > 1
+                  ? `Nenhum tema da rodada ${round - 1} passou. Gerando temas novos, sem repetir os que caíram…`
+                  : 'Pesquisando o que está acontecendo nas obras do canal e no nicho, e gerando os temas…'}
+              </p>
+            )}
+            {debate?.messages.map((m, i) => (
+              <StageMessage key={i} m={m} />
+            ))}
+            {debate?.thinking && (
+              <div className={`ds-msg ${debate.thinking} typing`}>
+                <span className="ds-avatar">{SPEAKER_INITIAL[debate.thinking]}</span>
+                <div className="ds-bubble">
+                  <span className="dc-who">{SPEAKER_NAME[debate.thinking]}</span>
+                  <p><span className="ds-dots"><i /><i /><i /></span></p>
+                </div>
+              </div>
+            )}
+
+            {debate?.status === 'resumindo' && (
+              <p className="dc-note">
+                <Spinner /> As duas aceitaram o tema {debate.chosen}. Escrevendo por que ele é bom…
+              </p>
+            )}
+            {debate?.status === 'acordo' && (
+              <div className="dc-result">
+                <strong>✓ As duas aceitaram o tema {debate.chosen}</strong>
+                {debate.why && <p>{debate.why}</p>}
+                {debate.projectId ? (
+                  <Link to={`/projeto/${debate.projectId}/roteiro`} className="btn-y">Abrir o vídeo →</Link>
+                ) : (
+                  creating && (
+                    <span className="meta">
+                      <Spinner /> criando o vídeo: roteiro, montagem e imagens…
+                    </span>
+                  )
+                )}
+              </div>
+            )}
+            {debate?.review && <ReviewChat review={debate.review} />}
+            {debate?.status === 'sem-acordo' && (
+              <p className="dc-result fail">
+                {debate.past?.length
+                  ? `As duas não chegaram a um acordo em ${round} rodadas de temas, então nenhum vídeo foi criado.`
+                  : `As duas não chegaram a um acordo em ${MAX_TURNS} falas, então nenhum vídeo foi criado.`}{' '}
+                Dá para debater de novo ou usar o “🤖 Criar sozinho” de uma ideia.
+              </p>
+            )}
+            {debate?.status === 'parado' && <p className="dc-result fail">Você parou o debate, então nenhum vídeo foi criado.</p>}
+            {debate?.status === 'erro' && <p className="form-error">O debate parou: {debate.error}</p>}
+            <div ref={end} />
+          </div>
+
+          {/* os 5 s para vetar ficam presos embaixo da conversa, onde o olho está */}
+          {debate?.status === 'aguardando' && (
+            <div className="ds-veto">
+              <VetoBar key={`${round}-${debate.chosen}-${debate.vetoUntil}`} debate={debate} onVeto={onVeto} />
+            </div>
+          )}
+        </main>
+
+        <aside className="ds-side">{side}</aside>
+      </div>
     </div>
   )
 }

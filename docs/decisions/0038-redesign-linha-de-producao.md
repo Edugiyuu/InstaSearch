@@ -46,3 +46,7 @@ O Painel ficou **sem a coluna Ideias**, a pedido do usuário, para sobrar espaç
 ## Adendo: o Painel foi desfeito (2026-10-25)
 
 Depois de usar, o usuário achou que o Painel "ficou ruim" e pediu para desfazer só ele. O **Início** e os **Projetos** voltam como eram antes da etapa 2, e o trilho ganha os dois itens (Início e Projetos) no lugar do Painel. O resto do redesign continua: o trilho, a Biblioteca como porta de entrada, a paleta (o "Começar →" do Início abre a paleta já preenchida), o roteiro em modo foco e a Revisão em checklist. O ponto 2 da decisão (o Painel) e o adendo anterior (a coluna Ideias) deixam de valer.
+
+## Adendo: o palco do debate (2026-10-26)
+
+Na etapa 7, o debate ficou numa coluna fixa de 400px ao lado das ideias, e o usuário achou o chat "minúsculo": a conversa, os temas e a revisão do roteiro dividiam pouco espaço, com uma rolagem dentro da outra. O debate passa a abrir num **palco em tela cheia**: o placar (os temas, com o voto de cada IA) à esquerda, a conversa grande no centro (com o veto, o resultado e a revisão embaixo) e os bastidores (a fila dos vídeos e o "como funciona") à direita. Na tela Ideias fica um cartão com o status do último debate, um ponto "ao vivo" e os botões para abrir o palco ou começar um debate; as ideias ganham a largura toda. As regras do debate (ADR 0027, 0030 e 0034) não mudam.

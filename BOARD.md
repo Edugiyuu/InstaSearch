@@ -50,6 +50,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-26 · Palco do debate: o chat das IAs saiu da coluna de 400px (ficava minúsculo, com rolagem dentro de rolagem) e virou um palco em tela cheia, com placar, conversa grande e bastidores; na tela Ideias, um cartão com o status e as ideias em largura total (ADR 0038, adendo)
 - [x] 2026-10-26 · Redesign C, etapa 8: Números, o desempenho em tela própria, cada vídeo numa barra contra a mediana (ADR 0038)
 - [x] 2026-10-26 · Redesign C, etapa 7: Ideias em cartões, com o debate ao lado (ADR 0038)
 - [x] 2026-10-26 · Calendário sem o "19:30 · sugerido ✨" inventado: era fixo no código (o primeiro fim de semana livre) e a legenda dizia "pelos seus insights" (ADR 0011, sem dados de mentira)
