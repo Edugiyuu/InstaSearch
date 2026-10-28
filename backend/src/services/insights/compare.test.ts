@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
-import { bucketOf, compareVideos, hasDueSnapshot, median, withSnapshot } from './compare.js'
+import { bucketOf, compareVideos, goneVideos, hasDueSnapshot, median, withSnapshot } from './compare.js'
 import type { Bucket, VideoMetrics } from './types.js'
 
 const DAY = 24 * 60 * 60 * 1000
@@ -139,5 +139,24 @@ describe('compareVideos', () => {
 
   it('vídeo sem foto fica sem comparação', () => {
     expect(compareVideos([video('novo', 0.2)]).get('novo')).toEqual({ peers: 0 })
+  })
+})
+
+describe('vídeos apagados da plataforma', () => {
+  const stored = [video('instagram_a', 1), video('instagram_b', 5), video('instagram_velho', 40), video('youtube_c', 2, [], 'youtube')]
+  const seen = (...ids: [string, number][]) => ids.map(([id, d]) => ({ id, publishedAt: daysAgo(d) }))
+
+  it('marca quem a coleta não viu mais, só da mesma plataforma', () => {
+    expect(goneVideos(stored, 'instagram', seen(['a', 1]), 50).map(v => v.id)).toEqual(['instagram_b', 'instagram_velho'])
+  })
+
+  it('com a lista cheia, o mais velho que ela só saiu da janela', () => {
+    expect(goneVideos(stored, 'instagram', seen(['a', 1], ['x', 10]), 2).map(v => v.id)).toEqual(['instagram_b'])
+  })
+
+  it('lista vazia não apaga nada, e quem já saiu não é marcado de novo', () => {
+    expect(goneVideos(stored, 'instagram', [], 50)).toEqual([])
+    const gone = { ...video('instagram_b', 5), removedAt: daysAgo(1) }
+    expect(goneVideos([gone], 'instagram', seen(['a', 1]), 50)).toEqual([])
   })
 })

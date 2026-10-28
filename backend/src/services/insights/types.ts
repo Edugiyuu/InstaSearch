@@ -55,6 +55,8 @@ export interface VideoMetrics {
   snapshots: MetricsSnapshot[]
   /** Os comentários mais curtidos e recentes (até 20), lidos na coleta. */
   topComments?: AudienceComment[]
+  /** Quando a coleta viu que o vídeo saiu da plataforma (apagado). Fica guardado, mas some da tela e da mediana. */
+  removedAt?: string
   updatedAt: string
 }
 

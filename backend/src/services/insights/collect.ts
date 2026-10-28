@@ -14,7 +14,7 @@ import { instagramGraphService } from '../instagramGraphService.js'
 import * as youtube from '../youtubeService.js'
 import { listProjects } from '../shorts/projects.js'
 import type { ShortProject } from '../shorts/types.js'
-import { ageInDays, compareVideos, FEW_DATA, hasDueSnapshot, measured, withSnapshot } from './compare.js'
+import { ageInDays, compareVideos, FEW_DATA, goneVideos, hasDueSnapshot, measured, withSnapshot } from './compare.js'
 import type { AudienceComment, MetricsSnapshot, MetricsState, Platform, PlatformState, VideoMetrics } from './types.js'
 
 const videoStore = new FileStorage<VideoMetrics>('metrics/videos')
@@ -63,6 +63,15 @@ function newVideo(platform: Platform, mediaId: string, fields: Partial<VideoMetr
   }
 }
 
+/** Marca os vídeos que saíram da plataforma; o arquivo fica, para não perder as fotos se ele voltar. */
+async function markGone(existing: Map<string, VideoMetrics>, platform: Platform, seen: { id: string; publishedAt: string }[]) {
+  const at = new Date().toISOString()
+  for (const v of goneVideos([...existing.values()], platform, seen, MAX_VIDEOS)) {
+    await videoStore.save({ ...v, removedAt: at, updatedAt: at })
+    logger.info(`📈 Saiu do ${platform}: ${v.title}`)
+  }
+}
+
 /** Projeto do app que publicou cada post, por plataforma e id. */
 function projectsByMedia(projects: ShortProject[]) {
   const map = new Map<string, ShortProject>()
@@ -84,6 +93,7 @@ async function collectInstagram(existing: Map<string, VideoMetrics>, projects: M
       return state
     }
     const reels = await instagramGraphService.listReels(MAX_VIDEOS)
+    await markGone(existing, 'instagram', reels.map(r => ({ id: r.id, publishedAt: r.timestamp })))
     const now = Date.now()
     let failed = 0
     let commentsBlocked = false
@@ -129,6 +139,8 @@ async function collectInstagram(existing: Map<string, VideoMetrics>, projects: M
               // o Instagram não diz a duração do Reel; dos vídeos do app, sabemos
               durationSec: project ? Math.round(project.audioDuration || project.duration) : base.durationSec,
               topComments,
+              // apareceu de novo (a coleta anterior não o viu por engano): volta para a tela
+              removedAt: undefined,
             },
             snap,
           ),
@@ -161,6 +173,7 @@ async function collectYouTube(existing: Map<string, VideoMetrics>, projects: Map
   const state: PlatformState = { connected: true, ok: false, videos: 0 }
   try {
     const shorts = await youtube.listShorts(MAX_VIDEOS)
+    await markGone(existing, 'youtube', shorts)
     const now = Date.now()
 
     // retenção e compartilhamentos vêm da Analytics API; se ela falhar, ficam só os números básicos
@@ -216,6 +229,7 @@ async function collectYouTube(existing: Map<string, VideoMetrics>, projects: Map
             privacy: short.privacy,
             projectId: project?.id,
             topComments,
+            removedAt: undefined,
           },
           snap,
         ),
@@ -259,7 +273,7 @@ async function tick() {
   const now = Date.now()
   const last = state.lastRunAt ? Date.parse(state.lastRunAt) : 0
   const failed = [state.instagram, state.youtube].some(p => p.connected && !p.ok)
-  const due = (await videoStore.findAll()).some(v => hasDueSnapshot(v, now))
+  const due = (await videoStore.findAll()).some(v => !v.removedAt && hasDueSnapshot(v, now))
   if (now - last >= 24 * HOUR || due || (failed && now - last >= 3 * HOUR)) {
     await collectNow()
   }
@@ -282,7 +296,9 @@ export function stopMetricsCollector() {
 
 /** Para a tela: os vídeos com a comparação, do mais novo para o mais velho. */
 export async function listMetrics() {
-  const [videos, state] = await Promise.all([videoStore.findAll(), loadState()])
+  const [all, state] = await Promise.all([videoStore.findAll(), loadState()])
+  // os apagados da plataforma não aparecem nem entram na mediana
+  const videos = all.filter(v => !v.removedAt)
   const comparisons = compareVideos(videos)
   const count = (p: Platform) => measured(videos.filter(v => v.platform === p))
   return {

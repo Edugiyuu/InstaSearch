@@ -88,3 +88,18 @@ export function compareVideos(videos: VideoMetrics[]): Map<string, Comparison> {
 
 /** Vídeos com pelo menos uma foto fixa (os que já dá para comparar). */
 export const measured = (videos: VideoMetrics[]) => videos.filter(v => comparable(v) && v.snapshots.length > 0).length
+
+/**
+ * Os vídeos guardados de uma plataforma que a coleta não viu mais: foram apagados. A coleta lê só os
+ * `limit` mais recentes, então, com a lista cheia, um vídeo mais velho que o mais velho dela só saiu da
+ * janela e não conta.
+ */
+export function goneVideos(stored: VideoMetrics[], platform: VideoMetrics['platform'], seen: { id: string; publishedAt: string }[], limit: number) {
+  // lista vazia: mais provável uma falha da API do que todos apagados
+  if (!seen.length) return []
+  const ids = new Set(seen.map(s => `${platform}_${s.id}`))
+  const oldest = seen.reduce((min, s) => (s.publishedAt < min ? s.publishedAt : min), seen[0].publishedAt)
+  return stored.filter(
+    v => v.platform === platform && !v.removedAt && !ids.has(v.id) && (seen.length < limit || v.publishedAt >= oldest),
+  )
+}
