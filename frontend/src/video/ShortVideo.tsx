@@ -94,10 +94,8 @@ function BeatScene({ timed, settings, tier, phase }: { timed: TimedBeat; setting
     return (
       <AbsoluteFill>
         <TierListScene board={tier} phase={phase} revealAt={timed.revealAt} />
-        {settings.caption === 'completa' ? (
-          <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} />
-        ) : (
-          settings.caption !== 'sem' && <Caption text={beat.text} mode={settings.caption} />
+        {settings.caption !== 'sem' && (
+          <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} mode={settings.caption} size={settings.captionSize} anim={settings.captionAnim} />
         )}
       </AbsoluteFill>
     )
@@ -115,10 +113,8 @@ function BeatScene({ timed, settings, tier, phase }: { timed: TimedBeat; setting
 
       {image && <BeatEffect timed={timed} region={look !== 'full' ? undefined : regionOnScreen(region, image.width, image.height, looseFraming(beat.framing))} />}
 
-      {settings.caption === 'completa' ? (
-        <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} />
-      ) : (
-        settings.caption !== 'sem' && <Caption text={beat.text} mode={settings.caption} />
+      {settings.caption !== 'sem' && (
+        <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} mode={settings.caption} size={settings.captionSize} anim={settings.captionAnim} />
       )}
 
       {(transition === 'flash' || transition === 'flash-black') && (
@@ -741,69 +737,43 @@ function ClickTouch({ frame, click }: { frame: number; click: number }) {
 }
 
 // ── Legenda ──────────────────────────────────────────────
+// Os padrões vêm dos apps de legenda de Short (Submagic, CapCut e afins) e dos guias de 2026
+// resumidos no ADR 0040: fonte pesada em caixa alta com contorno, 2 a 5 palavras por tela
+// (ou uma só), faixa no meio da tela (nunca no quarto de baixo, que a interface cobre),
+// uma cor de destaque só e uma animação curta (100 a 200 ms) com leve passada do ponto.
 
-function Caption({ text, mode }: { text: string; mode: ProjectSettings['caption'] }) {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
-  const upper = text.toUpperCase()
-
-  if (mode === 'limpa') {
-    const enter = interpolate(frame, [0, 5], [0, 1], { extrapolateRight: 'clamp' })
-    return (
-      <div
-        style={{
-          position: 'absolute',
-          left: 70,
-          right: 70,
-          top: 1290,
-          textAlign: 'center',
-          color: '#fff',
-          fontSize: 84,
-          fontWeight: 800,
-          lineHeight: 1.1,
-          textShadow: '0 4px 24px rgba(0,0,0,0.85)',
-          opacity: enter,
-          transform: `translateY(${(1 - enter) * 30}px)`,
-        }}
-      >
-        {text}
-      </div>
-    )
-  }
-
-  const pop = spring({ frame, fps, config: { damping: 11, stiffness: 260 } })
-  const size = upper.length <= 8 ? 176 : upper.length <= 14 ? 146 : upper.length <= 22 ? 118 : 96
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        left: 40,
-        right: 40,
-        top: 1150,
-        textAlign: 'center',
-        color: YELLOW,
-        fontSize: size,
-        fontWeight: 900,
-        lineHeight: 1.02,
-        letterSpacing: -1,
-        WebkitTextStroke: '16px #000',
-        paintOrder: 'stroke fill',
-        textShadow: '0 10px 0 #000',
-        transform: `scale(${interpolate(pop, [0, 1], [0.55, 1])}) rotate(-3deg)`,
-      }}
-    >
-      {upper}
-    </div>
-  )
+/** Fonte e palavras por bloco, por tamanho escolhido. */
+const CAPTION_LOOK: Record<NonNullable<ProjectSettings['captionSize']>, { font: number; chunk: number }> = {
+  pequena: { font: 76, chunk: 5 },
+  media: { font: 92, chunk: 4 },
+  grande: { font: 118, chunk: 3 },
 }
 
+/** Palavra por palavra: sozinha na tela ela cabe maior, como nos apps de legenda. */
+const SOLO_FONT = 1.35
+
 /**
- * Legenda completa: todas as palavras da fala, em blocos de até 4,
- * com a palavra falada acendendo em amarelo. Com a voz transcrita, cada palavra acende
- * quando é falada (wordStarts, ADR 0018); sem, o tempo é proporcional ao tamanho dela.
+ * Legenda do vídeo (ADR 0040). `mode`: 'completa' mostra o bloco de palavras com a falada
+ * acendendo (karaokê), 'palavra' mostra uma palavra por vez. Com a voz transcrita, cada palavra
+ * acende quando é falada (wordStarts, ADR 0018); sem, o tempo é proporcional ao tamanho dela.
  */
-function FullCaption({ say, frames, wordStarts }: { say: string; frames: number; wordStarts?: number[] }) {
+function FullCaption({
+  say,
+  frames,
+  wordStarts,
+  mode,
+  size = 'media',
+  anim = 'destaque',
+}: {
+  say: string
+  frames: number
+  wordStarts?: number[]
+  mode: 'completa' | 'palavra'
+  size?: ProjectSettings['captionSize']
+  anim?: ProjectSettings['captionAnim']
+}) {
   const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
   const words = say.split(/\s+/).filter(Boolean)
   if (words.length === 0) return null
 
@@ -819,9 +789,16 @@ function FullCaption({ say, frames, wordStarts }: { say: string; frames: number;
   let current = starts.findIndex((s, i) => frame >= s && (i === words.length - 1 || frame < starts[i + 1]))
   if (current < 0) current = words.length - 1
 
-  const CHUNK = 4
-  const chunkStart = Math.floor(current / CHUNK) * CHUNK
-  const chunk = words.slice(chunkStart, chunkStart + CHUNK)
+  const look = CAPTION_LOOK[size ?? 'media']
+  // palavra por palavra: só a falada na tela, e maior; completa: o bloco em que ela está
+  const solo = mode === 'palavra'
+  const font = Math.round(look.font * (solo ? SOLO_FONT : 1))
+  const chunkStart = solo ? current : Math.floor(current / look.chunk) * look.chunk
+  const chunk = solo ? [words[current]] : words.slice(chunkStart, chunkStart + look.chunk)
+
+  // o contorno e a sombra acompanham a fonte, senão a legenda pequena fica toda preta
+  const stroke = Math.round(font * 0.12)
+  const local = frame - starts[current]
 
   return (
     <div
@@ -829,37 +806,117 @@ function FullCaption({ say, frames, wordStarts }: { say: string; frames: number;
         position: 'absolute',
         left: 60,
         right: 60,
-        top: 1200,
+        top: 1180,
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'center',
-        gap: '0 26px',
+        alignItems: 'center',
+        gap: `0 ${Math.round(font * 0.28)}px`,
         textAlign: 'center',
-        fontSize: 92,
+        fontSize: font,
         fontWeight: 900,
         lineHeight: 1.12,
+        letterSpacing: -1,
         textTransform: 'uppercase',
-        WebkitTextStroke: '12px #000',
+        WebkitTextStroke: `${stroke}px #000`,
         paintOrder: 'stroke fill',
-        textShadow: '0 8px 0 #000',
+        textShadow: `0 ${Math.round(font * 0.09)}px 0 #000`,
       }}
     >
-      {chunk.map((w, i) => {
-        const index = chunkStart + i
-        const on = index === current
-        return (
-          <span
-            key={index}
-            style={{
-              color: on ? YELLOW : '#fff',
-              transform: on ? 'scale(1.12)' : 'scale(1)',
-              display: 'inline-block',
-            }}
-          >
-            {w}
-          </span>
-        )
-      })}
+      {chunk.map((w, i) => (
+        <CaptionWord
+          key={chunkStart + i}
+          word={w}
+          on={chunkStart + i === current}
+          local={local}
+          fps={fps}
+          font={font}
+          stroke={stroke}
+          anim={anim}
+        />
+      ))}
     </div>
   )
+}
+
+/**
+ * Uma palavra da legenda. As que ainda não foram ditas (ou já passaram) ficam brancas e paradas;
+ * a falada acende na cor de destaque com a animação escolhida. `local` é o quadro desde que ela
+ * acendeu, e é por isso que a mola (`spring`) recomeça em cada palavra — `useCurrentFrame()`
+ * sozinho conta desde o começo da cena e a mola já teria terminado.
+ */
+function CaptionWord({
+  word,
+  on,
+  local,
+  fps,
+  font,
+  stroke,
+  anim,
+}: {
+  word: string
+  on: boolean
+  local: number
+  fps: number
+  font: number
+  stroke: number
+  anim: ProjectSettings['captionAnim']
+}) {
+  // ~200 ms: o tempo de entrada que os apps usam, curto o bastante para caber numa palavra falada
+  const enter = spring({ frame: local, fps, durationInFrames: 6, config: { damping: 10, stiffness: 220 } })
+  // o salto é um pouco mais longo e balança: mola mais solta, como o "bounce" dos apps
+  const bounce = spring({ frame: local, fps, durationInFrames: 9, config: { damping: 8, stiffness: 180 } })
+
+  const base: CSSProperties = { display: 'inline-block', color: '#fff' }
+  if (!on) return <span style={base}>{word}</span>
+
+  if (anim === 'placa') {
+    // Estilo "plaquinha": a palavra falada ganha um retângulo amarelo e vira texto escuro.
+    // Sem contorno preto aqui — contorno sobre o amarelo embola a leitura.
+    return (
+      <span
+        style={{
+          ...base,
+          color: '#111',
+          WebkitTextStroke: '0px',
+          textShadow: 'none',
+          background: YELLOW,
+          borderRadius: Math.round(font * 0.12),
+          padding: `0 ${Math.round(font * 0.12)}px`,
+          transform: `scale(${interpolate(enter, [0, 1], [0.86, 1])})`,
+        }}
+      >
+        {word}
+      </span>
+    )
+  }
+
+  if (anim === 'pop') {
+    // sobe de 0,84 até 1 passando um pouco do ponto (a mola dá os ~10% de overshoot)
+    return (
+      <span style={{ ...base, color: YELLOW, transform: `scale(${interpolate(enter, [0, 1], [0.84, 1])})` }}>
+        {word}
+      </span>
+    )
+  }
+
+  if (anim === 'salto') {
+    // entra de baixo (cerca de 35% da altura da letra) e aparece na primeira metade do movimento
+    return (
+      <span
+        style={{
+          ...base,
+          color: YELLOW,
+          opacity: interpolate(local, [0, 4], [0, 1], clamp),
+          transform: `translateY(${interpolate(bounce, [0, 1], [font * 0.35, 0])}px)`,
+        }}
+      >
+        {word}
+      </span>
+    )
+  }
+
+  // 'destaque' (padrão): só a cor e um crescidinho de 4%, o karaokê que os guias recomendam
+  // quando a imagem já se mexe — movimento sobre movimento cansa de ler.
+  return <span style={{ ...base, color: YELLOW, transform: 'scale(1.04)', WebkitTextStroke: `${stroke}px #000` }}>{word}</span>
 }

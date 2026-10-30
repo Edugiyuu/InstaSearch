@@ -33,7 +33,7 @@ export function StyleThumb({ style, size = 'md' }: { style: ShortStyle; size?: '
       className={`style-thumb ${size}`}
       style={{ background: `linear-gradient(160deg, hsl(${hue} 45% 32%), hsl(${(hue + 40) % 360} 40% 12%))` }}
     >
-      <span className={`style-thumb-cap ${style.caption === 'quadrinho' ? '' : 'clean'}`}>{style.hook}</span>
+      <span className="style-thumb-cap">{style.hook}</span>
     </span>
   )
 }

@@ -48,6 +48,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-30 · Legenda em dois modos, **Completa** (o bloco com a palavra falada acendendo) e **Palavra por palavra**, mais o desliga; no lugar dos modos Quadrinho e Limpa entraram **Tamanho** (muda a fonte, o contorno e quantas palavras cabem) e **Animação da palavra falada** (Destaque, Pop, Salto e Plaquinha, copiadas do que os apps de legenda de Short fazem), ajustadas por vídeo na Revisão; os estilos não decidem mais a legenda ([ADR 0040](docs/decisions/0040-legenda-completa-com-estilo.md))
 - [x] 2026-10-29 · Bordão do meio: a virada logo depois do gancho, com uma das suas frases (sugeridas pela IA e aprovadas por você) e um clipe do rodízio por baixo da voz, na ordem que você escolhe; recorte para clipes de mais de 3 s, a voz espera o clipe terminar, e a aba Bordões em três faixas; as figurinhas saíram do app ([ADR 0039](docs/decisions/0039-bordao-do-meio.md))
 - [x] 2026-10-27 · Desempenho: vídeos apagados do Instagram ou do YouTube saem da tela e da mediana (a coleta marca quem não viu mais)
 - [x] 2026-10-26 · Palco do debate: o chat das IAs saiu da coluna de 400px (ficava minúsculo, com rolagem dentro de rolagem) e virou um palco em tela cheia, com placar, conversa grande e bastidores; na tela Ideias, um cartão com o status e as ideias em largura total (ADR 0038, adendo)

@@ -47,7 +47,7 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0015](0015-framework-de-testes.md) | Framework de testes: Jest | Aceita |
 | [0016](0016-bordoes-de-abertura-e-final.md) | Bordões de abertura e de final na biblioteca | Substituída em parte por 0039 |
 | [0017](0017-troca-de-imagem-rapida-e-chat-na-cena-certa.md) | Troca de imagem rápida e chat que acerta a cena | Aceita |
-| [0018](0018-legenda-sincronizada-com-a-voz.md) | Legenda sincronizada com a voz | Aceita |
+| [0018](0018-legenda-sincronizada-com-a-voz.md) | Legenda sincronizada com a voz | Substituída em parte por 0040 |
 | [0019](0019-roteiro-com-argumento-e-tons-proprios.md) | Roteiro com argumento e tons próprios | Substituída em parte por 0031 |
 | [0020](0020-imagens-especificas-memes-e-zoom.md) | Imagens específicas, memes e zoom na medida | Aceita |
 | [0021](0021-ideias-a-partir-do-desempenho.md) | Ideias de vídeo a partir do que funcionou no Instagram e no YouTube | Aceita |
@@ -68,3 +68,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0037](0037-efeitos-da-cena-na-frente-e-chat-secundario.md) | Efeitos da cena na frente, chat secundário | Substituída em parte por 0038 |
 | [0038](0038-redesign-linha-de-producao.md) | Redesign do frontend: linha de produção | Aceita |
 | [0039](0039-bordao-do-meio.md) | Bordão do meio: um clipe do rodízio na virada do roteiro | Aceita |
+| [0040](0040-legenda-completa-com-estilo.md) | Legenda completa ou palavra por palavra, com tamanho e animação | Aceita |

@@ -3,8 +3,18 @@
 
 export type Pace = 'calmo' | 'normal' | 'rapido' | 'frenetico'
 export type EffectsLevel = 'poucos' | 'medida' | 'muitos'
-/** quadrinho = 1 a 3 palavras-chave; completa = todas as palavras, uma acendendo por vez */
-export type CaptionMode = 'quadrinho' | 'completa' | 'limpa' | 'sem'
+/**
+ * Como a legenda mostra a fala (ADR 0040): 'completa' = o bloco inteiro com a palavra falada
+ * acendendo (karaokê); 'palavra' = uma palavra por vez, sozinha na tela; 'sem' desliga.
+ */
+export type CaptionMode = 'completa' | 'palavra' | 'sem'
+export const CAPTION_MODES: CaptionMode[] = ['completa', 'palavra', 'sem']
+/** Tamanho da fonte da legenda (ADR 0040); também muda quantas palavras cabem no bloco. */
+export type CaptionSize = 'pequena' | 'media' | 'grande'
+export const CAPTION_SIZES: CaptionSize[] = ['pequena', 'media', 'grande']
+/** Como a palavra falada entra (ADR 0040): os quatro jeitos que os apps de legenda usam. */
+export type CaptionAnim = 'destaque' | 'pop' | 'salto' | 'placa'
+export const CAPTION_ANIMS: CaptionAnim[] = ['destaque', 'pop', 'salto', 'placa']
 export type MusicMood = 'tensa' | 'animada' | 'calma' | 'sem'
 export type ImageType = 'manga' | 'anime' | 'fanart' | 'tanto-faz'
 
@@ -18,7 +28,6 @@ export interface ShortStyle {
   builtIn: boolean
   pace: Pace
   effects: EffectsLevel
-  caption: CaptionMode
   music: MusicMood
   imageType: ImageType
   /** "Algo mais para a IA saber?" */
@@ -151,7 +160,12 @@ export interface BeatTwist {
 export interface ProjectSettings {
   pace: Pace
   effects: EffectsLevel
+  /** Completa, palavra por palavra ou desligada (ADR 0040). */
   caption: CaptionMode
+  /** Tamanho da legenda; sem valor = 'media'. */
+  captionSize?: CaptionSize
+  /** Animação da palavra falada; sem valor = 'destaque'. */
+  captionAnim?: CaptionAnim
   /** Bordão de abertura (id em Biblioteca → Bordões); toca antes da narração. null = sem abertura. */
   intro?: string | null
   /**

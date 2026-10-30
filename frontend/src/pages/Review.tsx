@@ -2,8 +2,12 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   beatsNeedingImage,
+  CAPTION_ANIM_LABEL,
   CAPTION_LABEL,
+  CAPTION_SIZE_LABEL,
+  CaptionAnim,
   CaptionMode,
+  CaptionSize,
   Catchphrase,
   catchphraseFileUrl,
   catchphraseRole,
@@ -275,9 +279,11 @@ function Review() {
     shortsApi.updateProject(project.id, { settings }).catch(e => toast.show(errorMessage(e)))
   }
 
-  const setCaption = (caption: CaptionMode) => {
-    setProject({ ...project, settings: { ...project.settings, caption } })
-    shortsApi.updateProject(project.id, { settings: { ...project.settings, caption } }).catch(e => toast.show(errorMessage(e)))
+  /** Legenda (ADR 0040): o liga/desliga, o tamanho e a animação da palavra falada. */
+  const setCaption = (change: { caption?: CaptionMode; captionSize?: CaptionSize; captionAnim?: CaptionAnim }) => {
+    const settings = { ...project.settings, ...change }
+    setProject({ ...project, settings })
+    shortsApi.updateProject(project.id, { settings }).catch(e => toast.show(errorMessage(e)))
   }
 
   /** Segue a criação sozinha da etapa onde parou; o andamento aparece na tela Ideias. */
@@ -464,7 +470,15 @@ function Review() {
     },
     { id: 'efeitos', title: 'Efeitos', ok: true, sub: chosenCount ? `✨ Auto · ${chosenCount} ${chosenCount === 1 ? 'cena sua' : 'cenas suas'}` : '✨ Auto em todas as cenas' },
     { id: 'som', title: 'Som e música', ok: true, sub: `${musicName ?? 'Sem música'} · efeitos ${Math.round(videoSfxVolume * 100)}%` },
-    { id: 'legenda', title: 'Legenda', ok: true, sub: `${CAPTION_LABEL[project.settings.caption]} · ${captionSynced ? 'no tempo da voz' : 'tempo estimado'}` },
+    {
+      id: 'legenda',
+      title: 'Legenda',
+      ok: true,
+      sub:
+        project.settings.caption === 'sem'
+          ? 'Desligada'
+          : `${CAPTION_LABEL[project.settings.caption]} · ${CAPTION_SIZE_LABEL[project.settings.captionSize ?? 'media']} · ${CAPTION_ANIM_LABEL[project.settings.captionAnim ?? 'destaque']}`,
+    },
   ]
   const done = checklist.filter(c => c.ok).length
   const ready = done === checklist.length
@@ -944,11 +958,29 @@ function Review() {
             <>
               <div className="rv-fix-head">
                 <strong>Legenda</strong>
-                <span>O texto da tela sai do roteiro; o tempo, da sua voz.</span>
+                <span>O texto sai do roteiro; o tempo, da sua voz{captionSynced ? '' : ' (estimado, enquanto a voz não for transcrita)'}.</span>
               </div>
               <div className="rv-fix-rows">
                 <span className="rv-fix-label">Como aparece</span>
-                <VideoChoice label="Legenda" value={project.settings.caption} options={CAPTION_LABEL} onChange={setCaption} />
+                <VideoChoice label="Legenda" value={project.settings.caption} options={CAPTION_LABEL} onChange={caption => setCaption({ caption })} />
+                {project.settings.caption !== 'sem' && (
+                  <>
+                    <span className="rv-fix-label">Tamanho</span>
+                    <VideoChoice
+                      label="Tamanho"
+                      value={project.settings.captionSize ?? 'media'}
+                      options={CAPTION_SIZE_LABEL}
+                      onChange={captionSize => setCaption({ captionSize })}
+                    />
+                    <span className="rv-fix-label">Animação da palavra falada</span>
+                    <VideoChoice
+                      label="Animação"
+                      value={project.settings.captionAnim ?? 'destaque'}
+                      options={CAPTION_ANIM_LABEL}
+                      onChange={captionAnim => setCaption({ captionAnim })}
+                    />
+                  </>
+                )}
               </div>
               <ul className="rv-facts">
                 {project.audioFile ? <VoiceSync project={project} onSync={syncVoice} /> : <li>Sem voz, a legenda segue um tempo estimado.</li>}

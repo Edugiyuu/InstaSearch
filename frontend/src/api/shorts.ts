@@ -3,7 +3,10 @@ import api from '../services/api'
 
 export type Pace = 'calmo' | 'normal' | 'rapido' | 'frenetico'
 export type EffectsLevel = 'poucos' | 'medida' | 'muitos'
-export type CaptionMode = 'quadrinho' | 'completa' | 'limpa' | 'sem'
+/** 'completa' = o bloco com a palavra falada acendendo; 'palavra' = uma por vez (ADR 0040). */
+export type CaptionMode = 'completa' | 'palavra' | 'sem'
+export type CaptionSize = 'pequena' | 'media' | 'grande'
+export type CaptionAnim = 'destaque' | 'pop' | 'salto' | 'placa'
 export type MusicMood = 'tensa' | 'animada' | 'calma' | 'sem'
 export type ImageType = 'manga' | 'anime' | 'fanart' | 'tanto-faz'
 
@@ -15,7 +18,6 @@ export interface ShortStyle {
   builtIn: boolean
   pace: Pace
   effects: EffectsLevel
-  caption: CaptionMode
   music: MusicMood
   imageType: ImageType
   notes: string
@@ -125,7 +127,12 @@ export interface TierBoard {
 export interface ProjectSettings {
   pace: Pace
   effects: EffectsLevel
+  /** Liga/desliga da legenda (ADR 0040). */
   caption: CaptionMode
+  /** Tamanho da legenda; sem valor = 'media'. */
+  captionSize?: CaptionSize
+  /** Animação da palavra falada; sem valor = 'destaque'. */
+  captionAnim?: CaptionAnim
   /** Bordão de abertura (Biblioteca → Bordões); toca antes da narração. null = sem abertura. */
   intro?: string | null
   /** Bordão do final; null = sem final. */
@@ -754,7 +761,9 @@ export interface AiStatus {
 
 export const PACE_LABEL: Record<Pace, string> = { calmo: 'Calmo', normal: 'Normal', rapido: 'Rápido', frenetico: 'Frenético' }
 export const EFFECTS_LABEL: Record<EffectsLevel, string> = { poucos: 'Poucos', medida: 'Na medida', muitos: 'Muitos' }
-export const CAPTION_LABEL: Record<CaptionMode, string> = { quadrinho: 'Quadrinho', completa: 'Completa', limpa: 'Limpa', sem: 'Sem legenda' }
+export const CAPTION_LABEL: Record<CaptionMode, string> = { completa: 'Completa', palavra: 'Palavra por palavra', sem: 'Desligada' }
+export const CAPTION_SIZE_LABEL: Record<CaptionSize, string> = { pequena: 'Pequena', media: 'Média', grande: 'Grande' }
+export const CAPTION_ANIM_LABEL: Record<CaptionAnim, string> = { destaque: 'Destaque', pop: 'Pop', salto: 'Salto', placa: 'Plaquinha' }
 export const MUSIC_LABEL: Record<MusicMood, string> = { tensa: 'Tensa', animada: 'Animada', calma: 'Calma', sem: 'Sem música' }
 export const IMAGE_TYPE_LABEL: Record<ImageType, string> = { manga: 'Mangá', anime: 'Anime', fanart: 'Fanart', 'tanto-faz': 'Tanto faz' }
 

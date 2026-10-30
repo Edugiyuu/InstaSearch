@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  CAPTION_LABEL,
   EFFECTS_LABEL,
   errorMessage,
   IMAGE_TYPE_LABEL,
@@ -35,7 +34,8 @@ function Styles() {
   // "Como fica": o vídeo mais recente com os ajustes deste estilo
   const sample = projects.find(p => p.beats.some(b => b.imageId)) ?? projects[0]
   const preview = useMemo(
-    () => (sample && draft ? { ...sample, settings: { pace: draft.pace, effects: draft.effects, caption: draft.caption } } : null),
+    () => (sample && draft ? // a legenda não faz parte do estilo (ADR 0040): a prévia mostra a do vídeo de exemplo
+      { ...sample, settings: { ...sample.settings, pace: draft.pace, effects: draft.effects } } : null),
     [sample, draft],
   )
 
@@ -100,9 +100,6 @@ function Styles() {
           </Row>
           <Row label="Setas, X e círculos">
             <Segmented value={draft.effects} options={EFFECTS_LABEL} onChange={effects => set({ effects })} />
-          </Row>
-          <Row label="Legenda">
-            <Segmented value={draft.caption} options={CAPTION_LABEL} onChange={caption => set({ caption })} />
           </Row>
           <Row label="Música">
             <Segmented value={draft.music} options={MUSIC_LABEL} onChange={music => set({ music })} />

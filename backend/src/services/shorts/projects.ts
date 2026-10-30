@@ -18,7 +18,7 @@ import { transcribeAudio, WHISPER_MODEL } from './transcription.js'
 import { BUILT_IN_TONES, getTone, toneByName } from './tones.js'
 import { tierBoard } from './formats.js'
 import { applyChoice, clearChoices, validChoice, type ChoiceScope } from './effects.js'
-import { type ChosenEffects, type ChosenField, type AiCredit, type AssemblyLogEntry, type Beat, type FramingChoice, type ProjectSettings, type PivotScene, type ShortProject, type TierEntry, type TierRank, type Transcript, type VideoFormat } from './types.js'
+import { CAPTION_ANIMS, CAPTION_MODES, type ChosenEffects, type ChosenField, type AiCredit, type AssemblyLogEntry, type Beat, type FramingChoice, type ProjectSettings, type PivotScene, type ShortProject, type TierEntry, type TierRank, type Transcript, type VideoFormat } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const AUDIO_DIR = path.join(__dirname, '../../../data/short_projects/audio')
@@ -30,10 +30,15 @@ const MAX_UNDO = 15
 /**
  * Projetos de antes dos bordões (ADR 0016) guardavam `outro: true/false`, o final do "Seu canal".
  * Na leitura, true vira o bordão migrado e false vira "sem final"; o arquivo muda no próximo save.
+ * Projetos de antes do ADR 0040 guardavam legenda 'quadrinho' ou 'limpa', que não existem mais:
+ * viram a completa (o 'sem' continua desligado). Uma animação que saiu volta a ser a padrão.
  */
 function migrateSettings(project: ShortProject) {
   const outro = project.settings.outro as unknown
   if (typeof outro === 'boolean') project.settings.outro = outro ? CHANNEL_CATCHPHRASE_ID : null
+  const { caption, captionAnim } = project.settings
+  if (!CAPTION_MODES.includes(caption)) project.settings.caption = 'completa'
+  if (captionAnim && !CAPTION_ANIMS.includes(captionAnim)) project.settings.captionAnim = undefined
   return project
 }
 
@@ -137,7 +142,8 @@ export async function createProject(input: ProjectInput & { script?: Script; for
     toneGuide: tone.guide,
     narration: script.narration,
     beats: script.beats,
-    settings: { pace: style.pace, effects: style.effects, caption: style.caption, ...(await defaultCatchphrases()) },
+    // a legenda não vem do estilo: nasce completa, média e "pop", e se ajusta na Revisão (ADR 0040)
+    settings: { pace: style.pace, effects: style.effects, caption: 'completa', ...(await defaultCatchphrases()) },
     status: 'roteiro',
     history: [],
     ai: { script: script.ai },
