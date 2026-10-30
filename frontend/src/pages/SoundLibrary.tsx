@@ -9,7 +9,7 @@ const SFX_TYPES = [
   { id: 'whoosh', when: 'setas e cortes', words: ['whoosh', 'swoosh', 'swish', 'woosh'] },
   { id: 'boom', when: 'gancho e revelações', words: ['boom', 'explos', 'bass', 'impacto'] },
   { id: 'erro', when: 'X vermelho', words: ['erro', 'error', 'wrong', 'fail', 'buzz'] },
-  { id: 'pop', when: 'figurinhas e emojis', words: ['pop', 'bolha', 'bubble', 'plop'] },
+  { id: 'pop', when: 'aparições rápidas', words: ['pop', 'bolha', 'bubble', 'plop'] },
   { id: 'ding', when: 'círculos', words: ['ding', 'bell', 'sino', 'plim'] },
   { id: 'click', when: 'provas e prints', words: ['click', 'clique', 'camera', 'shutter'] },
   { id: 'risada', when: 'piadas', words: ['risada', 'laugh', 'rindo', 'haha'] },
@@ -137,7 +137,7 @@ function SoundLibrary({ kind }: { kind: SoundKind }) {
       </div>
       <p className="lib-hint">
         {isSfx
-          ? 'A montagem coloca os efeitos sozinha, pelo nome e pelas etiquetas: whoosh nas setas, erro nos X, pop nas figurinhas, boom no gancho.'
+          ? 'A montagem coloca os efeitos sozinha, pelo nome e pelas etiquetas: whoosh nas setas, erro nos X, boom no gancho.'
           : 'A montagem escolhe uma música que combina com o clima do estilo (tensa, animada, calma) e baixa o volume quando tem a sua voz. Na revisão dá para trocar.'}
         {!isSfx && ' Músicas com direitos autorais podem ser silenciadas pelo Instagram ou pelo YouTube.'}
       </p>

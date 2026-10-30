@@ -1,16 +1,20 @@
 // Composição Remotion do Short (1080×1920, 30fps).
-// Cada batida é uma <Sequence>: imagem (ou trecho de vídeo) com movimento, efeito (seta, X, círculo, figurinha de reação) e legenda.
+// Cada batida é uma <Sequence>: imagem (ou trecho de vídeo) com movimento, efeito (seta, X, círculo) e legenda.
 import { CSSProperties } from 'react'
-import { AbsoluteFill, Audio, Freeze, Img, interpolate, OffthreadVideo, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion'
+import { AbsoluteFill, Audio, Freeze, Img, interpolate, Loop, OffthreadVideo, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import type { ProjectSettings, Region, TierBoard, Transition } from '../api/shorts'
-import { CatchphraseProps, focusRegion, MediaProps, sceneTransition, sfxVolume, ShortVideoProps, TimedBeat, WIDTH, HEIGHT } from './timeline'
+import { CatchphraseProps, focusRegion, MediaProps, sceneTransition, sfxVolume, ShortVideoProps, TimedBeat, WIDTH, HEIGHT, FPS } from './timeline'
 import { framing, looseFraming, regionOnScreen, sceneLook } from './framing'
 import { TierListScene, type TierPhase } from './TierListScene'
 
 const RED = '#E52222'
 const YELLOW = '#FFD60A'
 
-export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro, tier }: ShortVideoProps) {
+/** Quadros em que a voz some e volta na pausa da virada: o corte no meio do silêncio, sem estalo. */
+const VOICE_FADE = 2
+const fade = (framesFromCut: number) => Math.min(1, Math.max(0, framesFromCut / VOICE_FADE))
+
+export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro, tier, voicePause }: ShortVideoProps) {
   const first = beats[0]
   // a cena da revelação da tier list: antes dela o personagem ainda não está no quadro; depois, está (ADR 0036)
   const reveal = beats.findIndex(t => t.beat.tier === 'revelacao')
@@ -36,7 +40,8 @@ export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro, 
         </Sequence>
       )}
       {beats.map(t => (
-        <Sequence key={t.beat.id} from={t.from} durationInFrames={t.frames} name={t.beat.text}>
+        // cena de vídeo: monta 2 s antes, escondida, para o vídeo já estar carregado no corte (sem tela preta na prévia)
+        <Sequence key={t.beat.id} from={t.from} durationInFrames={t.frames} name={t.beat.text} premountFor={t.image?.clip ? 2 * FPS : undefined}>
           <BeatScene timed={t} settings={settings} tier={t.beat.tier ? tier : undefined} phase={phase(t)} />
           {/* na revelação, o impacto toca quando o personagem voa para a fileira, e não no corte */}
           {t.sfxSrc && (
@@ -52,10 +57,21 @@ export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro, 
         </Sequence>
       )}
       {/* a narração começa depois da abertura, que toca com o som dela */}
-      {audioSrc && (
+      {audioSrc && !voicePause && (
         <Sequence from={start} layout="none" name="Narração">
           <Audio src={audioSrc} />
         </Sequence>
+      )}
+      {/* na virada, a voz para no fim da frase e volta quando o clipe termina (ADR 0039) */}
+      {audioSrc && voicePause && (
+        <>
+          <Sequence from={start} durationInFrames={voicePause.at} layout="none" name="Narração">
+            <Audio src={audioSrc} trimAfter={voicePause.at} volume={f => fade(voicePause.at - f)} />
+          </Sequence>
+          <Sequence from={start + voicePause.at + voicePause.frames} layout="none" name="Narração, depois da virada">
+            <Audio src={audioSrc} trimBefore={voicePause.at} volume={f => fade(f + 1)} />
+          </Sequence>
+        </>
       )}
       {musicSrc && (
         <Sequence from={musicFrom} durationInFrames={musicEnd !== undefined ? musicEnd - musicFrom : undefined} layout="none" name="Música">
@@ -73,7 +89,7 @@ function BeatScene({ timed, settings, tier, phase }: { timed: TimedBeat; setting
   const transition = sceneTransition(beat, timed.index, settings)
   const look = sceneLook(beat.scene, beat.framing, !!image?.clip)
 
-  // a cena da tier list desenha o quadro no lugar da imagem, sem efeito nem figurinha; a legenda continua
+  // a cena da tier list desenha o quadro no lugar da imagem, sem efeito; a legenda continua
   if (tier) {
     return (
       <AbsoluteFill>
@@ -98,8 +114,6 @@ function BeatScene({ timed, settings, tier, phase }: { timed: TimedBeat; setting
       )}
 
       {image && <BeatEffect timed={timed} region={look !== 'full' ? undefined : regionOnScreen(region, image.width, image.height, looseFraming(beat.framing))} />}
-      {/* fora do efeito: a figurinha escolhida na cena aparece também junto de uma seta ou de um X */}
-      {image && timed.stickerSrc && <Sticker timed={timed} />}
 
       {settings.caption === 'completa' ? (
         <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} />
@@ -203,7 +217,7 @@ function FullImage({ src, timed, region, punch }: { src: string; timed: TimedBea
         />
       )}
       <AbsoluteFill>
-        {clip ? <ClipVideo src={src} clip={clip} frames={timed.frames} style={imgStyle} /> : <Img src={src} style={imgStyle} />}
+        {clip ? <ClipVideo src={src} clip={clip} frames={timed.frames} style={imgStyle} pivot={timed.image?.pivot} /> : <Img src={src} style={imgStyle} />}
       </AbsoluteFill>
       {/* escurece o pé do quadro para a legenda aparecer */}
       <AbsoluteFill style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 100%)' }} />
@@ -214,11 +228,28 @@ function FullImage({ src, timed, region, punch }: { src: string; timed: TimedBea
 /**
  * Trecho de uma cena de vídeo, sem som. Se a cena for mais curta que a batida, desacelera
  * até a metade da velocidade e, se ainda faltar, congela no último quadro (nunca mostra a cena seguinte).
+ * O clipe da virada (ADR 0039) é diferente: a dança repete no ritmo certo e toca baixinho por baixo da voz.
  */
-function ClipVideo({ src, clip, frames, style }: { src: string; clip: { start: number; end: number }; frames: number; style: CSSProperties }) {
+function ClipVideo({ src, clip, frames, style, pivot }: { src: string; clip: { start: number; end: number }; frames: number; style: CSSProperties; pivot?: { volume: number } }) {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
   const clipFrames = Math.max(1, Math.floor((clip.end - clip.start) * fps))
+  if (pivot) {
+    // a cena dura pelo menos o trecho (a voz espera); com a fala mais longa, o trecho repete
+    return (
+      <Loop durationInFrames={clipFrames} layout="none">
+        <OffthreadVideo
+          src={src}
+          muted={pivot.volume === 0}
+          volume={pivot.volume}
+          trimBefore={Math.round(clip.start * fps)}
+          trimAfter={Math.round(clip.end * fps)}
+          pauseWhenBuffering
+          style={style}
+        />
+      </Loop>
+    )
+  }
   const rate = Math.min(1, Math.max(0.5, clipFrames / frames))
   const last = Math.max(0, Math.floor(clipFrames / rate) - 1)
   return (
@@ -386,33 +417,8 @@ function BeatEffect({ timed, region }: { timed: TimedBeat; region?: Region }) {
       )
     }
     default:
-      // 'emoji': a reação é a figurinha (<Sticker>); emoji desenhado no vídeo não fica bom
       return null
   }
-}
-
-/** Figurinha de reação: entra no mesmo tempo dos efeitos, com um pulo, e balança. */
-function Sticker({ timed }: { timed: TimedBeat }) {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
-  const f = frame - Math.min(4, Math.floor(timed.frames * 0.15))
-  if (f < 0 || !timed.stickerSrc) return null
-  const pop = spring({ frame: f, fps, config: { damping: 9, stiffness: 220 } })
-  return (
-    <Img
-      src={timed.stickerSrc}
-      style={{
-        position: 'absolute',
-        right: 50,
-        top: 230,
-        width: 420,
-        height: 420,
-        objectFit: 'contain',
-        transform: `scale(${pop}) rotate(${Math.sin(f / 4) * 6 - 4}deg)`,
-        filter: 'drop-shadow(0 12px 20px rgba(0,0,0,0.55))',
-      }}
-    />
-  )
 }
 
 // ── Bordões (abertura e final) ───────────────────────────

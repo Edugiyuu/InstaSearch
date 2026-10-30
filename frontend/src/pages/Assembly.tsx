@@ -59,7 +59,7 @@ function Assembly() {
           : 'Imagens: as cenas já tinham as que você escolheu',
       state: done ? 'done' : 'doing',
     },
-    { label: project ? `${effects} efeitos (setas, X, emojis) e legendas` : 'Efeitos e legendas', state: done ? 'done' : 'todo' },
+    { label: project ? `${effects} efeitos (setas, X, círculos) e legendas` : 'Efeitos e legendas', state: done ? 'done' : 'todo' },
     {
       label: project?.audioFile ? `Cortes no tempo da sua voz (${project.audioDuration?.toFixed(0) ?? '?'}s)` : 'Sem áudio: tempo estimado pela fala',
       state: done ? 'done' : 'todo',

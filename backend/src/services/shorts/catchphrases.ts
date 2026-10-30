@@ -13,8 +13,9 @@ import { generateId } from '../../utils/idGenerator.js'
 import { logger } from '../../utils/logger.js'
 import { instagramGraphService } from '../instagramGraphService.js'
 import { AUDIO_EXTENSIONS } from './sounds.js'
-import { mediaDuration, saveClip } from './videoScenes.js'
-import type { ButtonStyle, Catchphrase, CatchphraseKind, ClickStyle, Entrance, SubscribePart, TextAnim, TextPosition } from './types.js'
+import { mediaDuration, motionPeak, saveClip } from './videoScenes.js'
+import { catchphraseRole, DEFAULT_TRIM_SECONDS, WHOLE_CLIP_SECONDS } from './pivot.js'
+import { CATCHPHRASE_ROLES, type ButtonStyle, type Catchphrase, type CatchphraseKind, type CatchphraseRole, type ClickStyle, type ClipTrim, type Entrance, type SubscribePart, type TextAnim, type TextPosition } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = path.join(__dirname, '../../../data')
@@ -116,8 +117,15 @@ type Upload = { path: string; originalname: string; mimetype?: string }
 /** O upload vem para a pasta temporária; se o pedido falhar antes de usar, apaga. */
 const discard = (upload?: Upload) => upload && fs.unlink(upload.path).catch(() => undefined)
 
-/** Bordão novo. O clipe precisa do vídeo; o montado e o "se inscreve" começam vazios e se completam depois. */
-export async function createCatchphrase(kind: CatchphraseKind, upload?: Upload) {
+/** Só clipe pronto entra no meio: ele toca por baixo da voz, e o montado e o "se inscreve" têm texto e animação próprios. */
+const validRole = (kind: CatchphraseKind, role: unknown): role is CatchphraseRole =>
+  CATCHPHRASE_ROLES.includes(role as CatchphraseRole) && (role !== 'meio' || kind === 'clipe')
+
+/**
+ * Bordão novo. O clipe precisa do vídeo; o montado e o "se inscreve" começam vazios e se completam depois.
+ * `role`: a faixa onde foi criado (ADR 0039); um clipe do meio com mais de 3 s já vem com o trecho sugerido.
+ */
+export async function createCatchphrase(kind: CatchphraseKind, upload?: Upload, role?: unknown) {
   if (!KINDS.includes(kind)) {
     await discard(upload)
     throw new AppError('Tipo de bordão inválido', 400, 'VALIDATION')
@@ -129,10 +137,34 @@ export async function createCatchphrase(kind: CatchphraseKind, upload?: Upload) 
     kind,
     duration: FIXED_SECONDS,
     ...(kind === 'inscreva' ? { text: 'Se inscreve pra mais!', channelName: '', button: 'INSCREVA-SE' } : {}),
+    ...(validRole(kind, role) ? { role } : {}),
     createdAt: new Date().toISOString(),
   }
-  if (upload) return setFile(item, upload)
-  return storage.save(item)
+  if (!upload) return storage.save(item)
+  const saved = await setFile(item, upload)
+  return saved.role === 'meio' ? storage.save(await withSuggestedTrim(saved)) : saved
+}
+
+/**
+ * O trecho que o recorte já traz selecionado: os 2 s com mais movimento (ADR 0039). Clipe de até 3 s entra
+ * inteiro e não tem trecho. Se o ffmpeg falhar, o começo do clipe.
+ */
+async function withSuggestedTrim(item: Catchphrase): Promise<Catchphrase> {
+  if (!item.file || item.duration <= WHOLE_CLIP_SECONDS) return { ...item, trim: undefined }
+  const start = await motionPeak(path.join(CATCHPHRASE_FILES_DIR, item.file), DEFAULT_TRIM_SECONDS).catch(error => {
+    logger.warn(`Não deu para medir o movimento do clipe ${item.id}: ${error.message}`)
+    return 0
+  })
+  return { ...item, trim: { start, duration: DEFAULT_TRIM_SECONDS } }
+}
+
+/** Trecho que chegou da tela → dentro do clipe, de 1 a 3 s, em décimos de segundo; inválido = undefined. */
+export function cleanTrim(value: unknown, clipSeconds: number): ClipTrim | undefined {
+  const t = value as Partial<ClipTrim> | null
+  if (!t || typeof t.start !== 'number' || typeof t.duration !== 'number' || !Number.isFinite(t.start) || !Number.isFinite(t.duration)) return undefined
+  const duration = Math.round(Math.min(WHOLE_CLIP_SECONDS, Math.max(1, t.duration), clipSeconds) * 10) / 10
+  const start = Math.round(Math.min(Math.max(0, t.start), Math.max(0, clipSeconds - duration)) * 10) / 10
+  return { start, duration }
 }
 
 export async function updateCatchphrase(id: string, changes: Partial<Catchphrase>) {
@@ -168,6 +200,19 @@ export async function updateCatchphrase(id: string, changes: Partial<Catchphrase
     item.textAnim = oneOf(TEXT_ANIMS, changes.textAnim, item.textAnim)
     item.textPosition = oneOf(TEXT_POSITIONS, changes.textPosition, item.textPosition)
   }
+  // a faixa do bordão (ADR 0039); quem sai da abertura ou do final deixa de ser o padrão dela
+  if (changes.role !== undefined && validRole(item.kind, changes.role) && changes.role !== catchphraseRole(item)) {
+    item.role = changes.role
+    if (item.role !== 'abertura') item.defaultIntro = false
+    if (item.role !== 'final') item.defaultOutro = false
+    if (item.role === 'meio' && !item.trim) Object.assign(item, await withSuggestedTrim(item))
+  }
+  if (item.kind === 'clipe') {
+    if (changes.trim === null) item.trim = undefined
+    else if (changes.trim !== undefined) item.trim = cleanTrim(changes.trim, item.duration) ?? item.trim
+    if (typeof changes.volume === 'number' && Number.isFinite(changes.volume)) item.volume = Math.round(Math.min(1, Math.max(0, changes.volume)) * 100) / 100
+    if (typeof changes.inRotation === 'boolean') item.inRotation = changes.inRotation
+  }
   // só um padrão por ponta: marcar este desmarca o anterior
   for (const key of ['defaultIntro', 'defaultOutro'] as const) {
     if (typeof changes[key] !== 'boolean') continue
@@ -190,7 +235,9 @@ export async function replaceFile(id: string, upload: Upload) {
     await discard(upload)
     throw error
   })
-  return setFile(item, upload)
+  const saved = await setFile(item, upload)
+  // outro vídeo no clipe do meio: o trecho de antes não vale mais
+  return saved.kind === 'clipe' && catchphraseRole(saved) === 'meio' ? storage.save(await withSuggestedTrim(saved)) : saved
 }
 
 async function setFile(item: Catchphrase, upload: Upload) {

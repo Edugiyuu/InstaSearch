@@ -11,7 +11,6 @@ import './Library.css'
 
 // sem aba "Imagens": as imagens das cenas vêm só da web, a cada vídeo (ADR 0022, 1B)
 const TABS = [
-  { id: 'figurinhas', label: 'Figurinhas' },
   { id: 'sfx', label: 'Efeitos sonoros' },
   { id: 'musica', label: 'Músicas' },
   { id: 'bordoes', label: 'Bordões' },
@@ -43,8 +42,7 @@ function Library() {
           ))}
         </nav>
       </div>
-      {tab === 'videos' && <ImageLibrary key="videos" mode="videos" />}
-      {tab === 'figurinhas' && <ImageLibrary key="figurinhas" mode="figurinhas" />}
+      {tab === 'videos' && <VideoLibrary />}
       {tab === 'sfx' && <SoundLibrary key="sfx" kind="sfx" />}
       {tab === 'musica' && <SoundLibrary key="musica" kind="musica" />}
       {tab === 'bordoes' && <CatchphraseLibrary />}
@@ -65,10 +63,9 @@ function LibraryHub() {
   const cards = [
     { to: '/estilos', icon: '✦', title: 'Estilos', text: 'Ritmo, efeitos, legenda e música de cada tipo de vídeo', n: count(!stylesLoading, styles.length) },
     { to: '/biblioteca?aba=tons', icon: '🎙', title: 'Tons', text: 'Como a IA fala no roteiro', n: count(tonesLoaded, tones.length) },
-    { to: '/biblioteca?aba=figurinhas', icon: '😮', title: 'Figurinhas', text: 'Reações no lugar dos emojis', n: count(!imagesLoading, images.filter(i => i.kind === 'figurinha').length) },
     { to: '/biblioteca?aba=sfx', icon: '🔊', title: 'Efeitos sonoros', text: 'Whoosh, vine boom… ou o áudio de um Reel', n: count(!soundsLoading, sounds.filter(s => s.kind === 'sfx').length) },
     { to: '/biblioteca?aba=musica', icon: '♪', title: 'Músicas', text: 'O fundo dos vídeos', n: count(!soundsLoading, sounds.filter(s => s.kind === 'musica').length) },
-    { to: '/biblioteca?aba=bordoes', icon: '▶', title: 'Bordões', text: 'Abertura e final: botão, áudio e o que aparece', n: count(catchphrasesLoaded, catchphrases.length) },
+    { to: '/biblioteca?aba=bordoes', icon: '▶', title: 'Bordões', text: 'Abertura, a virada no meio e o final', n: count(catchphrasesLoaded, catchphrases.length) },
     { to: '/biblioteca?aba=videos', icon: '🎞', title: 'Vídeos', text: 'Episódios divididos em cenas, para usar na troca de imagem', n: count(!imagesLoading, images.filter(i => i.kind === 'video').length) },
   ]
 
@@ -94,10 +91,6 @@ function LibraryHub() {
   )
 }
 
-type Mode = 'videos' | 'figurinhas'
-
-const inMode = (img: LibraryImage, mode: Mode) => (mode === 'figurinhas' ? img.kind === 'figurinha' : img.kind === 'cena')
-
 const STAGE: Record<NonNullable<LibraryImage['processing']>['stage'], string> = {
   preparando: 'convertendo',
   cortes: 'achando os cortes',
@@ -113,13 +106,8 @@ const seconds = (n: number) => `${n.toFixed(1).replace('.', ',')}s`
 const usage = (img: LibraryImage) =>
   img.usedIn.length === 0 ? 'nunca usada' : `usada em ${img.usedIn.length} ${img.usedIn.length === 1 ? 'vídeo' : 'vídeos'}`
 
-/**
- * Cenas de vídeo (um episódio enviado vira várias cenas) ou figurinhas (recortes com fundo
- * transparente que entram no lugar dos emojis).
- */
-function ImageLibrary({ mode }: { mode: Mode }) {
-  const stickers = mode === 'figurinhas'
-  const videos = mode === 'videos'
+/** Cenas de vídeo: um episódio enviado vira várias cenas. */
+function VideoLibrary() {
   const { images, setImages, loading, error } = useLibrary()
   const toast = useToast()
   const fileInput = useRef<HTMLInputElement>(null)
@@ -127,7 +115,6 @@ function ImageLibrary({ mode }: { mode: Mode }) {
   const [found, setFound] = useState<Set<string> | null>(null)
   const [character, setCharacter] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(0)
   const [dragOver, setDragOver] = useState(false)
   const [videoId, setVideoId] = useState<string | null>(null)
   const [hint, setHint] = useState('')
@@ -145,19 +132,19 @@ function ImageLibrary({ mode }: { mode: Mode }) {
     return () => clearTimeout(t)
   }, [query])
 
-  const pool = useMemo(() => images.filter(i => inMode(i, mode)), [images, mode])
+  const pool = useMemo(() => images.filter(i => i.kind === 'cena'), [images])
   const videoList = useMemo(() => images.filter(i => i.kind === 'video'), [images])
   const processing = videoList.some(busy)
   const cataloguing = images.some(i => i.cataloguing)
 
   // enquanto um vídeo é dividido em cenas ou a IA cataloga imagens novas, atualiza a lista
   useEffect(() => {
-    if (!(videos && processing) && !cataloguing) return
+    if (!processing && !cataloguing) return
     const t = setInterval(() => {
       shortsApi.listImages().then(setImages).catch(() => undefined)
     }, 3000)
     return () => clearInterval(t)
-  }, [videos, processing, cataloguing, setImages])
+  }, [processing, cataloguing, setImages])
 
   const characters = useMemo(() => {
     const count = new Map<string, number>()
@@ -187,47 +174,16 @@ function ImageLibrary({ mode }: { mode: Mode }) {
     }
   }
 
-  const upload = async (files: File[]) => {
-    if (videos) {
-      const file = files.find(f => f.type.startsWith('video/') || /\.(mkv|avi|mov|m4v|webm|mp4)$/i.test(f.name))
-      if (file) sendVideo(file)
-      return
-    }
-    const list = files.filter(f => f.type.startsWith('image/'))
-    if (!list.length) return
-    setUploading(list.length)
-    try {
-      const saved = await shortsApi.uploadImages(list, stickers ? 'figurinha' : undefined)
-      setImages(prev => [...saved, ...prev])
-      setSelectedId(saved[0]?.id ?? null)
-      toast.show(`${saved.length} ${saved.length === 1 ? 'imagem catalogada' : 'imagens catalogadas'}`)
-    } catch (e) {
-      toast.show(errorMessage(e))
-    } finally {
-      setUploading(0)
-    }
-  }
-
-  const importUrl = async (url: string) => {
-    setUploading(1)
-    try {
-      const img = await shortsApi.importImageUrl(url)
-      setImages(prev => [img, ...prev])
-      setSelectedId(img.id)
-    } catch (e) {
-      toast.show(errorMessage(e))
-    } finally {
-      setUploading(0)
-    }
+  const upload = (files: File[]) => {
+    const file = files.find(f => f.type.startsWith('video/') || /\.(mkv|avi|mov|m4v|webm|mp4)$/i.test(f.name))
+    if (file) sendVideo(file)
   }
 
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === 'INPUT') return
       const files = Array.from(e.clipboardData?.files ?? [])
-      const text = e.clipboardData?.getData('text')?.trim()
       if (files.length) upload(files)
-      else if (text && /^https?:\/\//.test(text)) importUrl(text)
     }
     window.addEventListener('paste', onPaste)
     return () => window.removeEventListener('paste', onPaste)
@@ -289,28 +245,21 @@ function ImageLibrary({ mode }: { mode: Mode }) {
           className="field lib-search"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder={
-            stickers
-              ? 'Busque pela reação: “chocado”, “rindo”…'
-              : 'Busque a cena: “gojo tirando a venda”, “sukuna luta”'
-          }
+          placeholder="Busque a cena: “gojo tirando a venda”, “sukuna luta”"
         />
-        {videos && (
-          <input
+        <input
             className="field lib-video-hint"
             value={hint}
             onChange={e => setHint(e.target.value)}
             placeholder="De qual anime e episódio? (ajuda a IA)"
           />
-        )}
         <button className="btn-y" onClick={() => fileInput.current?.click()} disabled={!!sending}>
-          ⭱ {stickers ? 'Importar figurinhas' : 'Importar vídeo'}
+          ⭱ Importar vídeo
         </button>
         <input
           ref={fileInput}
           type="file"
-          accept={videos ? 'video/*,.mkv,.avi' : 'image/*'}
-          multiple={!videos}
+          accept="video/*,.mkv,.avi"
           hidden
           onChange={e => {
             upload(Array.from(e.target.files ?? []))
@@ -319,12 +268,10 @@ function ImageLibrary({ mode }: { mode: Mode }) {
         />
       </div>
       <p className="lib-hint">
-        {stickers
-          ? 'Figurinhas entram no vídeo no lugar dos emojis, escolhidas pela reação da cena. Use PNG com fundo transparente. A IA etiqueta a reação sozinha.'
-          : 'Envie um episódio ou trecho do anime: ele é dividido em cenas nos cortes e a IA descreve cada uma (quem aparece, o que acontece). Para usar uma cena, escolha na tela de troca de imagem da cena. O som do episódio não entra no Short.'}
+        Envie um episódio ou trecho do anime: ele é dividido em cenas nos cortes e a IA descreve cada uma (quem aparece, o que acontece). Para usar uma cena, escolha na tela de troca de imagem da cena. O som do episódio não entra no Short.
       </p>
 
-      {videos && (sending || videoList.length > 0) && (
+      {(sending || videoList.length > 0) && (
         <div className="lib-videos">
           {sending && (
             <div className="lib-video busy">
@@ -390,38 +337,28 @@ function ImageLibrary({ mode }: { mode: Mode }) {
         <section>
           <h2 className="lib-total">
             {visible.length}{' '}
-            {stickers
-              ? visible.length === 1 ? 'figurinha' : 'figurinhas'
-              : visible.length === 1 ? 'cena' : 'cenas'}
+            {visible.length === 1 ? 'cena' : 'cenas'}
             {character ? ` do ${character}` : ''}
           </h2>
           {error && <p className="form-error">{error}</p>}
           {loading ? (
             <Spinner />
-          ) : pool.length === 0 && !uploading ? (
-            videos && (sending || videoList.length > 0) ? (
+          ) : pool.length === 0 ? (
+            sending || videoList.length > 0 ? (
               <p className="meta">As cenas aparecem aqui quando a divisão terminar.</p>
             ) : (
               <button className="lib-empty" onClick={() => fileInput.current?.click()}>
-                <strong>{stickers ? 'Nenhuma figurinha ainda' : 'Nenhum vídeo ainda'}</strong>
+                <strong>Nenhum vídeo ainda</strong>
                 <span>
-                  {stickers
-                    ? 'Importe figurinhas de reação (chocado, rindo, bravo, pensando…). Sem figurinhas, o vídeo usa emojis.'
-                    : 'Importe episódios ou trechos (mp4, mkv, mov). Cada corte do episódio vira uma cena que pode entrar no Short, em movimento.'}
+                  Importe episódios ou trechos (mp4, mkv, mov). Cada corte do episódio vira uma cena que pode entrar no Short, em movimento.
                 </span>
               </button>
             )
           ) : (
             <div className="lib-grid">
-              {Array.from({ length: uploading }, (_, i) => (
-                <div key={`up${i}`} className="lib-card lib-uploading">
-                  <span className="lib-img"><Spinner /></span>
-                  <strong>catalogando…</strong>
-                </div>
-              ))}
               {visible.map(img => (
                 <button key={img.id} className={`lib-card ${selected?.id === img.id ? 'on' : ''}`} onClick={() => setSelectedId(img.id)}>
-                  <span className={`lib-img ${stickers ? 'checker' : ''}`}>
+                  <span className="lib-img">
                     <img src={imageUrl(img)} alt="" loading="lazy" />
                     {img.clip && <em className="lib-clip-len">▶ {seconds(img.clip.end - img.clip.start)}</em>}
                   </span>
@@ -435,9 +372,9 @@ function ImageLibrary({ mode }: { mode: Mode }) {
 
         {selected && (
           <aside className="panel lib-detail">
-            <div className={`lib-big ${stickers ? 'checker' : ''}`}>
+            <div className="lib-big">
               {selected.clip ? <ClipPreview img={selected} /> : <img src={imageUrl(selected)} alt="" />}
-              {!stickers && selected.regions.map(r => (
+              {selected.regions.map(r => (
                 <span
                   key={r.label}
                   className="lib-region"

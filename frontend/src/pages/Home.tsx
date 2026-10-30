@@ -4,7 +4,7 @@ import { getUpcomingPosts } from '../services/api'
 import type { Post } from '../types'
 import { projectHome, projectStatus } from '../api/shorts'
 import { ProjectCover } from '../components/flow'
-import { useLibrary, useProjects, useStyles } from '../hooks/useShorts'
+import { useCatchphrases, useLibrary, useProjects, useStyles } from '../hooks/useShorts'
 import './Home.css'
 
 const WEEKDAY = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB']
@@ -18,7 +18,8 @@ function Home() {
   const navigate = useNavigate()
   const { styles } = useStyles()
   const { projects, loading } = useProjects()
-  const { images, byId } = useLibrary()
+  const { byId } = useLibrary()
+  const { catchphrases } = useCatchphrases()
   const [theme, setTheme] = useState('')
   const [styleId, setStyleId] = useState('comentario-anime')
   const [upcoming, setUpcoming] = useState<Post[] | null>(null)
@@ -31,8 +32,6 @@ function Home() {
     e.preventDefault()
     navigate(`/novo?tema=${encodeURIComponent(theme.trim())}&estilo=${styleId}`)
   }
-
-  const stickerCount = images.filter(i => i.kind === 'figurinha').length
 
   return (
     <div className="page home">
@@ -78,10 +77,10 @@ function Home() {
       <div className="home-bottom">
         <Link to="/biblioteca" className="panel panel-pad home-lib">
           <h2 className="panel-title">Sua biblioteca</h2>
-          <div className="home-lib-count">{stickerCount}</div>
-          <p className="c-muted">figurinhas</p>
+          <div className="home-lib-count">{catchphrases.length}</div>
+          <p className="c-muted">bordões</p>
           <p className="meta home-lib-tip">
-            As imagens das cenas vêm da web a cada vídeo. Aqui ficam as figurinhas, os sons, as músicas, os bordões e os tons.
+            As imagens das cenas vêm da web a cada vídeo. Aqui ficam os bordões, os sons, as músicas e os tons.
           </p>
         </Link>
 

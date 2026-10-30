@@ -2,7 +2,7 @@
 
 **Do tema ao Short narrado, com você no controle.**
 
-Você escreve um assunto (*"Por que o Luffy nunca mata ninguém?"*) e grava a voz. A IA pesquisa e escreve o roteiro; o app monta o vídeo (imagens, legendas, setas, figurinhas, efeitos sonoros e música), mostra a **prévia ao vivo**, aplica os ajustes que você pedir e publica no **Instagram** e no **YouTube**. Depois, mede como cada vídeo foi e sugere os próximos temas.
+Você escreve um assunto (*"Por que o Luffy nunca mata ninguém?"*) e grava a voz. A IA pesquisa e escreve o roteiro; o app monta o vídeo (imagens, legendas, setas, efeitos sonoros e música), mostra a **prévia ao vivo**, aplica os ajustes que você pedir e publica no **Instagram** e no **YouTube**. Depois, mede como cada vídeo foi e sugere os próximos temas.
 
 ![Do tema ao Short em 30 segundos](docs/diagramas/01-em-30-segundos.svg)
 

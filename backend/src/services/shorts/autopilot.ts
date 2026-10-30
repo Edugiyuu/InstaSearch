@@ -190,13 +190,13 @@ async function run(job: AutopilotJob) {
  * porquê da ideia, e a Estrategista revisa, com até 3 reescritas. Com debate, cada passo vai para o chat.
  */
 async function writeReviewed(job: AutopilotJob, idea: Idea) {
-  const { theme, duration, style, tone } = await scriptInputs({ theme: idea.theme, styleId: idea.styleId, toneId: idea.toneId, duration: idea.duration })
+  const { theme, duration, style, tone, pivotPhrase } = await scriptInputs({ theme: idea.theme, styleId: idea.styleId, toneId: idea.toneId, duration: idea.duration })
   const agreed = { theme: theme || idea.theme, hook: idea.hook || undefined, brief: idea.why || undefined }
   const format = idea.format ?? 'opiniao'
   const tier = format === 'tierlist' ? await tierContext(idea) : undefined
   return reviewLoop({
-    write: revision => generateScript({ ...agreed, toneGuide: tone.guide, duration, style, revision, format, tier }),
-    review: (script, version) => reviewScript({ ...agreed, duration, narration: script.narration, version, structure: formatStructure(format, tier) }),
+    write: revision => generateScript({ ...agreed, toneGuide: tone.guide, duration, style, revision, format, tier, pivotPhrase }),
+    review: (script, version) => reviewScript({ ...agreed, duration, narration: script.narration, version, structure: formatStructure(format, tier), pivotPhrase }),
     maxWords: maxWords(duration),
     // na tier list, a narração nunca diz a fileira: quem revela é a animação (ADR 0036, 6)
     checks: tier ? [tierLetterProblem] : [],

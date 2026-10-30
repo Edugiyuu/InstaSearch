@@ -36,7 +36,7 @@ Tudo de um vídeo fica num arquivo só: `backend/data/short_projects/<id>.json`.
 
 ![O modelo de dados do projeto](diagramas/07-modelo-de-dados.svg)
 
-- **Beat** é uma **cena**: um trecho da fala (`say`), a legenda curta (`text`), o que a imagem precisa mostrar (`query`), os personagens, o tipo (`full` ou `evidence`, a "prova"), o efeito (seta, X, círculo, reação), a imagem escolhida e se ela bateu (`match`, `similar`, `missing`).
+- **Beat** é uma **cena**: um trecho da fala (`say`), a legenda curta (`text`), o que a imagem precisa mostrar (`query`), os personagens, o tipo (`full` ou `evidence`, a "prova"), o efeito (seta, X, círculo), a imagem escolhida e se ela bateu (`match`, `similar`, `missing`).
 - Os campos `…Locked` e `framing` guardam o que **você** escolheu à mão; a montagem e o chat respeitam.
 - `chosen` guarda os **efeitos** que você escolheu na cena (movimento, transição, foco do zoom e destaque), por cima dos da IA, que continuam guardados para o "Automático". O vídeo usa `chosen ?? valor da IA` (`effectiveBeat`, igual no servidor e no frontend); o chat vê esse valor e só troca uma escolha quando o pedido cita a cena e fala do efeito (`protectChosen`, [ADR 0037](decisions/0037-efeitos-da-cena-na-frente-e-chat-secundario.md)). `transition` é como a cena entra; sem valor, o ritmo decide.
 - `status` segue a vida do vídeo: `roteiro` → `revisao` → `salvo` / `agendado` → `publicado`.
@@ -70,9 +70,11 @@ A IA de visão olha **6 sugestões por cena: 3 da web e 3 fanarts do Danbooru** 
 
 As imagens vêm **só da web** ([ADR 0022](decisions/0022-imagens-da-web-e-controles-da-cena.md)): a montagem tira as que ela mesma pôs antes e busca de novo, e o chat busca as das cenas novas ou mudadas. Só a imagem que você escolheu fica travada. O arquivo baixado continua em `data/library/`, porque a prévia e o render precisam dele, mas não é oferecido a outro vídeo.
 
-Cada imagem vira três arquivos (`imageVariants.ts`): a **original**, como veio, guardada em `original` e sem uso hoje; a **versão do vídeo** (`file`), reduzida até cobrir 1728×3072 (1080×1920 com o zoom máximo de 1,6×), que o player, o render e a catalogação usam; e a **miniatura** (`thumb`, 360 px de largura), para capas e grades. Sai em JPEG, ou em PNG se a imagem tem transparência de verdade (o recorte de uma figurinha). GIF fica como está. As imagens antigas foram convertidas com `npm --prefix backend run migrate:images`, que pode rodar de novo sem refazer as convertidas.
+Cada imagem vira três arquivos (`imageVariants.ts`): a **original**, como veio, guardada em `original` e sem uso hoje; a **versão do vídeo** (`file`), reduzida até cobrir 1728×3072 (1080×1920 com o zoom máximo de 1,6×), que o player, o render e a catalogação usam; e a **miniatura** (`thumb`, 360 px de largura), para capas e grades. Sai em JPEG, ou em PNG se a imagem tem transparência de verdade (um recorte, um logo). GIF fica como está. As imagens antigas foram convertidas com `npm --prefix backend run migrate:images`, que pode rodar de novo sem refazer as convertidas.
 
-Depois das imagens, a montagem põe as **figurinhas** (pela etiqueta da reação, ex.: "chocado"; o vídeo não desenha emoji), os **efeitos sonoros** (pelo tipo de efeito e pelo nome do arquivo) e a **música** (pelo clima do estilo).
+Antes das imagens, a montagem resolve a **virada** ([ADR 0039](decisions/0039-bordao-do-meio.md), `pivot.ts`): o roteiro escreveu uma das frases do usuário no fim do gancho (`generateScript` recebe a frase da vez, `markPivot` marca a batida que a fala como foi escrita, ou nenhuma), e a montagem põe nela um clipe do meio pelo rodízio (`pickPivotClip`, lendo dos projetos o que cada vídeo usou). A cena com clipe não busca imagem. Na composição, o clipe toca no volume dele por baixo da voz; se a fala for mais longa, o trecho repete (`<Loop>`). Se o trecho for mais longo que a frase, `buildTimeline` estica a cena até o fim dele e devolve `voicePause`: a narração entra em dois pedaços (`trimAfter` e `trimBefore` do `<Audio>`), com o silêncio entre eles, e as cenas seguintes andam junto.
+
+Depois das imagens, a montagem põe os **efeitos sonoros** (pelo tipo de efeito e pelo nome do arquivo) e a **música** (pelo clima do estilo).
 
 ## Voz, legenda e cortes no tempo certo
 
@@ -105,7 +107,7 @@ Tudo em `backend/data/`, que está no `.gitignore`. **Backup = copiar essa pasta
 ```
 backend/data/
 ├── short_projects/      um JSON por vídeo  (+ audio/ narrações, renders/ MP4)
-├── library/             imagens, vídeos e figurinhas  (+ files/)
+├── library/             imagens e vídeos  (+ files/)
 ├── sounds/              efeitos sonoros e músicas  (+ files/)
 ├── bordoes/  tones/  styles/      o que você cria na Biblioteca e em Estilos
 ├── ideas/  metrics/     banco de ideias e fotos das métricas
@@ -127,7 +129,8 @@ backend/src/
 │   │   ├── autopilot.ts       criar sozinho: a fila ideia → roteiro → montagem → imagens (ADR 0026)
 │   │   ├── scriptReview.ts    a revisão do roteiro pelas IAs: escreve, revisa e reescreve até 2 vezes (ADR 0034)
 │   │   ├── formats.ts         os formatos de vídeo e a tier list em série: estrutura, quadro, fileira (ADR 0036)
-│   │   ├── library.ts         arquivos baixados, figurinhas e sons de cada cena
+│   │   ├── catchphrases.ts · pivot.ts   bordões; a virada: frases, a cena marcada e o rodízio dos clipes do meio (ADR 0039)
+│   │   ├── library.ts         arquivos baixados e sons de cada cena
 │   │   ├── imageSearch.ts     busca na web (Bing, Danbooru, AniList, Serper)
 │   │   ├── sceneEdits.ts      o chat só mexe nas cenas citadas
 │   │   ├── effects.ts         os efeitos escolhidos na cena e o que o chat pode trocar (ADR 0037)

@@ -3,8 +3,6 @@ import api from '../services/api'
 
 export type Pace = 'calmo' | 'normal' | 'rapido' | 'frenetico'
 export type EffectsLevel = 'poucos' | 'medida' | 'muitos'
-/** Quantas figurinhas o vídeo leva (ADR 0022, 2C); a escolha feita na cena vale mais. */
-export type StickerLevel = 'nenhuma' | 'poucas' | 'muitas'
 export type CaptionMode = 'quadrinho' | 'completa' | 'limpa' | 'sem'
 export type MusicMood = 'tensa' | 'animada' | 'calma' | 'sem'
 export type ImageType = 'manga' | 'anime' | 'fanart' | 'tanto-faz'
@@ -24,7 +22,7 @@ export interface ShortStyle {
 }
 
 export type SceneKind = 'full' | 'evidence'
-export type Effect = 'none' | 'arrow' | 'cross' | 'circle' | 'emoji'
+export type Effect = 'none' | 'arrow' | 'cross' | 'circle'
 /** 'still' = parado (ADR 0037). */
 export type Motion = 'zoom-in' | 'zoom-out' | 'shake' | 'pan' | 'still'
 /** Como a cena entra, no corte que vem da anterior (ADR 0037); sem valor, o ritmo decide. */
@@ -53,15 +51,10 @@ export interface Beat {
   characters: string[]
   scene: SceneKind
   effect: Effect
-  emoji?: string
   motion: Motion
   focus?: string
   imageId?: string
   imageStatus: ImageStatus
-  sticker?: string
-  stickerId?: string
-  /** o usuário escolheu a figurinha na cena (ou nenhuma); aparece mesmo sem reação, e a montagem não troca */
-  stickerLocked?: boolean
   sfx?: string
   sfxId?: string
   /** o usuário escolheu o som (editor ou chat); a montagem não troca */
@@ -79,7 +72,24 @@ export interface Beat {
   chosen?: ChosenEffects
   /** Cena da tier list (ADR 0036), no lugar da imagem: o quadro, ou a revelação da fileira. */
   tier?: 'quadro' | 'revelacao'
+  /** A cena da virada (ADR 0039): o roteiro marca, a montagem põe um clipe do meio. */
+  pivot?: PivotScene
 }
+
+/** A cena da virada (ADR 0039): a frase do canal no fim do gancho; o visual é um clipe do rodízio. */
+export interface PivotScene {
+  phrase: string
+  /** o clipe do meio; null = "Sem virada aqui" (a cena volta a ter imagem); sem o campo, a montagem ainda não escolheu */
+  clipId?: string | null
+  /** o usuário escolheu o clipe (ou nenhum) */
+  locked?: boolean
+  /** neste vídeo, por cima dos do clipe */
+  trim?: ClipTrim
+  volume?: number
+}
+
+/** O clipe da virada ocupa a cena: ela não precisa de imagem. */
+export const hasPivotClip = (b: Pick<Beat, 'pivot'>) => typeof b.pivot?.clipId === 'string'
 
 /** Os formatos de vídeo (ADR 0036). */
 export type VideoFormat = 'opiniao' | 'tierlist' | 'versus' | 'ese' | 'mito' | 'antesdepois'
@@ -122,8 +132,6 @@ export interface ProjectSettings {
   outro?: string | null
   /** Volume de todos os efeitos sonoros do vídeo (0 a 1; sem valor = 0,75). */
   sfxVolume?: number
-  /** Sem valor = poucas (onde a IA pôs uma reação). */
-  stickers?: StickerLevel
 }
 
 /** Quem respondeu um pedido de IA (salvo no projeto pelo backend). */
@@ -326,7 +334,7 @@ export interface Region {
 }
 
 /** video = episódio ou trecho enviado; cena = um momento desse vídeo (o que entra nas batidas). */
-export type MediaKind = 'imagem' | 'meme' | 'print' | 'logo' | 'figurinha' | 'video' | 'cena'
+export type MediaKind = 'imagem' | 'meme' | 'print' | 'logo' | 'video' | 'cena'
 
 export interface VideoProcessing {
   stage: 'preparando' | 'cortes' | 'catalogando' | 'pronto' | 'erro'
@@ -465,13 +473,13 @@ export const shortsApi = {
   /** Efeito sonoro de uma cena: id de um som, null = sem som, 'auto' = a montagem escolhe. */
   setBeatSfx: (id: string, beatId: string, sfxId: string | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sfx`, { sfxId })),
-  /** Figurinha da cena: id de uma figurinha, null = nenhuma, 'auto' = a montagem escolhe (ADR 0022). */
-  setBeatSticker: (id: string, beatId: string, stickerId: string | null) =>
-    data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sticker`, { stickerId })),
   /** Cria um vídeo sozinho (ADR 0026): da ideia, ou sem ela (o app escolhe ou faz um brainstorm). */
   startAutopilot: (ideaId?: string) => data<AutopilotJob>(api.post('/shorts/autopilot', { ideaId })),
   autopilotJobs: () => data<AutopilotJob[]>(api.get('/shorts/autopilot')),
   continueAutopilot: (projectId: string) => data<AutopilotJob>(api.post(`/shorts/autopilot/${projectId}/continue`)),
+  /** A cena da virada (ADR 0039): clipId null = sem virada; trim e volume null = os do clipe. */
+  setBeatPivot: (id: string, beatId: string, changes: { clipId?: string | null; trim?: ClipTrim | null; volume?: number | null }) =>
+    data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/pivot`, changes)),
   /** Volume do efeito na cena (multiplica o do vídeo); null = normal. */
   setBeatSfxVolume: (id: string, beatId: string, volume: number | null) =>
     data<ShortProject>(api.put(`/shorts/projects/${id}/beats/${beatId}/sfx-volume`, { volume })),
@@ -496,9 +504,10 @@ export const shortsApi = {
 
   listCatchphrases: () => data<Catchphrase[]>(api.get('/catchphrases')),
   /** O clipe já vai com o vídeo; o montado e o "se inscreve" se completam depois. */
-  createCatchphrase: (kind: CatchphraseKind, file?: File) => {
+  createCatchphrase: (kind: CatchphraseKind, file?: File, role?: CatchphraseRole) => {
     const form = new FormData()
     form.append('kind', kind)
+    if (role) form.append('role', role)
     if (file) form.append('file', file, file.name)
     return data<Catchphrase>(api.post('/catchphrases', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 300000 }))
   },
@@ -511,6 +520,11 @@ export const shortsApi = {
   },
   catchphrasePhotoFromInstagram: (id: string) => data<Catchphrase>(api.post(`/catchphrases/${id}/photo/instagram`, {}, { timeout: 30000 })),
   deleteCatchphrase: (id: string) => api.delete(`/catchphrases/${id}`),
+  /** A virada (ADR 0039): frases e rodízio. */
+  pivotConfig: () => data<PivotConfig>(api.get('/catchphrases/virada')),
+  updatePivotConfig: (changes: Partial<PivotConfig>) => data<PivotConfig>(api.put('/catchphrases/virada', changes)),
+  /** 5 frases novas da IA, para o usuário escolher. */
+  suggestPivotPhrases: () => data<{ phrases: string[] }>(api.post('/catchphrases/virada/suggest', {}, { timeout: 120000 })),
 
   youtubeStatus: () => data<YouTubeStatus>(api.get('/youtube/status')),
   youtubeAuthUrl: () => data<{ url: string }>(api.get('/youtube/auth-url')),
@@ -534,9 +548,8 @@ export const shortsApi = {
 
   listImages: (q = '') => data<LibraryImage[]>(api.get('/library', { params: q ? { q } : {} })),
   /** background: responde sem esperar a IA catalogar (ela cataloga depois, no servidor). */
-  uploadImages: (files: File[], kind?: MediaKind, background = false) => {
+  uploadImages: (files: File[], background = false) => {
     const form = new FormData()
-    if (kind) form.append('kind', kind)
     if (background) form.append('background', 'true')
     files.forEach(f => form.append('images', f, f.name || 'colada.png'))
     return data<LibraryImage[]>(
@@ -634,7 +647,53 @@ export interface Catchphrase {
   photoFile?: string
   defaultIntro?: boolean
   defaultOutro?: boolean
+  /** onde entra (ADR 0039); sem o campo, vem da marcação de padrão (catchphraseRole) */
+  role?: CatchphraseRole
+  /** só no clipe do meio: o trecho que entra; sem o campo, o clipe inteiro (até 3 s) */
+  trim?: ClipTrim
+  /** só no clipe do meio: o som dele por baixo da voz (0 a 1; sem o campo, 0,2) */
+  volume?: number
+  /** só no clipe do meio: false tira do rodízio */
+  inRotation?: boolean
   createdAt: string
+}
+
+/** abertura = antes da voz; meio = a virada do roteiro, com a voz por cima; final = depois da última cena (ADR 0039). */
+export type CatchphraseRole = 'abertura' | 'meio' | 'final'
+
+/** Um trecho de um clipe, em segundos. */
+export interface ClipTrim {
+  start: number
+  duration: number
+}
+
+/** O mesmo cálculo do servidor (pivot.ts): bordões de antes do ADR 0039 vêm da marcação de padrão. */
+export function catchphraseRole(c: Pick<Catchphrase, 'role' | 'defaultIntro' | 'defaultOutro' | 'kind'>): CatchphraseRole {
+  if (c.role) return c.role
+  if (c.defaultIntro) return 'abertura'
+  return c.defaultOutro || c.kind === 'inscreva' ? 'final' : 'abertura'
+}
+
+/** Volume do clipe do meio por baixo da voz, quando ninguém escolheu. */
+export const DEFAULT_PIVOT_VOLUME = 0.2
+/** Clipe até este tamanho entra inteiro; maior, só o trecho. */
+export const WHOLE_CLIP_SECONDS = 3
+
+/** O trecho do clipe do meio que entra: o do vídeo, o do clipe, ou o clipe inteiro. */
+export const pivotTrim = (c: Pick<Catchphrase, 'trim' | 'duration'>, scene?: Pick<PivotScene, 'trim'>): ClipTrim =>
+  scene?.trim ?? c.trim ?? { start: 0, duration: Math.min(c.duration, WHOLE_CLIP_SECONDS) }
+
+/** Como os clipes do meio giram (ADR 0039). */
+export type PivotOrder = 'descanso' | 'aleatorio' | 'sequencia'
+
+/** A virada: as frases do usuário e o rodízio dos clipes. */
+export interface PivotConfig {
+  id: 'config'
+  enabled: boolean
+  phrases: string[]
+  order: PivotOrder
+  /** "descanso": um clipe não volta antes de N vídeos */
+  rest: number
 }
 
 export const CATCHPHRASE_KIND_LABEL: Record<CatchphraseKind, string> = { clipe: 'Clipe pronto', montado: 'Montado', inscreva: 'Se inscreve' }
@@ -695,7 +754,6 @@ export interface AiStatus {
 
 export const PACE_LABEL: Record<Pace, string> = { calmo: 'Calmo', normal: 'Normal', rapido: 'Rápido', frenetico: 'Frenético' }
 export const EFFECTS_LABEL: Record<EffectsLevel, string> = { poucos: 'Poucos', medida: 'Na medida', muitos: 'Muitos' }
-export const STICKERS_LABEL: Record<StickerLevel, string> = { nenhuma: 'Nenhuma', poucas: 'Poucas', muitas: 'Muitas' }
 export const CAPTION_LABEL: Record<CaptionMode, string> = { quadrinho: 'Quadrinho', completa: 'Completa', limpa: 'Limpa', sem: 'Sem legenda' }
 export const MUSIC_LABEL: Record<MusicMood, string> = { tensa: 'Tensa', animada: 'Animada', calma: 'Calma', sem: 'Sem música' }
 export const IMAGE_TYPE_LABEL: Record<ImageType, string> = { manga: 'Mangá', anime: 'Anime', fanart: 'Fanart', 'tanto-faz': 'Tanto faz' }
@@ -715,8 +773,8 @@ export interface AppSettings {
   suggestiveImages: boolean
 }
 
-// a cena do quadro da tier list não tem imagem: o quadro é desenhado no vídeo (ADR 0036)
-export const beatsNeedingImage = (p: ShortProject) => p.beats.filter(b => !b.locked && !b.tier && b.imageStatus !== 'match')
+// a cena do quadro da tier list não tem imagem: o quadro é desenhado no vídeo (ADR 0036); nem a virada com clipe (ADR 0039)
+export const beatsNeedingImage = (p: ShortProject) => p.beats.filter(b => !b.locked && !b.tier && !hasPivotClip(b) && b.imageStatus !== 'match')
 
 /** Texto e cor do status de um projeto nas listas. */
 export function projectStatus(p: ShortProject) {

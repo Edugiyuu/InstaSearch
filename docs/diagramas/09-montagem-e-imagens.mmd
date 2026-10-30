@@ -1,5 +1,7 @@
 flowchart TD
-    B["Cena do roteiro<br/>o que mostrar, personagens,<br/>etiquetas, meme?"] --> LOCK{"Você já escolheu<br/>a imagem desta cena?"}
+    B["Cena do roteiro<br/>o que mostrar, personagens,<br/>etiquetas, meme?"] --> PIV{"É a virada?<br/>(a sua frase, logo<br/>depois do gancho)"}
+    PIV -- "sim" --> CLIP["🎬 um clipe do meio, pelo rodízio<br/>voz por cima, clipe baixinho<br/>(não busca imagem)"]
+    PIV -- "não" --> LOCK{"Você já escolheu<br/>a imagem desta cena?"}
     LOCK -- "sim" --> OK["✅ entra na cena"]
     LOCK -- "não" --> SRCH["Busca na web, com a obra do vídeo<br/>meme primeiro, depois a cena"]
     SRCH --> TOP["6 por cena:<br/>3 da web + 3 fanarts do Danbooru"]

@@ -1,5 +1,5 @@
 import type { Beat, ButtonStyle, Transition, Catchphrase, ClickStyle, Entrance, LibraryImage, ProjectSettings, Region, ShortProject, SoundItem, SubscribePart, TextAnim, TextPosition, TierBoard } from '../api/shorts'
-import { afterButtonText, audioUrl, catchphraseFileUrl, catchphraseHasSound, imageUrl, mediaUrl, soundUrl } from '../api/shorts'
+import { afterButtonText, audioUrl, catchphraseFileUrl, catchphraseHasSound, DEFAULT_PIVOT_VOLUME, imageUrl, mediaUrl, pivotTrim, soundUrl } from '../api/shorts'
 import { alignWords, type WordTime } from './align'
 
 export const FPS = 30
@@ -49,6 +49,11 @@ export interface MediaProps {
   /** Tamanho em pixels, quando conhecido: decide o enquadramento (ADR 0020). */
   width?: number
   height?: number
+  /**
+   * O clipe da virada (ADR 0039): o trecho repete até a cena acabar (em vez de desacelerar e congelar) e
+   * toca com este volume por baixo da voz. Sem o campo, a cena de vídeo é muda.
+   */
+  pivot?: { volume: number }
 }
 
 /** O que a composição precisa de cada batida: o texto, a imagem e quando entra. */
@@ -58,8 +63,6 @@ export interface TimedBeat {
   from: number
   frames: number
   image?: MediaProps
-  /** Figurinha no lugar do emoji. */
-  stickerSrc?: string
   /** Efeito sonoro que toca no corte. */
   sfxSrc?: string
   /** Com a voz transcrita: em que quadro (desde o início da batida) cada palavra da fala começa. */
@@ -99,6 +102,16 @@ export interface ShortVideoProps extends Record<string, unknown> {
   outro?: CatchphraseProps
   /** O quadro da tier list (ADR 0036), nas cenas marcadas com `tier`. */
   tier?: TierBoard
+  /**
+   * A voz para enquanto o clipe da virada termina (ADR 0039): em `at` (quadros desde o começo da
+   * narração), ela fica `frames` quadros em silêncio e depois continua.
+   */
+  voicePause?: VoicePause
+}
+
+export interface VoicePause {
+  at: number
+  frames: number
 }
 
 const splitWords = (text: string) => text.split(/\s+/).filter(Boolean)
@@ -137,6 +150,19 @@ const libraryMedia = (img: LibraryImage): MediaProps => {
     : { src: mediaUrl(img), regions: img.regions, ...size }
 }
 
+/** O clipe do meio na cena da virada (ADR 0039): o trecho e o volume deste vídeo, ou os do clipe. */
+function pivotMedia(beat: Beat, catchphrases?: Map<string, Catchphrase>): MediaProps | undefined {
+  const c = typeof beat.pivot?.clipId === 'string' ? catchphrases?.get(beat.pivot.clipId) : undefined
+  if (!c?.file) return undefined
+  const trim = pivotTrim(c, beat.pivot)
+  return {
+    src: catchphraseFileUrl(c.file)!,
+    regions: [],
+    clip: { start: trim.start, end: trim.start + trim.duration },
+    pivot: { volume: beat.pivot?.volume ?? c.volume ?? DEFAULT_PIVOT_VOLUME },
+  }
+}
+
 /**
  * Quadro (desde o começo da narração) em que cada batida começa, pela voz: quando a primeira
  * palavra dela é falada. A primeira batida começa no 0, para o vídeo não abrir sem imagem.
@@ -152,13 +178,32 @@ function voiceStarts(voice: VoiceTiming) {
 }
 
 /**
+ * Onde a voz para na virada (quadros desde o começo da narração): no fim da última palavra da frase,
+ * como a transcrição marca. A palavra seguinte começa a soar antes do tempo marcado dela; cortar no
+ * começo dela, ou no meio do silêncio, ainda deixava escapar um "n-" ("rolou. N-").
+ */
+function pauseAt(voice: VoiceTiming | null, index: number, fallback: number) {
+  const said = voice?.beats[index]
+  if (!said?.length || !voice?.beats[index + 1]?.length) return fallback
+  const end = Math.max(...said.map(w => w.end))
+  return Math.min(fallback, Math.round(end * FPS))
+}
+
+/**
  * Distribui o tempo do vídeo entre as batidas.
  * - Com a voz transcrita (ADR 0018): cada batida começa quando a primeira palavra dela é falada.
  * - Sem: pelo número de palavras faladas (estimado).
  * Com áudio, o total é a duração do áudio; sem áudio, a duração escolhida no tema.
  * `start` é onde a primeira batida entra (depois da abertura); os `from` já saem somados.
  */
-export function buildTimeline(project: ShortProject, images: Map<string, LibraryImage>, sounds: Map<string, SoundItem> = new Map(), start = 0) {
+export function buildTimeline(
+  project: ShortProject,
+  images: Map<string, LibraryImage>,
+  sounds: Map<string, SoundItem> = new Map(),
+  start = 0,
+  /** Para o clipe da cena da virada (ADR 0039). */
+  catchphrases?: Map<string, Catchphrase>,
+) {
   const voice = voiceTiming(project)
   const lastWordEnd = voice ? Math.max(0, ...voice.beats.flat().map(w => w.end)) : 0
   const seconds = Math.max(project.audioDuration || project.duration, lastWordEnd)
@@ -168,24 +213,30 @@ export function buildTimeline(project: ShortProject, images: Map<string, Library
   const starts = voice ? voiceStarts(voice) : null
 
   let from = start
+  let voicePause: VoicePause | undefined
   const beats: TimedBeat[] = project.beats.map((beat, index) => {
     const isLast = index === project.beats.length - 1
-    const frames = starts
+    // o tempo da voz não conta a pausa da virada
+    const spoken = from - start - (voicePause?.frames ?? 0)
+    const said = starts
       ? Math.max(MIN_VOICE_FRAMES, (isLast ? total : starts[index + 1]) - starts[index])
       : isLast
-        ? Math.max(8, total - (from - start))
+        ? Math.max(8, total - spoken)
         : Math.max(8, Math.round((weights[index] / sum) * total))
     const img = beat.imageId ? images.get(beat.imageId) : undefined
-    const sticker = beat.stickerId ? images.get(beat.stickerId) : undefined
     const sfx = beat.sfxId ? sounds.get(beat.sfxId) : undefined
+    const pivot = pivotMedia(beat, catchphrases)
+    // trecho da virada mais longo que a fala: a voz para no fim da frase e o clipe vai até o fim
+    const clipFrames = pivot?.clip ? Math.floor((pivot.clip.end - pivot.clip.start) * FPS) : 0
+    if (clipFrames > said && !voicePause) voicePause = { at: pauseAt(voice, index, spoken + said), frames: clipFrames - said }
+    const frames = voicePause && clipFrames > said ? clipFrames : said
     const timed: TimedBeat = {
       // a composição desenha os efeitos que valem: os escolhidos pelo usuário ou os da IA
       beat: effectiveBeat(beat),
       index,
       from,
       frames,
-      image: img ? libraryMedia(img) : undefined,
-      stickerSrc: sticker ? mediaUrl(sticker) : undefined,
+      image: pivot ?? (img ? libraryMedia(img) : undefined),
       sfxSrc: sfx ? soundUrl(sfx) : undefined,
       wordStarts: starts && voice ? voice.beats[index].map(w => Math.max(0, Math.round(w.start * FPS) - starts[index])) : undefined,
     }
@@ -195,7 +246,7 @@ export function buildTimeline(project: ShortProject, images: Map<string, Library
   })
 
   /** end: o quadro em que a última batida termina */
-  return { beats, end: Math.max(start + 1, from) }
+  return { beats, end: Math.max(start + 1, from), voicePause }
 }
 
 /** As palavras que apontam para o quadro na revelação ("o lugar dele é aqui", "pra cá", "esse"). */
@@ -276,7 +327,7 @@ export function shortVideoProps(
   }
   const intro = pick(project.settings.intro)
   const outro = pick(project.settings.outro)
-  const timeline = buildTimeline(project, images, sounds, intro?.frames ?? 0)
+  const timeline = buildTimeline(project, images, sounds, intro?.frames ?? 0, catchphrases)
   const music = project.musicId ? sounds?.get(project.musicId) : undefined
   const props: ShortVideoProps = {
     beats: timeline.beats,
@@ -286,6 +337,7 @@ export function shortVideoProps(
     ...(intro ? { intro } : {}),
     ...(outro ? { outro } : {}),
     ...(tier ? { tier } : {}),
+    ...(timeline.voicePause ? { voicePause: timeline.voicePause } : {}),
   }
   const durationInFrames = timeline.end + (outro?.frames ?? 0)
   return { timeline, props, durationInFrames }

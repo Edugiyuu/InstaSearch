@@ -13,7 +13,7 @@ import { imageSize } from './videoScenes.js'
 import { makeVariants } from './imageVariants.js'
 
 export { normalize }
-import type { Beat, LibraryImage, MediaKind, SoundItem, StickerLevel } from './types.js'
+import type { Beat, LibraryImage, MediaKind, SoundItem } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const LIBRARY_FILES_DIR = path.join(__dirname, '../../../data/library/files')
@@ -93,7 +93,6 @@ export async function addImage(
   mimeType: string,
   originalName: string,
   source?: string,
-  kind?: MediaKind,
   hint: ImageHint = {},
 ) {
   await fs.mkdir(LIBRARY_FILES_DIR, { recursive: true })
@@ -130,7 +129,6 @@ export async function addImage(
   }
 
   if (hint.catalog === 'background') {
-    if (kind) base.kind = kind
     base.cataloguing = true
     const saved = await storage.save(base)
     enqueueCatalog(id)
@@ -143,13 +141,11 @@ export async function addImage(
       const seen = base.original ? await fs.readFile(path.join(LIBRARY_FILES_DIR, base.file)) : data
       const info = await catalogImage(seen, MIME[path.extname(base.file)] ?? mimeType)
       Object.assign(base, info, { catalogued: true })
-      if (kind) base.kind = kind
     } catch (error: any) {
       // sem catalogação a imagem fica na biblioteca e pode ser etiquetada à mão
       logger.warn(`⚠️ Imagem ${id} salva sem catalogação: ${error.message}`)
     }
   }
-  if (kind) base.kind = kind
   return storage.save(base)
 }
 
@@ -197,7 +193,7 @@ export async function importImageFromUrl(url: string, opts: ImageHint & { fallba
     throw new AppError('Esse link não é de uma imagem. Abra a imagem e copie o endereço dela.', 400, 'NOT_IMAGE')
   }
   const fileName = decodeURIComponent(new URL(url).pathname.split('/').pop() || 'imagem')
-  return addImage(Buffer.from(response.data), mime, fileName, url, undefined, opts)
+  return addImage(Buffer.from(response.data), mime, fileName, url, opts)
 }
 
 export async function recatalog(id: string) {
@@ -241,10 +237,9 @@ async function catalogInBackground(id: string) {
     // relê: a imagem pode ter sido apagada enquanto a IA olhava
     const fresh = await storage.findById(id)
     if (!fresh) return
-    const kind = fresh.kind === 'figurinha' ? 'figurinha' : info.kind
     // a catalogação nem sempre reconhece o personagem; se ela não achou ninguém, vale o que já foi conferido
     const characters = info.characters.length || !fresh.charactersChecked ? info.characters : fresh.characters
-    await storage.save({ ...fresh, ...info, characters, kind, catalogued: true, cataloguing: false })
+    await storage.save({ ...fresh, ...info, characters, catalogued: true, cataloguing: false })
     logger.info(`🏷️ Imagem ${id} catalogada: ${info.name}`)
   } catch (error: any) {
     // igual a quando a IA não responde no envio: fica salva, sem catalogação, e dá para tentar de novo
@@ -314,7 +309,7 @@ export async function deleteImage(id: string) {
 
 /** Marca em quais projetos cada imagem está sendo usada. */
 export async function syncUsage(projectId: string, beats: Beat[]) {
-  const used = new Set(beats.flatMap(b => [b.imageId, b.stickerId]).filter(Boolean))
+  const used = new Set(beats.map(b => b.imageId).filter(Boolean))
   for (const img of await storage.findAll()) {
     const has = img.usedIn.includes(projectId)
     if (used.has(img.id) && !has) await storage.update(img.id, { usedIn: [...img.usedIn, projectId] })
@@ -326,68 +321,19 @@ export async function forgetProject(projectId: string) {
   await syncUsage(projectId, [])
 }
 
-/** Figurinha e efeito sonoro de cada batida; o que o usuário escolheu na cena fica. */
-function stickersAndSfx(beats: Beat[], stickers: LibraryImage[], sfx: SoundItem[], level?: StickerLevel) {
-  const stickerUses = new Map<string, number>()
-  const sfxUses = new Map<string, number>()
-  return beats.map((beat, index) => {
-    const withSticker = { ...beat, stickerId: pickSticker(beat, stickers, stickerUses, level) }
-    const sfxId = pickSfx(withSticker, index, sfx, sfxUses)
-    // o volume da cena foi acertado para aquele som; com outro, volta ao normal
-    return { ...withSticker, sfxId, sfxVolume: sfxId === beat.sfxId ? beat.sfxVolume : undefined }
-  })
-}
-
-export const listStickers = async () => (await storage.findAll()).filter(i => i.kind === 'figurinha')
-
 /**
- * Escolhe as figurinhas e os efeitos sonoros (que dependem delas), sem mexer nas imagens: na montagem,
- * depois do ajuste "Figurinhas" do vídeo ou de uma escolha na cena.
+ * Escolhe os efeitos sonoros, sem mexer nas imagens: na montagem e depois do ajuste do vídeo.
+ * O que o usuário escolheu na cena fica; o volume da cena foi acertado para aquele som, e com outro volta ao normal.
  */
-export async function refreshStickers(projectId: string, beats: Beat[], level?: StickerLevel) {
-  const next = stickersAndSfx(beats, await listStickers(), await listSounds('sfx'), level)
+export async function refreshSfx(projectId: string, beats: Beat[]) {
+  const sounds = await listSounds('sfx')
+  const uses = new Map<string, number>()
+  const next = beats.map((beat, index) => {
+    const sfxId = pickSfx(beat, index, sounds, uses)
+    return { ...beat, sfxId, sfxVolume: sfxId === beat.sfxId ? beat.sfxVolume : undefined }
+  })
   await syncUsage(projectId, next)
   return next
-}
-
-/** Reações parecidas: "chocado" acha uma figurinha etiquetada "surpreso". */
-const REACTIONS = [
-  ['chocado', 'surpreso', 'espantado', 'assustado', 'choque', 'omg', 'surpresa', 'medo'],
-  ['rindo', 'risada', 'feliz', 'engracado', 'kkk', 'gargalhada', 'alegre', 'sorrindo'],
-  ['bravo', 'raiva', 'irritado', 'furioso', 'nervoso'],
-  ['triste', 'chorando', 'choro', 'decepcionado', 'magoado'],
-  ['pensando', 'duvida', 'confuso', 'hmm', 'pensativo', 'curioso'],
-  ['convencido', 'confiante', 'sarcastico', 'debochado', 'malicioso'],
-  ['nojo', 'enojado', 'eca'],
-  ['legal', 'joinha', 'aprovado', 'positivo', 'top'],
-]
-
-function expandReaction(words: string[]) {
-  const out = new Set(words)
-  for (const w of words) for (const group of REACTIONS) if (group.some(g => w.startsWith(g) || g.startsWith(w))) group.forEach(g => out.add(g))
-  return [...out]
-}
-
-/**
- * Figurinha da batida. A escolhida na cena fica (ou nenhuma, se o usuário tirou). No automático, só
- * batidas com reação (effect = emoji) ganham uma, e nenhuma com o ajuste "Nenhuma"; sem uma que
- * combine, a cena fica sem reação.
- */
-function pickSticker(beat: Beat, stickers: LibraryImage[], uses: Map<string, number>, level?: StickerLevel) {
-  if (beat.stickerLocked) return beat.stickerId && stickers.some(s => s.id === beat.stickerId) ? beat.stickerId : undefined
-  if (level === 'nenhuma' || beat.effect !== 'emoji' || stickers.length === 0) return undefined
-  if (beat.stickerId && stickers.some(s => s.id === beat.stickerId)) return beat.stickerId
-  const words = expandReaction(tokens(`${beat.sticker ?? ''} ${beat.text}`))
-  let best: { id: string; score: number } | null = null
-  for (const s of stickers) {
-    const hay = haystack(s)
-    const hits = words.filter(w => hay.includes(w)).length
-    if (hits === 0) continue
-    const score = hits - (uses.get(s.id) ?? 0) * 0.6
-    if (!best || score > best.score) best = { id: s.id, score }
-  }
-  if (best) uses.set(best.id, (uses.get(best.id) ?? 0) + 1)
-  return best?.id
 }
 
 /** Palavras que identificam cada tipo de efeito sonoro no nome ou nas etiquetas. */
@@ -397,8 +343,6 @@ function defaultSfx(beat: Beat, index: number) {
   if (beat.effect === 'arrow') return 'whoosh'
   if (beat.effect === 'cross') return 'erro'
   if (beat.effect === 'circle') return 'ding'
-  // a figurinha escolhida na cena aparece mesmo sem reação, e entra com o mesmo som
-  if (beat.effect === 'emoji' || beat.stickerId) return 'pop'
   if (beat.scene === 'evidence') return 'click'
   return undefined
 }
@@ -411,8 +355,6 @@ export function pickSfx(beat: Beat, index: number, sounds: SoundItem[], uses: Ma
   if (beat.sfxLocked) return beat.sfxId && sounds.some(s => s.id === beat.sfxId) ? beat.sfxId : undefined
   const wanted = beat.sfx ?? defaultSfx(beat, index)
   if (!wanted) return undefined
-  // reação sem figurinha não aparece no vídeo: o "pop" tocaria sem nada na tela
-  if (beat.effect === 'emoji' && !beat.stickerId && wanted === 'pop') return undefined
   const matches = sounds.filter(s => soundIsType(s, wanted))
   if (matches.length === 0) return undefined
   // mantém o som que a batida já tinha, se ele ainda vale para o tipo

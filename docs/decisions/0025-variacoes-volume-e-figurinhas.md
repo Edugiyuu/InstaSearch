@@ -1,6 +1,6 @@
 # 0025 — Mais variações, volume dos efeitos e figurinha na cena
 
-**Status:** Aceita · **Data:** 2026-10-10 · Complementa o [0020](0020-imagens-especificas-memes-e-zoom.md) (dose dos memes e variações) e o [0022](0022-imagens-da-web-e-controles-da-cena.md) (como ficou a figurinha, 2C)
+**Status:** Substituída em parte por [0039](0039-bordao-do-meio.md) (o ponto 3: as figurinhas saíram do app) · **Data:** 2026-10-10 · Complementa o [0020](0020-imagens-especificas-memes-e-zoom.md) (dose dos memes e variações) e o [0022](0022-imagens-da-web-e-controles-da-cena.md) (como ficou a figurinha, 2C)
 
 ## Contexto
 

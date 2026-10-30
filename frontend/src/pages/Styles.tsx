@@ -98,7 +98,7 @@ function Styles() {
           <Row label="Velocidade dos cortes">
             <Segmented value={draft.pace} options={PACE_LABEL} onChange={pace => set({ pace })} />
           </Row>
-          <Row label="Setas, X e emojis">
+          <Row label="Setas, X e círculos">
             <Segmented value={draft.effects} options={EFFECTS_LABEL} onChange={effects => set({ effects })} />
           </Row>
           <Row label="Legenda">

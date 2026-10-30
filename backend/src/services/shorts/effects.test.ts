@@ -27,7 +27,7 @@ describe('validChoice', () => {
     expect(validChoice('motion', null)).toBe(true)
   })
 
-  it('recusa valor de outro efeito e a reação (que é a figurinha)', () => {
+  it('recusa valor de outro efeito e a reação, que saiu com as figurinhas (ADR 0039)', () => {
     expect(validChoice('motion', 'flash')).toBe(false)
     expect(validChoice('effect', 'emoji')).toBe(false)
     expect(validChoice('focus', 42)).toBe(false)

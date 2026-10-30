@@ -25,7 +25,8 @@ import * as tones from '../services/shorts/tones.js'
 import { forgetProjectJobs } from '../services/shorts/autopilot.js'
 import { discardIdeasWithoutProject } from '../services/ideas/ideas.js'
 import { unlinkDeletedProjects } from '../services/ideas/debate.js'
-import { suggestTone } from '../services/shorts/shortsAI.js'
+import { suggestPivotPhrases, suggestTone } from '../services/shorts/shortsAI.js'
+import * as pivot from '../services/shorts/pivot.js'
 import { CHOSEN_FIELDS, FRAMING_CHOICES, type ChosenField, type FramingChoice } from '../services/shorts/types.js'
 import { CHOICE_SCOPES, type ChoiceScope } from '../services/shorts/effects.js'
 
@@ -208,9 +209,8 @@ export const uploadImages = [
     if (files.length === 0) throw new AppError('Nenhuma imagem enviada', 400, 'NO_FILE')
     const saved = []
     // em sequência para não estourar o limite por minuto do Gemini
-    const kind = req.body.kind === 'figurinha' ? 'figurinha' : undefined
     const catalog = req.body.background === 'true' ? 'background' : undefined
-    for (const f of files) saved.push(await library.addImage(f.buffer, f.mimetype, f.originalname, 'upload', kind, { catalog }))
+    for (const f of files) saved.push(await library.addImage(f.buffer, f.mimetype, f.originalname, 'upload', { catalog }))
     res.status(201).json({ success: true, data: saved })
   }),
 ]
@@ -268,13 +268,6 @@ export const setBeatSfx = asyncHandler(async (req: Request, res: Response) => {
   const raw = req.body?.sfxId
   const sfxId = raw === null || raw === undefined || raw === '' ? null : String(raw)
   res.json({ success: true, data: await projects.setBeatSfx(req.params.id, req.params.beatId, sfxId) })
-})
-
-/** PUT /shorts/projects/:id/beats/:beatId/sticker { stickerId: id | null | 'auto' } → figurinha da cena */
-export const setBeatSticker = asyncHandler(async (req: Request, res: Response) => {
-  const raw = req.body?.stickerId
-  const stickerId = raw === null || raw === undefined || raw === '' ? null : String(raw)
-  res.json({ success: true, data: await projects.setBeatSticker(req.params.id, req.params.beatId, stickerId) })
 })
 
 /** PUT /shorts/projects/:id/beats/:beatId/sfx-volume { volume: número | null } → volume do efeito na cena */
@@ -464,11 +457,11 @@ export const listCatchphrases = asyncHandler(async (_req: Request, res: Response
   res.json({ success: true, data: await catchphrases.listCatchphrases() })
 })
 
-/** multipart: kind (clipe | montado | inscreva) e, no clipe, o vídeo em file. */
+/** multipart: kind (clipe | montado | inscreva), role (a faixa: abertura | meio | final) e, no clipe, o vídeo em file. */
 export const createCatchphrase = [
   catchphraseUpload.single('file'),
   asyncHandler(async (req: Request, res: Response) => {
-    res.status(201).json({ success: true, data: await catchphrases.createCatchphrase(req.body.kind, req.file) })
+    res.status(201).json({ success: true, data: await catchphrases.createCatchphrase(req.body.kind, req.file, req.body.role) })
   }),
 ]
 
@@ -491,4 +484,26 @@ export const catchphrasePhotoFromInstagram = asyncHandler(async (req: Request, r
 export const deleteCatchphrase = asyncHandler(async (req: Request, res: Response) => {
   await catchphrases.deleteCatchphrase(req.params.id)
   res.json({ success: true })
+})
+
+// ── Virada (bordão do meio, ADR 0039) ────────────────────
+
+export const getPivotConfig = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ success: true, data: await pivot.getPivotConfig() })
+})
+
+/** body: enabled, phrases, order (descanso | aleatorio | sequencia), rest (1 a 10); o que vier inválido é ignorado. */
+export const updatePivotConfig = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await pivot.updatePivotConfig(req.body ?? {}) })
+})
+
+/** POST /catchphrases/virada/suggest → 5 frases novas da IA; o usuário escolhe quais entram na lista. */
+export const suggestPhrases = asyncHandler(async (_req: Request, res: Response) => {
+  const config = await pivot.getPivotConfig()
+  res.json({ success: true, data: await suggestPivotPhrases({ existing: config.phrases }) })
+})
+
+/** body: clipId (id ou null = sem virada), trim ({ start, duration } ou null = o do clipe), volume (0 a 1 ou null = o do clipe). */
+export const setBeatPivot = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await projects.setBeatPivot(req.params.id, req.params.beatId, req.body ?? {}) })
 })

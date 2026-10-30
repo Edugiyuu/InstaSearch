@@ -5,6 +5,8 @@ import {
   CAPTION_LABEL,
   CaptionMode,
   Catchphrase,
+  catchphraseFileUrl,
+  catchphraseRole,
   CATCHPHRASE_KIND_LABEL,
   ChoiceScope,
   ChosenEffects,
@@ -14,15 +16,15 @@ import {
   EffectsLevel,
   errorMessage,
   FramingChoice,
+  hasPivotClip,
   imageUrl,
   Motion,
   Pace,
   PACE_LABEL,
+  pivotTrim,
   ShortProject,
   shortsApi,
   soundUrl,
-  StickerLevel,
-  STICKERS_LABEL,
   Transition,
 } from '../api/shorts'
 import { AiBadge, SearchList, Spinner, useToast } from '../components/flow'
@@ -36,7 +38,7 @@ import { EFFECT_INFO, EffectRow, MOTION_INFO, TRANSITION_INFO } from '../compone
 import { WhyTopic } from '../components/WhyTopic'
 import { ScriptReviewNote } from '../components/ScriptReviewNote'
 import { TierListCard } from '../components/TierListCard'
-import { StickerChoice, StickerPick } from '../components/StickerPick'
+import { PivotScenePanel } from '../components/PivotScenePanel'
 import './Review.css'
 
 /** "se ligaa · clipe pronto · 3,2s" na lista de bordões (sem repetir o tipo quando o nome já é ele) */
@@ -75,14 +77,6 @@ function VoiceSync({ project, onSync }: { project: ShortProject; onSync: () => v
     )
   }
   return <li>Legenda com tempo estimado · {retry('sincronizar com a voz')}</li>
-}
-
-/** O pedido ao chat quando o ajuste "Figurinhas" muda a quantidade de reações (Nenhuma não precisa da IA). */
-const STICKERS_REQUEST: Record<Exclude<StickerLevel, 'nenhuma'>, string> = {
-  muitas:
-    'Figurinhas "Muitas": ponha uma reação (effect emoji, com "sticker") em cerca de 1 a cada 3 cenas, nos momentos de emoção, nas cenas sem efeito. Não tire setas nem X e não mude a narração.',
-  poucas:
-    'Figurinhas "Poucas": deixe a reação (effect emoji) só nos 2 ou 3 momentos mais fortes; nas outras, use effect "none". Não mexa nas setas e X nem na narração.',
 }
 
 const SUGGESTIONS = ['Gancho mais curto', 'Final mais polêmico', 'Mais setas e X', 'Tira uma cena do meio', 'Legenda menor']
@@ -169,7 +163,7 @@ function Review() {
   const [params] = useSearchParams()
   const initialBeat = Math.max(0, Number(params.get('cena') ?? 1) - 1)
   const { project, setProject, error, loading } = useProject(id)
-  const { images, byId, reload: reloadLibrary } = useLibrary()
+  const { byId, reload: reloadLibrary } = useLibrary()
   const { sounds, byId: soundsById } = useSounds()
   const { catchphrases, byId: catchphraseById } = useCatchphrases()
   const { styles } = useStyles()
@@ -269,22 +263,8 @@ function Review() {
   const setEffects = (effects: EffectsLevel) =>
     run(`Efeitos: ${EFFECTS_LABEL[effects].toLowerCase()}`, async () => {
       await shortsApi.updateProject(project.id, { settings: { ...project.settings, effects } })
-      return shortsApi.adjust(project.id, `Efeitos "${EFFECTS_LABEL[effects]}": ajuste a quantidade de setas, X, círculos e emojis, sem mudar a narração.`)
+      return shortsApi.adjust(project.id, `Efeitos "${EFFECTS_LABEL[effects]}": ajuste a quantidade de setas, X e círculos, sem mudar a narração.`)
     })
-
-  /**
-   * Nenhuma: tira as figurinhas automáticas na hora, sem IA. Muitas: a IA põe reações em mais cenas.
-   * Poucas: volta às reações que a IA já tinha posto; vindo de Muitas, a IA tira as que sobram.
-   * Nos três, as figurinhas escolhidas na cena ficam.
-   */
-  const setStickers = (stickers: StickerLevel) => {
-    const from = project.settings.stickers ?? 'poucas'
-    run(`Figurinhas: ${STICKERS_LABEL[stickers].toLowerCase()}`, async () => {
-      const saved = await shortsApi.updateProject(project.id, { settings: { stickers } })
-      const askAI = stickers === 'muitas' || (stickers === 'poucas' && from === 'muitas')
-      return askAI ? shortsApi.adjust(project.id, STICKERS_REQUEST[stickers as Exclude<StickerLevel, 'nenhuma'>]) : saved
-    })
-  }
 
   const repickImages = (label: string) => run(label, async () => (await shortsApi.assemble(project.id)).project)
 
@@ -328,7 +308,6 @@ function Review() {
   const music = sounds.filter(s => s.kind === 'musica')
   const hasSfx = sounds.some(s => s.kind === 'sfx')
   const sfxCount = project.beats.filter(b => b.sfxId).length
-  const stickerCount = project.beats.filter(b => b.stickerId).length
   const pending = beatsNeedingImage(project)
   const missing = pending.filter(b => b.imageStatus === 'missing')
   const effects = project.beats.filter(b => effectiveBeat(b).effect !== 'none').length
@@ -338,8 +317,6 @@ function Review() {
   const shown = beat ? effectiveBeat(beat) : undefined
   const beatImage = beat?.imageId ? byId.get(beat.imageId) : undefined
   const sfxList = sounds.filter(s => s.kind === 'sfx')
-  const stickerList = images.filter(i => i.kind === 'figurinha')
-  const beatSticker = beat?.stickerId ? byId.get(beat.stickerId) : undefined
   const beatSound = beat?.sfxId ? soundsById.get(beat.sfxId) : undefined
   const lastChat = project.history[project.history.length - 1]
 
@@ -352,16 +329,6 @@ function Review() {
       setProject(await shortsApi.setBeatSfx(project.id, beat.id, sfxId))
       // som novo: o ajuste da cena volta a 100%, então toca no volume do vídeo
       if (sound) playSound(sound.id, videoSfxVolume)
-    } catch (e) {
-      toast.show(errorMessage(e))
-    }
-  }
-
-  /** A figurinha da cena (ADR 0022, 2C): uma da biblioteca, nenhuma ou automático. */
-  const setSticker = async (choice: StickerChoice) => {
-    if (!beat) return
-    try {
-      setProject(await shortsApi.setBeatSticker(project.id, beat.id, choice))
     } catch (e) {
       toast.show(errorMessage(e))
     }
@@ -572,11 +539,6 @@ function Review() {
           <div className="rv-whole">
             <VideoChoice label="Ritmo" value={project.settings.pace} options={PACE_LABEL} onChange={setPace} disabled={!!working} />
             <VideoChoice label="Efeitos" value={project.settings.effects} options={EFFECTS_LABEL} onChange={setEffects} disabled={!!working} />
-            {stickerList.length ? (
-              <VideoChoice label="Figurinhas" value={project.settings.stickers ?? 'poucas'} options={STICKERS_LABEL} onChange={setStickers} disabled={!!working} />
-            ) : (
-              <Link to="/biblioteca?aba=figurinhas" className="sp-chip">+ Figurinhas</Link>
-            )}
           </div>
 
           {project.format === 'tierlist' && project.tier && (
@@ -595,7 +557,7 @@ function Review() {
             <ul className="rv-facts">
               <li><strong>{project.beats.length}</strong> cenas em {seconds}s</li>
               <li><strong>{project.beats.length - pending.length}</strong> com imagem certa</li>
-              <li><strong>{effects}</strong> setas, X e reações{stickerCount > 0 && ` (${stickerCount} figurinhas)`}</li>
+              <li><strong>{effects}</strong> setas, X e círculos</li>
               <li>
                 {hasSfx ? (
                   <><strong>{sfxCount}</strong> efeitos sonoros</>
@@ -643,7 +605,9 @@ function Review() {
               const img = b.imageId ? byId.get(b.imageId) : undefined
               const fx = effectiveBeat(b)
               const t = sceneTransition(b, i, project.settings)
-              const status = b.locked ? 'match' : b.imageStatus
+              // a virada com clipe não precisa de imagem (ADR 0039)
+              const pivotClip = hasPivotClip(b) ? catchphraseById.get(b.pivot!.clipId!) : undefined
+              const status = b.locked || pivotClip ? 'match' : b.imageStatus
               return (
                 <Fragment key={b.id}>
                   {i > 0 && (
@@ -670,7 +634,14 @@ function Review() {
                       setOpen(status === 'missing' || status === 'similar' ? 'imagens' : 'efeitos')
                     }}
                   >
-                    {img ? <img src={imageUrl(img)} alt="" loading="lazy" /> : <span className="rv-thumb-missing">?</span>}
+                    {pivotClip?.file ? (
+                      <video src={`${catchphraseFileUrl(pivotClip.file)}#t=${pivotTrim(pivotClip, b.pivot).start + 0.1}`} muted preload="metadata" />
+                    ) : img ? (
+                      <img src={imageUrl(img)} alt="" loading="lazy" />
+                    ) : (
+                      <span className="rv-thumb-missing">?</span>
+                    )}
+                    {b.pivot && <span className="rv-thumb-pivot" title={`A virada: “${b.pivot.phrase}”`}>virada</span>}
                     <span className="rv-thumb-n">{i + 1}</span>
                     {b.chosen && <span className="rv-thumb-mine" title="Você escolheu efeitos nesta cena" />}
                     <span className="rv-thumb-fx">
@@ -769,12 +740,22 @@ function Review() {
 
           {active === 'efeitos' && beat && shown && (
             <>
+              {beat.pivot && (
+                <PivotScenePanel
+                  project={project}
+                  beat={{ ...beat, pivot: beat.pivot }}
+                  index={current}
+                  catchphrases={catchphrases}
+                  run={run}
+                  disabled={!!working}
+                />
+              )}
               <div className="rv-fix-head">
                 <strong>Efeitos da cena {current + 1}</strong>
                 <span className="rv-fx-say">“{beat.say}”</span>
                 <span className="spacer" />
                 {beat.chosen && (
-                  // só os 4 efeitos do ADR 0037; imagem, fundo, som e figurinha têm o "Automático" de cada pop-up
+                  // só os 4 efeitos do ADR 0037; imagem, fundo e som têm o "Automático" de cada pop-up
                   <button className="act" onClick={() => setChoice('all', null)}>
                     ↺ Voltar ao que a IA fez
                   </button>
@@ -825,12 +806,15 @@ function Review() {
                 />
               </div>
 
-              {/* imagem, fundo, som e figurinha têm listas grandes: continuam em pop-up (ADR 0022) */}
+              {/* imagem, fundo e som têm listas grandes: continuam em pop-up (ADR 0022) */}
               <div className="rv-fx-more">
                 <span className="rv-fx-more-label">Também</span>
-                <button className="sp-chip" onClick={() => navigate(`/projeto/${project.id}/imagens?cena=${beat.id}`)} title="Trocar a imagem desta cena">
-                  🖼 {beatImage ? 'Trocar imagem' : 'Falta imagem'}
-                </button>
+                {/* na virada com clipe, o visual é o clipe (o painel acima); a imagem só volta com "Sem virada aqui" */}
+                {!hasPivotClip(beat) && (
+                  <button className="sp-chip" onClick={() => navigate(`/projeto/${project.id}/imagens?cena=${beat.id}`)} title="Trocar a imagem desta cena">
+                    🖼 {beatImage ? 'Trocar imagem' : 'Falta imagem'}
+                  </button>
+                )}
                 {beatImage && <BackdropPick scene={beat.scene} choice={beat.framing} image={beatImage} onChange={setFraming} />}
                 {sfxList.length === 0 ? (
                   <Link to="/biblioteca?aba=sfx" className="sp-chip">🔊 + Efeitos sonoros</Link>
@@ -886,17 +870,6 @@ function Review() {
                     <button className="sp-chip" onClick={() => playSound(beat.sfxId, sfxVolume(project.settings, beat))} disabled={!beatSound} title="Ouvir o efeito desta cena">▶</button>
                   </>
                 )}
-                {stickerList.length === 0 ? (
-                  <Link to="/biblioteca?aba=figurinhas" className="sp-chip">😮 + Figurinhas</Link>
-                ) : (
-                  <StickerPick
-                    stickers={stickerList}
-                    current={beatSticker}
-                    locked={!!beat.stickerLocked}
-                    context={`${project.subject ?? project.theme} ${beat.characters.join(' ')}`}
-                    onChange={setSticker}
-                  />
-                )}
               </div>
               <p className="rv-fx-hint">Passe o mouse numa opção e o vídeo toca a cena com ela. Um clique aplica nesta cena; ✨ Auto é o que a IA fez. Clique numa cena da faixa para mexer nela.</p>
             </>
@@ -936,7 +909,8 @@ function Review() {
                           {close => (
                             <>
                               <ScenePickOption on={!chosen} onClick={() => { setCatchphrase(slot, null); close() }}>Nenhum</ScenePickOption>
-                              {catchphrases.map(c => (
+                              {/* só os da faixa certa: os clipes do meio entram na virada, não nas pontas (ADR 0039) */}
+                              {catchphrases.filter(c => catchphraseRole(c) === (slot === 'intro' ? 'abertura' : 'final')).map(c => (
                                 <ScenePickOption key={c.id} on={chosen?.id === c.id} onClick={() => { setCatchphrase(slot, c.id); close() }}>{catchphraseLabel(c)}</ScenePickOption>
                               ))}
                             </>

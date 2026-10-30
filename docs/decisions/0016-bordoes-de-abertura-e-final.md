@@ -1,6 +1,6 @@
 # 0016 — Bordões de abertura e de final na biblioteca
 
-**Status:** Aceita · **Data:** 2026-10-05
+**Status:** Substituída em parte por [0039](0039-bordao-do-meio.md) (o bordão do meio e o papel de cada bordão) · **Data:** 2026-10-05
 
 ## Contexto
 

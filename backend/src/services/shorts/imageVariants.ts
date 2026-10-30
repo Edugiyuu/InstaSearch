@@ -13,7 +13,7 @@ const OPAQUE = 250
 
 /**
  * Cria a versão do vídeo (`id.v.jpg`) e a miniatura (`id.t.jpg`) de uma imagem já salva em `dir/file`.
- * A original fica intacta. Imagem com transparência (o recorte de uma figurinha) sai em PNG; GIF fica
+ * A original fica intacta. Imagem com transparência (um recorte, um logo) sai em PNG; GIF fica
  * como está (pode ser animado). Devolve os campos para o LibraryImage.
  */
 export async function makeVariants(dir: string, file: string): Promise<Variants | null> {
@@ -22,7 +22,7 @@ export async function makeVariants(dir: string, file: string): Promise<Variants 
   const info = await imageInfo(input)
   if (!info) return null
 
-  // PNG só se a transparência é usada de verdade (o recorte da figurinha); o resto vai em JPEG
+  // PNG só se a transparência é usada de verdade (um recorte, um logo); o resto vai em JPEG
   const transparent = mayHaveAlpha(info.pixFmt) && (await minAlpha(input).catch(() => 0)) < OPAQUE
   const ext = transparent ? '.png' : '.jpg'
   const base = path.parse(file).name

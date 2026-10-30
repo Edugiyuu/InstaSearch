@@ -29,8 +29,6 @@ export const EFFECT_INFO: Record<Effect, EffectInfo> = {
   circle: { name: 'Círculo', glyph: '◯' },
   arrow: { name: 'Seta', glyph: '➜' },
   cross: { name: 'X', glyph: '✕' },
-  // a reação é a figurinha, que tem o botão dela; aqui só aparece como o que a IA fez
-  emoji: { name: 'reação', glyph: '😮' },
 }
 
 export interface RowOption {

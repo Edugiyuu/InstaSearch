@@ -138,7 +138,7 @@ function ReplaceImage() {
 
   const addFiles = (files: File[]) => {
     const images = files.filter(f => f.type.startsWith('image/'))
-    if (images.length) addAndChoose(shortsApi.uploadImages(images.slice(0, 1), undefined, true))
+    if (images.length) addAndChoose(shortsApi.uploadImages(images.slice(0, 1), true))
   }
 
   // Ctrl+V em qualquer lugar da tela: imagem copiada ou link

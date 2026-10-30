@@ -7,7 +7,6 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 ## Fazendo
 
 
-
 ## A fazer
 
 
@@ -30,7 +29,6 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 - [ ] Personagem pelo apelido acha o errado no AniList: "Mob" vira "Mob no Haha" (a mãe dele), porque o nome procurado bate palavra por palavra; aí o Danbooru não traz nenhuma fanart do Mob (o nome completo, "Shigeo Kageyama", funciona)
 - [ ] O `npx tsc --noEmit -p backend` (e `-p frontend`) da Definição de Pronto não roda da raiz: o TypeScript está só em `backend/` e `frontend/`, e o `npx` sai sem checar nada; trocar no CLAUDE.md por `npm --prefix backend exec tsc -- --noEmit` (ou parecido)
 - [ ] Decidir se a aba Vídeos (episódios divididos em cenas) sai também: sem a escolha na biblioteca, a montagem não usa mais as cenas sozinha; hoje elas só aparecem na tela Trocar imagem, e não há nenhum vídeo enviado
-- [ ] Figurinha automática combina pouco: escolhe só pelas etiquetas da reação, sem olhar a obra do vídeo (num vídeo da Tatsumaki, "chocado" pegou "guria sorrindo", e 6 de 8 reações ficaram sem figurinha); talvez preferir as do assunto, como o pop-up já faz
 - [ ] 5 imagens da biblioteca sem largura e altura (o `imageSize` com ffprobe falhou nelas; uma é um JPEG salvo como `.webp`): sem a medida, o enquadramento e a moldura usam o plano B
 - [ ] Configurar o ESLint no frontend: não há arquivo de configuração, então o `npm run lint` falha antes de analisar qualquer arquivo
 - [ ] Configurar o Jest no frontend (timeline do vídeo e `video/align.ts`)
@@ -50,6 +48,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-29 · Bordão do meio: a virada logo depois do gancho, com uma das suas frases (sugeridas pela IA e aprovadas por você) e um clipe do rodízio por baixo da voz, na ordem que você escolhe; recorte para clipes de mais de 3 s, a voz espera o clipe terminar, e a aba Bordões em três faixas; as figurinhas saíram do app ([ADR 0039](docs/decisions/0039-bordao-do-meio.md))
 - [x] 2026-10-27 · Desempenho: vídeos apagados do Instagram ou do YouTube saem da tela e da mediana (a coleta marca quem não viu mais)
 - [x] 2026-10-26 · Palco do debate: o chat das IAs saiu da coluna de 400px (ficava minúsculo, com rolagem dentro de rolagem) e virou um palco em tela cheia, com placar, conversa grande e bastidores; na tela Ideias, um cartão com o status e as ideias em largura total (ADR 0038, adendo)
 - [x] 2026-10-26 · Redesign C, etapa 8: Números, o desempenho em tela própria, cada vídeo numa barra contra a mediana (ADR 0038)

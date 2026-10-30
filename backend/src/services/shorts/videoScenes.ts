@@ -190,6 +190,55 @@ async function detectCuts(file: string, fps: number, duration: number, onProgres
   return cuts
 }
 
+/** Quadros por segundo lidos para medir o movimento (basta para achar o pico de uma dança). */
+const MOTION_FPS = 10
+
+/**
+ * Onde o vídeo mais se mexe (ADR 0039): o começo, em segundos, da janela de `seconds` com a maior soma
+ * da diferença entre quadros vizinhos, na mesma imagem de 64×36 em tons de cinza dos cortes. É o trecho
+ * que o recorte do bordão do meio já traz selecionado.
+ */
+export async function motionPeak(file: string, seconds: number) {
+  const size = SMALL_W * SMALL_H
+  const diffs: number[] = []
+  let pending: Buffer = Buffer.alloc(0)
+  let prev: Buffer | null = null
+  await run(
+    'ffmpeg',
+    // -r na saída, e não o filtro fps: o ffmpeg do Remotion não tem esse filtro
+    ['-v', 'error', '-i', file, '-map', '0:v:0', '-an', '-r', String(MOTION_FPS), '-vf', `scale=${SMALL_W}:${SMALL_H}`, '-pix_fmt', 'gray', '-c:v', 'rawvideo', '-f', 'image2pipe', '-'],
+    { onStdout: chunk => {
+      pending = pending.length ? Buffer.concat([pending, chunk]) : chunk
+      let offset = 0
+      while (pending.length - offset >= size) {
+        const frame = pending.subarray(offset, offset + size)
+        if (prev) {
+          let sum = 0
+          for (let i = 0; i < size; i++) sum += Math.abs(frame[i] - prev[i])
+          diffs.push(sum / size)
+        }
+        prev = Buffer.from(frame)
+        offset += size
+      }
+      pending = pending.subarray(offset)
+    } },
+  )
+  const width = Math.round(seconds * MOTION_FPS)
+  if (diffs.length <= width) return 0
+  // janela deslizante: soma a primeira e depois troca um quadro de cada ponta
+  let sum = diffs.slice(0, width).reduce((a, b) => a + b, 0)
+  let best = sum
+  let bestAt = 0
+  for (let i = width; i < diffs.length; i++) {
+    sum += diffs[i] - diffs[i - width]
+    if (sum > best) {
+      best = sum
+      bestAt = i - width + 1
+    }
+  }
+  return bestAt / MOTION_FPS
+}
+
 /** Cortes → cenas: junta as muito curtas e divide as muito longas. */
 export function scenesFromCuts(cuts: number[], duration: number) {
   const bounds = [0, ...cuts.filter(c => c > 0 && c < duration), duration]

@@ -3,9 +3,9 @@ import { askJson, askJsonMeta, MAX_SEARCHES } from './llm.js'
 import { citedScenes, describeChanges, diffBeats, hasChanges, keepOnlyCited, scenesText } from './sceneEdits.js'
 import { ensureTierScenes, formatStructure, isRank } from './formats.js'
 import { effectiveBeat, mentionedEffects, protectChosen } from './effects.js'
+import { markPivot, normalizePhrase } from './pivot.js'
 import {
   MOTIONS,
-  STICKER_LEVELS,
   TRANSITIONS,
   type AiCredit,
   type Beat,
@@ -42,7 +42,7 @@ const IMAGE_TYPE: Record<ShortStyle['imageType'], string> = {
 }
 
 const SCENES: SceneKind[] = ['full', 'evidence']
-const EFFECTS: Effect[] = ['none', 'arrow', 'cross', 'circle', 'emoji']
+const EFFECTS: Effect[] = ['none', 'arrow', 'cross', 'circle']
 
 type RawBeat = Partial<Omit<Beat, 'characters' | 'twist'>> & { characters?: unknown; tags?: unknown; sound?: unknown; twist?: unknown }
 
@@ -90,7 +90,6 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
       const scene = SCENES.includes(b.scene as SceneKind) ? (b.scene as SceneKind) : 'full'
       // som escolhido pelo usuário (editor ou chat) fica até ele trocar
       const sfxId = sound ? sound.sfxId : previous?.sfxLocked || previous?.sfx === b.sfx ? previous?.sfxId : undefined
-      const sticker = b.effect === 'emoji' && b.sticker ? String(b.sticker) : undefined
       return {
         id: previous?.id ?? `b${Date.now().toString(36)}${i}`,
         say: unquote(b.say ?? b.text),
@@ -102,7 +101,6 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
         characters: Array.isArray(b.characters) ? b.characters.map(String).filter(Boolean) : [],
         scene,
         effect: EFFECTS.includes(b.effect as Effect) ? (b.effect as Effect) : 'none',
-        emoji: b.effect === 'emoji' ? String(b.emoji || '😱') : undefined,
         motion: MOTIONS.includes(b.motion as Motion) ? (b.motion as Motion) : 'zoom-in',
         focus: b.focus && b.focus !== 'none' ? String(b.focus) : undefined,
         // sem "transition" na resposta: mantém a de antes; "auto" volta para a regra do ritmo
@@ -111,10 +109,6 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
         imageId: changedImage ? undefined : previous?.imageId,
         imageStatus: changedImage ? 'missing' : previous?.imageStatus ?? 'missing',
         locked: changedImage ? false : previous?.locked,
-        sticker,
-        // a figurinha escolhida na cena fica sempre (para mudar, o pop-up da cena); a automática, até o chat mudar a reação
-        stickerId: previous?.stickerLocked || previous?.sticker === sticker ? previous?.stickerId : undefined,
-        stickerLocked: previous?.stickerLocked,
         sfx: b.sfx && SFX.includes(String(b.sfx)) ? String(b.sfx) : undefined,
         sfxId,
         sfxLocked: sound ? true : previous?.sfxLocked,
@@ -126,6 +120,8 @@ export function cleanBeats(raw: RawBeat[], keep: Beat[] = [], sounds?: SoundOpti
         framing: changedImage || previous?.scene !== scene ? undefined : previous?.framing,
         // a cena do quadro da tier list (ADR 0036); o chat que não fala dela mantém a de antes
         tier: b.tier === 'quadro' || b.tier === 'revelacao' ? b.tier : b.tier === undefined ? previous?.tier : undefined,
+        // a virada (ADR 0039) fica com a batida enquanto ela ainda fala a frase
+        pivot: previous?.pivot && normalizePhrase(unquote(b.say ?? b.text)).includes(normalizePhrase(previous.pivot.phrase)) ? previous.pivot : undefined,
       }
     })
 }
@@ -141,9 +137,7 @@ const BEAT_FORMAT = `Cada batida:
   "tags": ["2 a 4 etiquetas do Danbooru, em inglês, que descrevem essa imagem: expressão, pose, ação, enquadramento (ex.: 'smirk', 'hands_in_pockets', 'from_below', 'close-up')"],
   "characters": ["nomes dos personagens ou pessoas que aparecem na imagem; vazio se não aparece ninguém (um lugar, um logo, um pôster)"],
   "scene": "full" (imagem em tela cheia) ou "evidence" (imagem emoldurada sobre fundo quadriculado, para provas, prints e comparações),
-  "effect": "none" | "arrow" | "cross" | "circle" | "emoji",
-  "emoji": "só se effect = emoji",
-  "sticker": "só se effect = emoji: a reação em 1 a 3 palavras, para escolher uma figurinha (ex.: 'chocado', 'rindo', 'pensando', 'bravo')",
+  "effect": "none" | "arrow" | "cross" | "circle",
   "sfx": "efeito sonoro no corte, ou omita: ${SFX.join(' | ')}",
   "motion": "zoom-in" | "zoom-out" | "shake" | "pan" | "still" (parada; só quando a imagem precisa ficar quieta),
   "focus": "área da imagem para dar zoom, se fizer sentido: rosto, mão, olhos, corpo",
@@ -160,6 +154,13 @@ const TWIST_RULE = `Memes e imagens diferentes: em cerca de 1 a cada 3 batidas, 
 - "meme": nos momentos de piada, virada ou reação, um meme sobre o assunto do vídeo, mesmo que o assunto seja pesado. Pode ser o meme conhecido do personagem, da obra ou daquele momento (ex.: o Polnareff na cadeira de rodas → "polnareff wheelchair meme"), ou um meme famoso de reação que combina com a fala (ex.: algo deu errado → "this is fine meme"). Escreva a busca em inglês, terminando em "meme"; com o nome do personagem ou da obra quando o meme é deles.
 - "variacao": o personagem da batida de um jeito inesperado, em fanart (chibi, versão mulher, outro traço; ex.: "tatsumaki chibi fanart", tags ["chibi"]; "polnareff genderswap fanart", tags ["genderswap"]). Só em batidas que mostram esse personagem, e não precisa ser momento de piada: é o tipo mais comum de "twist", use mais variações que memes.
 Só memes e variações que existem de verdade; nada sexual. Nas outras batidas, omita "twist".`
+
+/**
+ * A virada (ADR 0039): a frase do canal, como foi escrita, sozinha numa batida no fim do gancho. Ela promete a
+ * explicação, então o que vem depois tem que ser a explicação.
+ */
+export const pivotRule = (phrase: string) =>
+  `- Logo depois do gancho (no fim da 1ª ou da 2ª frase), escreva exatamente esta frase, sem mudar nenhuma palavra, sozinha numa batida: "${phrase}". É a marca do canal: anuncia que agora vem a explicação, e o resto do roteiro é essa explicação. Ela conta nas palavras.`
 
 /** Quantas palavras cabem na duração (cerca de 2,6 por segundo falado). */
 export const maxWords = (duration: number) => Math.round(duration * 2.6)
@@ -184,8 +185,10 @@ export async function generateScript(input: {
   format?: VideoFormat
   /** Na tier list: a série, o personagem da vez, a parte e quem já está no quadro. */
   tier?: { series: string; character: string; part: number; previous: TierEntry[] }
+  /** A frase da virada da vez (ADR 0039); sem ela, o roteiro não tem virada. */
+  pivotPhrase?: string
 }): Promise<{ title: string; subject: string; narration: string; beats: Beat[]; tierRank?: TierRank; ai: AiCredit }> {
-  const { theme, toneGuide, duration, style, narration, hook, brief, revision, tier } = input
+  const { theme, toneGuide, duration, style, narration, hook, brief, revision, tier, pivotPhrase } = input
   const format = input.format ?? 'opiniao'
   const tierList = format === 'tierlist' && !!tier
   const beatCount = Math.round(duration / PACE_SECONDS[style.pace])
@@ -204,7 +207,8 @@ export async function generateScript(input: {
     ? `O usuário já tem a narração. NÃO mude o texto: divida exatamente esta narração em batidas, na ordem:\n"""${narration}"""`
     : `Escreva a narração de um Short sobre: "${theme}".
 - No máximo ${words} palavras (${duration} segundos falados). Conte: passar disso deixa o vídeo mais longo que o pedido.
-- Comece com um gancho forte nos primeiros 2 segundos.
+- Comece com um gancho forte nos primeiros 2 segundos.${pivotPhrase ? `
+${pivotRule(pivotPhrase)}` : ''}
 - Tom: ${toneGuide}.
 - ${formatStructure(tierList || format !== 'tierlist' ? format : 'opiniao', tier)}
 - Cada prova é específica e dá para conferir. Nada de frase genérica ("ele é muito forte", "todo mundo sabe").${agreed}${rewrite}`
@@ -217,8 +221,8 @@ Estilo do canal: "${style.name}" (${style.summary}). ${style.notes}
 Imagens preferidas: ${IMAGE_TYPE[style.imageType]}, quando o assunto tem. Um anime original não tem mangá; um jogo, um filme, uma série ou uma pessoa real pedem cena, print ou foto.
 
 Depois divida a narração em cerca de ${beatCount} batidas visuais. Em cada batida o vídeo corta para uma imagem nova.
-Efeitos (setas, X, círculos, figurinhas de reação): ${EFFECTS_SHARE[style.effects]}; use "none" no resto.
-Efeitos sonoros: "boom" ou "impacto" no gancho e nas revelações, "whoosh" em setas e cortes rápidos, "erro" com X, "pop" com figurinha de reação, "click" em provas; cerca de metade das batidas tem sfx.
+Efeitos (setas, X, círculos): ${EFFECTS_SHARE[style.effects]}; use "none" no resto.
+Efeitos sonoros: "boom" ou "impacto" no gancho e nas revelações, "whoosh" em setas e cortes rápidos, "erro" com X, "click" em provas; cerca de metade das batidas tem sfx.
 Use "evidence" para 1 a cada 5 batidas, quando o trecho cita uma prova, um print ou uma comparação.
 ${TWIST_RULE}
 Concatenar os "say" de todas as batidas tem que dar exatamente a narração.
@@ -232,7 +236,8 @@ Responda só com JSON:
   const { data: out, ai } = await askJsonMeta<{ title?: string; subject?: string; narration?: string; tierRank?: unknown; beats?: RawBeat[] }>(prompt, {
     research: !narration,
   })
-  const cleaned = cleanBeats(out.beats ?? [])
+  // a virada só existe quando a IA escreveu a frase como está na lista; com a narração do usuário, não há
+  const cleaned = markPivot(cleanBeats(out.beats ?? []), narration ? undefined : pivotPhrase)
   if (cleaned.length === 0) throw new AppError('A IA não devolveu nenhuma batida. Tente de novo.', 502, 'AI_EMPTY')
   // na tier list, o quadro e a revelação saem certos mesmo se a IA não marcar (ADR 0036)
   const beats = tierList ? ensureTierScenes(cleaned) : cleaned.map(b => ({ ...b, tier: undefined }))
@@ -265,6 +270,8 @@ export async function reviewScript(input: {
   version: number
   /** A estrutura do formato do vídeo (ADR 0036); sem ela, a de opinião com provas. */
   structure?: string
+  /** A frase da virada (ADR 0039): é marca do canal, a revisora não pede para tirar nem mudar. */
+  pivotPhrase?: string
 }): Promise<{ approved: boolean; problems: string[]; message: string; ai: AiCredit }> {
   const { theme, hook, brief, duration, narration, version } = input
   const structure = input.structure ?? formatStructure('opiniao')
@@ -283,7 +290,8 @@ Confira:
 ${structure}
 - Se o gancho prende nos 2 primeiros segundos.
 - Se é o tema combinado, e não outro, e se entrega o porquê dele.
-- Os fatos: as provas citadas existem e estão certas.
+- Os fatos: as provas citadas existem e estão certas.${input.pivotPhrase ? `
+- A frase "${input.pivotPhrase}" é a marca do canal e precisa ficar como está, depois do gancho. Não peça para tirar nem mudar; peça só se ela faltar ou estiver em outro lugar.` : ''}
 
 Aprove ("approved": true) se o roteiro está bom para virar vídeo, mesmo com detalhes que você faria diferente. Reprove só por um problema que o espectador notaria: fato errado ou inventado, argumento que não fecha, fuga do tema, gancho fraco ou texto confuso.
 
@@ -323,15 +331,15 @@ export async function adjustBeats(input: {
   const soundName = (id?: string) => sounds.find(s => s.id === id)?.name ?? 'nenhum'
   // "cena" é o número que o usuário vê; sem ele a IA contava a posição na lista e errava por uma
   // os efeitos como o vídeo mostra: os escolhidos pelo usuário valem por cima dos da IA (ADR 0037)
-  const compact = beats.map(effectiveBeat).map(({ id, say, text, query, searchTags, characters, scene, effect, emoji, sticker, sfx, sfxId, motion, focus, twist, transition }, i) => ({
-    cena: i + 1, id, say, text, query, tags: searchTags, characters, scene, effect, emoji, sticker, sfx, sound: soundName(sfxId), motion, focus, twist, transition: i === 0 ? undefined : transition ?? 'auto',
+  const compact = beats.map(effectiveBeat).map(({ id, say, text, query, searchTags, characters, scene, effect, sfx, sfxId, motion, focus, twist, transition }, i) => ({
+    cena: i + 1, id, say, text, query, tags: searchTags, characters, scene, effect, sfx, sound: soundName(sfxId), motion, focus, twist, transition: i === 0 ? undefined : transition ?? 'auto',
   }))
 
   const prompt = `Você edita um Short vertical em português do Brasil. O vídeo é uma lista de batidas; em cada batida o vídeo corta para uma imagem nova.
 
 ${subject ? `Assunto do vídeo: ${subject}. As imagens das batidas são desse assunto.
 ` : ''}Estilo: "${style.name}". ${style.notes}
-Ajustes atuais: ritmo=${settings.pace}, efeitos=${settings.effects}, legenda=${settings.caption}, figurinhas=${settings.stickers ?? 'poucas'}.
+Ajustes atuais: ritmo=${settings.pace}, efeitos=${settings.effects}, legenda=${settings.caption}.
 
 Batidas atuais (JSON):
 ${JSON.stringify(compact)}
@@ -344,7 +352,7 @@ Aplique o pedido. Regras:
 - Mantenha o "id" das batidas que continuam; batidas novas vêm sem id.
 - Só mude o que o pedido pede. Se o pedido cita cenas, não mexa nas outras.
 - "twist" (meme ou variação da imagem): mantenha como está, a menos que o pedido fale de memes ou de imagens diferentes; para tirar, use null. Quando pedir mais ou menos memes, siga esta regra: ${TWIST_RULE}
-- Se o pedido for sobre ritmo, efeitos, legenda ou figurinhas do vídeo inteiro, mude "settings" (pace: calmo|normal|rapido|frenetico, effects: poucos|medida|muitos, caption: quadrinho|completa|limpa|sem, stickers: nenhuma|poucas|muitas). Para tirar todas as figurinhas, use stickers=nenhuma e não mexa nas batidas.
+- Se o pedido for sobre ritmo, efeitos ou legenda do vídeo inteiro, mude "settings" (pace: calmo|normal|rapido|frenetico, effects: poucos|medida|muitos, caption: quadrinho|completa|limpa|sem).
 - "narration" é a junção dos "say".${
     tier
       ? `
@@ -393,7 +401,7 @@ Responda só com JSON:
 }
 
 const settingsDiffer = (a: ProjectSettings, b: ProjectSettings) =>
-  a.pace !== b.pace || a.effects !== b.effects || a.caption !== b.caption || (a.stickers ?? 'poucas') !== (b.stickers ?? 'poucas')
+  a.pace !== b.pace || a.effects !== b.effects || a.caption !== b.caption
 
 /**
  * A resposta do chat diz o que de fato mudou (ADR 0017). O texto da IA só aparece quando
@@ -427,7 +435,6 @@ function pickSettings(s?: Partial<ProjectSettings>): Partial<ProjectSettings> {
   if (s.pace && ['calmo', 'normal', 'rapido', 'frenetico'].includes(s.pace)) out.pace = s.pace
   if (s.effects && ['poucos', 'medida', 'muitos'].includes(s.effects)) out.effects = s.effects
   if (s.caption && ['quadrinho', 'completa', 'limpa', 'sem'].includes(s.caption)) out.caption = s.caption
-  if (s.stickers && STICKER_LEVELS.includes(s.stickers)) out.stickers = s.stickers
   return out
 }
 
@@ -440,20 +447,19 @@ export async function catalogImage(
 Descreva a imagem em português do Brasil. Responda só com JSON:
 {
   "name": "nome curto em minúsculas, 1 a 3 palavras (ex.: 'sukuna sorrindo')",
-  "kind": "imagem" | "meme" | "print" | "logo" | "figurinha" (recorte com fundo transparente, reação, adesivo),
+  "kind": "imagem" | "meme" | "print" | "logo",
   "characters": ["personagens reconhecidos, com o nome mais conhecido; vazio se não souber"],
   "tags": ["4 a 8 etiquetas curtas em minúsculas: estilo (mangá, anime, fanart), emoção, ação, enquadramento, cores"],
   "description": "uma frase sobre o que acontece, dizendo de que obra, pessoa ou marca é, se souber",
   "regions": [{ "label": "rosto" | "mão" | "olhos" | "corpo" | outro, "x": 0-1, "y": 0-1, "w": 0-1, "h": 0-1 }]
 }
-Se for figurinha ou reação, coloque nas etiquetas a emoção e 2 ou 3 sinônimos (ex.: chocado, surpreso, espantado).
 As regiões são caixas relativas ao tamanho da imagem (x,y = canto superior esquerdo). Marque no máximo 3, só as que valem um zoom.`
 
   const out = await askJson<any>(prompt, { image: { data: data.toString('base64'), mimeType }, effort: 'low' })
   const clamp = (n: unknown) => Math.min(1, Math.max(0, Number(n) || 0))
   return {
     name: String(out.name || 'imagem').toLowerCase(),
-    kind: ['imagem', 'meme', 'print', 'logo', 'figurinha'].includes(out.kind) ? out.kind : 'imagem',
+    kind: ['imagem', 'meme', 'print', 'logo'].includes(out.kind) ? out.kind : 'imagem',
     characters: Array.isArray(out.characters) ? out.characters.map(String).slice(0, 5) : [],
     tags: Array.isArray(out.tags) ? out.tags.map((t: unknown) => String(t).toLowerCase()).slice(0, 10) : [],
     description: String(out.description || ''),
@@ -564,6 +570,35 @@ Responda só com JSON:
     guide: guide.slice(0, 1200),
     ai,
   }
+}
+
+/**
+ * Frases da virada (ADR 0039): 5 sugestões para o usuário escolher. O que faz a frase soar natural é o lugar
+ * (a emenda entre o gancho e a explicação) e a função (prometer a explicação), então a regra é curta, serve
+ * para qualquer tema e promete o que vem.
+ */
+export async function suggestPivotPhrases(input: { existing: string[] }): Promise<{ phrases: string[]; ai: AiCredit }> {
+  const existing = input.existing.filter(Boolean)
+  const prompt = `Você ajuda um criador de Shorts narrados (cultura pop, anime, jogos e outros temas) em português do Brasil a criar a FRASE DA VIRADA: a marca do canal que ele fala logo depois do gancho, quando para de provocar e começa a explicar. Ela entra em todo vídeo, sobre qualquer tema.
+
+Regras:
+- Curta: de 3 a 7 palavras, até uns 2 segundos falada.
+- Serve para qualquer assunto: não cita personagem, obra nem tema.
+- Promete o que vem: a explicação, a história, a parte pior. Quem ouve sente "agora vai".
+- Soa falada, informal, do Brasil, como um amigo contando; nada de bordão de narrador de TV nem de clichê gasto ("senta que lá vem história", "sem mais delongas", "bora lá").
+- Original: nada parecido com estas, que ele já tem${existing.length ? `: ${existing.map(p => `"${p}"`).join(', ')}` : ' (nenhuma ainda)'}.
+- Cada uma de um jeito diferente (calma, pressa, suspense, intimidade).
+
+Responda só com JSON:
+{ "phrases": ["as 5 frases"] }`
+  const { data, ai } = await askJsonMeta<{ phrases?: unknown }>(prompt, { effort: 'low' })
+  const known = new Set(existing.map(normalizePhrase))
+  const phrases = (Array.isArray(data.phrases) ? data.phrases : [])
+    .map(p => unquote(p).slice(0, 80))
+    .filter(p => p && !known.has(normalizePhrase(p)) && known.add(normalizePhrase(p)))
+    .slice(0, 5)
+  if (phrases.length === 0) throw new AppError('A IA não devolveu nenhuma frase nova. Tente de novo.', 502, 'AI_EMPTY')
+  return { phrases, ai }
 }
 
 export interface WebPickScene {

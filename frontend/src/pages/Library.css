@@ -379,20 +379,6 @@
   border-radius: 8px;
 }
 
-/* Fundo quadriculado para ver a transparência das figurinhas */
-.checker {
-  background-color: #2a2d35;
-  background-image: linear-gradient(45deg, #343843 25%, transparent 25%), linear-gradient(-45deg, #343843 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #343843 75%), linear-gradient(-45deg, transparent 75%, #343843 75%);
-  background-size: 18px 18px;
-  background-position: 0 0, 0 9px, 9px -9px, -9px 0;
-}
-
-.lib-img.checker img {
-  object-fit: contain;
-  padding: 10px;
-}
-
 /* Sons */
 .snd-link {
   display: flex;
@@ -891,4 +877,180 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px 14px;
+}
+
+/* Bordões em faixas: abertura, meio (a virada) e final (ADR 0039) */
+.bdo-lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.bdo-lane-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.bdo-lane-head h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* uma fileira só, que rola para o lado: com 30 clipes, a faixa não cresce nem empurra o Final para baixo */
+.bdo-grid {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: 112px;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x proximity;
+}
+
+.bdo-grid > * {
+  scroll-snap-align: start;
+}
+
+/* min-width 0: sem isso, a fileira larga estica a coluna da grade em vez de rolar */
+.bdo-lanes,
+.bdo-lane {
+  min-width: 0;
+}
+
+.bdo-lane-head {
+  flex-wrap: wrap;
+}
+
+.bdo-grid .lib-img {
+  aspect-ratio: 9 / 14;
+}
+
+.bdo-grid .lib-img video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bdo-card.resting .lib-img {
+  opacity: 0.5;
+}
+
+.bdo-card .bdo-never {
+  color: var(--success);
+}
+
+.bdo-badge.off {
+  background: var(--panel-3);
+  color: var(--muted);
+}
+
+.bdo-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  aspect-ratio: 9 / 14;
+  padding: 10px;
+  border: 1px dashed var(--faint);
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.bdo-add span {
+  font-size: 24px;
+}
+
+.bdo-add:hover,
+.bdo-add.over {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.bdo-pivot-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.bdo-phrases,
+.bdo-order,
+.bdo-on {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bdo-phrases {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.bdo-order select {
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+}
+
+.bdo-order select option {
+  background: var(--panel);
+}
+
+.bdo-on input {
+  accent-color: var(--success);
+}
+
+.bdo-on.yes {
+  color: var(--success);
+}
+
+.bdo-warn {
+  margin-top: -14px;
+  font-size: 12px;
+  color: var(--warning);
+}
+
+.bdo-trim {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bdo-volume {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bdo-volume input {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.bdo-volume output {
+  width: 40px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.bdo-middle-preview {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
 }

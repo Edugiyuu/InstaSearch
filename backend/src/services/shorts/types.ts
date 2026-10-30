@@ -3,9 +3,6 @@
 
 export type Pace = 'calmo' | 'normal' | 'rapido' | 'frenetico'
 export type EffectsLevel = 'poucos' | 'medida' | 'muitos'
-/** Quantas figurinhas o vídeo leva (ADR 0022, 2C); a escolha feita na cena vale mais. */
-export type StickerLevel = 'nenhuma' | 'poucas' | 'muitas'
-export const STICKER_LEVELS: StickerLevel[] = ['nenhuma', 'poucas', 'muitas']
 /** quadrinho = 1 a 3 palavras-chave; completa = todas as palavras, uma acendendo por vez */
 export type CaptionMode = 'quadrinho' | 'completa' | 'limpa' | 'sem'
 export type MusicMood = 'tensa' | 'animada' | 'calma' | 'sem'
@@ -44,14 +41,14 @@ export interface Tone {
 }
 
 export type SceneKind = 'full' | 'evidence'
-export type Effect = 'none' | 'arrow' | 'cross' | 'circle' | 'emoji'
+export type Effect = 'none' | 'arrow' | 'cross' | 'circle'
 /** 'still' = parado (ADR 0037): a imagem não se mexe. */
 export type Motion = 'zoom-in' | 'zoom-out' | 'shake' | 'pan' | 'still'
 export const MOTIONS: Motion[] = ['zoom-in', 'zoom-out', 'shake', 'pan', 'still']
 /** Como a cena entra, no corte que vem da anterior (ADR 0037). */
 export type Transition = 'cut' | 'flash' | 'flash-black' | 'shake' | 'zoom'
 export const TRANSITIONS: Transition[] = ['cut', 'flash', 'flash-black', 'shake', 'zoom']
-/** O destaque que o usuário pode escolher (a reação é a figurinha, que tem o pop-up dela). */
+/** O destaque que o usuário pode escolher. */
 export const CHOSEN_EFFECTS: Effect[] = ['none', 'arrow', 'cross', 'circle']
 
 /**
@@ -84,20 +81,11 @@ export interface Beat {
   characters: string[]
   scene: SceneKind
   effect: Effect
-  emoji?: string
   motion: Motion
   /** Área da imagem para dar zoom (ex.: "rosto", "mão"). */
   focus?: string
   imageId?: string
   imageStatus: ImageStatus
-  /** Reação para a figurinha quando effect = emoji (ex.: "chocado"). */
-  sticker?: string
-  stickerId?: string
-  /**
-   * true quando o usuário escolheu a figurinha na cena (uma da biblioteca, ou nenhuma); a montagem
-   * e o ajuste "Figurinhas" do vídeo não trocam mais. Figurinha escolhida aparece mesmo sem reação.
-   */
-  stickerLocked?: boolean
   /** Efeito sonoro pedido pela IA (ex.: "whoosh", "boom"). */
   sfx?: string
   sfxId?: string
@@ -129,6 +117,8 @@ export interface Beat {
    * o personagem e, na palavra que aponta ("aqui"), o põe na fileira.
    */
   tier?: TierScene
+  /** A cena da virada (ADR 0039): o roteiro marca, a montagem põe um clipe do meio. */
+  pivot?: PivotScene
 }
 
 /** Os formatos de vídeo (ADR 0036): cada um muda a estrutura do roteiro; a tier list tem cena própria. */
@@ -171,8 +161,6 @@ export interface ProjectSettings {
   outro?: string | null
   /** Volume de todos os efeitos sonoros do vídeo (0 a 1; sem valor = 0,75). */
   sfxVolume?: number
-  /** Quantas figurinhas (sem valor = poucas: onde a IA pôs uma reação). */
-  stickers?: StickerLevel
 }
 
 export type AiProvider = 'gemini' | 'claude' | 'claude-code'
@@ -326,7 +314,7 @@ export interface Region {
 }
 
 /** video = episódio ou trecho enviado; cena = um momento desse vídeo (o que entra nas batidas). */
-export type MediaKind = 'imagem' | 'meme' | 'print' | 'logo' | 'figurinha' | 'video' | 'cena'
+export type MediaKind = 'imagem' | 'meme' | 'print' | 'logo' | 'video' | 'cena'
 
 /** Andamento da divisão de um vídeo em cenas. */
 export interface VideoProcessing {
@@ -454,5 +442,52 @@ export interface Catchphrase {
   /** Vídeos novos já começam com este bordão na abertura / no final. */
   defaultIntro?: boolean
   defaultOutro?: boolean
+  /** Onde o bordão entra (ADR 0039); sem o campo, vem da marcação de padrão (ver `catchphraseRole`). */
+  role?: CatchphraseRole
+  /** Só no clipe do meio: o trecho que entra no vídeo; sem o campo, o clipe inteiro (até 3 s). */
+  trim?: ClipTrim
+  /** Só no clipe do meio: o volume do som dele por baixo da voz (0 a 1; sem o campo, 0,2). */
+  volume?: number
+  /** Só no clipe do meio: false tira do rodízio, sem apagar. */
+  inRotation?: boolean
   createdAt: string
+}
+
+/** abertura = antes da voz; meio = a virada do roteiro, com a voz por cima; final = depois da última cena (ADR 0039). */
+export type CatchphraseRole = 'abertura' | 'meio' | 'final'
+export const CATCHPHRASE_ROLES: CatchphraseRole[] = ['abertura', 'meio', 'final']
+
+/** Um trecho de um clipe, em segundos. */
+export interface ClipTrim {
+  start: number
+  duration: number
+}
+
+/** Como o rodízio escolhe o clipe do meio (ADR 0039). */
+export type PivotOrder = 'descanso' | 'aleatorio' | 'sequencia'
+export const PIVOT_ORDERS: PivotOrder[] = ['descanso', 'aleatorio', 'sequencia']
+
+/** A virada (ADR 0039): as frases do usuário e como os clipes do meio giram. Um só, em data/bordoes_virada/config.json. */
+export interface PivotConfig {
+  id: 'config'
+  /** false: o roteiro não escreve virada. */
+  enabled: boolean
+  /** As frases do usuário; o roteiro usa uma por vídeo, como foi escrita. */
+  phrases: string[]
+  order: PivotOrder
+  /** "descanso": um clipe não volta antes de N vídeos. */
+  rest: number
+}
+
+/** A cena da virada (ADR 0039): a frase do canal no fim do gancho; o visual é um clipe do rodízio. */
+export interface PivotScene {
+  /** A frase usada, como está na lista (para o rodízio das frases). */
+  phrase: string
+  /** O clipe (bordão do meio); null = "Sem virada aqui" (a cena volta a ter imagem); sem o campo, a montagem escolhe. */
+  clipId?: string | null
+  /** true quando o usuário escolheu o clipe (ou nenhum); a montagem não troca mais. */
+  locked?: boolean
+  /** Neste vídeo: o trecho e o volume, por cima dos do clipe. */
+  trim?: ClipTrim
+  volume?: number
 }

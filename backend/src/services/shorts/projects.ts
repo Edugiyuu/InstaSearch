@@ -6,8 +6,9 @@ import { AppError } from '../../middleware/errorHandler.js'
 import { generateId } from '../../utils/idGenerator.js'
 import { logger } from '../../utils/logger.js'
 import { getStyle } from './styles.js'
-import { CHANNEL_CATCHPHRASE_ID, defaultCatchphrases } from './catchphrases.js'
-import { forgetProject, importImageFromUrl, listStickers, pickSfx, refreshStickers, syncUsage } from './library.js'
+import { CHANNEL_CATCHPHRASE_ID, cleanTrim, defaultCatchphrases, listCatchphrases } from './catchphrases.js'
+import { getPivotConfig, markPivot, pickPhrase, pickPivotClip, pivotHistory, pivotPool } from './pivot.js'
+import { forgetProject, importImageFromUrl, pickSfx, refreshSfx, syncUsage } from './library.js'
 import { getAppSettings } from './appSettings.js'
 import { fetchThumb, pickCandidates, searchWebImages, type WebImage } from './imageSearch.js'
 import { adjustBeats, generateScript, pickWebImagesWithAI, type Script } from './shortsAI.js'
@@ -17,7 +18,7 @@ import { transcribeAudio, WHISPER_MODEL } from './transcription.js'
 import { BUILT_IN_TONES, getTone, toneByName } from './tones.js'
 import { tierBoard } from './formats.js'
 import { applyChoice, clearChoices, validChoice, type ChoiceScope } from './effects.js'
-import { STICKER_LEVELS, type ChosenEffects, type ChosenField, type AiCredit, type AssemblyLogEntry, type Beat, type FramingChoice, type ProjectSettings, type ShortProject, type TierEntry, type TierRank, type Transcript, type VideoFormat } from './types.js'
+import { type ChosenEffects, type ChosenField, type AiCredit, type AssemblyLogEntry, type Beat, type FramingChoice, type ProjectSettings, type PivotScene, type ShortProject, type TierEntry, type TierRank, type Transcript, type VideoFormat } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const AUDIO_DIR = path.join(__dirname, '../../../data/short_projects/audio')
@@ -92,7 +93,14 @@ export async function scriptInputs(input: ProjectInput) {
     (input.toneId ? await getTone(input.toneId) : null) ??
     (input.tone ? await toneByName(input.tone) : null) ??
     BUILT_IN_TONES.find(t => t.id === 'curioso')!
-  return { theme, duration, style, tone }
+  return { theme, duration, style, tone, pivotPhrase: await nextPivotPhrase() }
+}
+
+/** A frase da virada do próximo vídeo (ADR 0039): a que está há mais tempo sem sair; nenhuma, com a virada desligada. */
+async function nextPivotPhrase() {
+  const config = await getPivotConfig()
+  if (!config.enabled) return undefined
+  return pickPhrase(config.phrases, pivotHistory(await listProjects()))
 }
 
 /**
@@ -101,7 +109,7 @@ export async function scriptInputs(input: ProjectInput) {
  * vem do roteiro.
  */
 export async function createProject(input: ProjectInput & { script?: Script; format?: VideoFormat; tier?: Omit<TierEntry, 'rank'> }) {
-  const { theme, duration, style, tone } = await scriptInputs(input)
+  const { theme, duration, style, tone, pivotPhrase } = await scriptInputs(input)
 
   const script =
     input.script ??
@@ -111,6 +119,7 @@ export async function createProject(input: ProjectInput & { script?: Script; for
       duration,
       style,
       narration: input.narration?.trim() || undefined,
+      pivotPhrase,
     }))
 
   const now = new Date().toISOString()
@@ -159,13 +168,11 @@ export async function updateProject(id: string, changes: Partial<ShortProject>) 
     next.settings = { ...project.settings, ...changes.settings }
     const volume = next.settings.sfxVolume
     if (volume !== undefined) next.settings.sfxVolume = typeof volume === 'number' && Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : undefined
-    if (next.settings.stickers && !STICKER_LEVELS.includes(next.settings.stickers)) next.settings.stickers = project.settings.stickers
-    // "Figurinhas: Nenhuma" tira as automáticas na hora; voltar põe de novo (as da cena ficam)
-    if (next.settings.stickers !== project.settings.stickers) next.beats = await refreshStickers(id, next.beats, next.settings.stickers)
   }
   if (Array.isArray(changes.beats)) {
     next.undo = [project.beats, ...project.undo].slice(0, MAX_UNDO)
-    next.beats = changes.beats
+    // texto editado no Roteiro: a cena que não fala mais a frase deixa de ser a virada (ADR 0039)
+    next.beats = changes.beats.map(b => (b.pivot ? markPivot([b], b.pivot.phrase)[0] : b))
     next.narration = changes.beats.map(b => b.say).join(' ')
     await syncUsage(id, next.beats)
   }
@@ -186,7 +193,7 @@ export const subjectOf = (p: ShortProject) => p.subject ?? p.theme
 
 /**
  * 04b: a montagem. As imagens vêm só da web (ADR 0022, 1B): as que a montagem pôs antes saem e são
- * buscadas de novo ("Escolher de novo"); as que o usuário escolheu ficam. Depois, figurinhas, sons e
+ * buscadas de novo ("Escolher de novo"); as que o usuário escolheu ficam. Depois, sons e
  * música, e o projeto passa para a revisão. `images: false`: só limpa, e a busca fica para depois
  * (a criação sozinha mostra a busca como uma etapa própria, ADR 0026).
  */
@@ -194,12 +201,15 @@ export async function assemble(id: string, opts: { images?: boolean } = {}) {
   const project = await getProject(id)
   project.beats = project.beats.map(b => (b.locked || b.tier ? b : { ...b, imageId: undefined, imageStatus: 'missing' as const }))
   const log: AssemblyLogEntry[] = []
+  // a virada antes das imagens: a cena com clipe não precisa de imagem (ADR 0039)
+  const pivot = await assignPivot(project)
+  if (pivot) log.push(pivot)
   if (opts.images !== false) {
     const fill = await fillFromWeb(project)
     if (fill.ai) log.push({ beatId: 'ia', status: 'match', message: '✨ A IA olhou as sugestões da web e escolheu as imagens', ai: fill.ai })
     for (const r of fill.results) log.push({ beatId: r.beatId, status: r.ok ? 'match' : 'missing', message: r.message })
   }
-  project.beats = await refreshStickers(id, project.beats, project.settings.stickers)
+  project.beats = await refreshSfx(id, project.beats)
   if (project.musicId === undefined) {
     const style = await getStyle(project.styleId)
     const musicId = await pickMusic(style.music)
@@ -207,6 +217,47 @@ export async function assemble(id: string, opts: { images?: boolean } = {}) {
   }
   if (project.status === 'roteiro') project.status = 'revisao'
   return { project: await save(project), log }
+}
+
+/**
+ * O clipe da cena da virada (ADR 0039), pelo rodízio da aba Bordões. O clipe que o usuário escolheu fica; o
+ * que a montagem pôs também (montar de novo não troca a dança), a menos que ele tenha saído do rodízio.
+ */
+async function assignPivot(project: ShortProject): Promise<AssemblyLogEntry | undefined> {
+  const beat = project.beats.find(b => b.pivot)
+  if (!beat?.pivot || beat.pivot.locked) return undefined
+  const clips = await listCatchphrases()
+  const pool = pivotPool(clips)
+  if (typeof beat.pivot.clipId === 'string' && pool.some(c => c.id === beat.pivot!.clipId)) return undefined
+  const clipId = pickPivotClip(clips, pivotHistory(await listProjects(), project.id), await getPivotConfig())
+  beat.pivot = { ...beat.pivot, clipId }
+  if (!clipId) return { beatId: beat.id, status: 'missing', message: `Virada “${beat.pivot.phrase}”: nenhum clipe no meio (Biblioteca → Bordões); a cena fica com imagem` }
+  return { beatId: beat.id, status: 'match', message: `Virada “${beat.pivot.phrase}” → ${clips.find(c => c.id === clipId)?.name ?? 'clipe'}` }
+}
+
+/**
+ * Revisão: a cena da virada. clipId: outro clipe, ou null = "Sem virada aqui" (a cena volta a pedir imagem);
+ * trim e volume: neste vídeo, por cima dos do clipe (null volta ao do clipe).
+ */
+export async function setBeatPivot(id: string, beatId: string, changes: { clipId?: unknown; trim?: unknown; volume?: unknown }) {
+  const project = await getProject(id)
+  const beat = project.beats.find(b => b.id === beatId)
+  if (!beat?.pivot) throw new AppError('Esta cena não é a virada', 404, 'NOT_FOUND')
+  const pivot: PivotScene = { ...beat.pivot }
+  const clips = await listCatchphrases()
+  if (changes.clipId === null) Object.assign(pivot, { clipId: null, locked: true, trim: undefined, volume: undefined })
+  else if (typeof changes.clipId === 'string') {
+    if (!pivotPool(clips).some(c => c.id === changes.clipId)) throw new AppError('Esse clipe não está no meio', 400, 'VALIDATION')
+    // outro clipe: o trecho deste vídeo era do anterior
+    Object.assign(pivot, { clipId: changes.clipId, locked: true, ...(changes.clipId !== beat.pivot.clipId ? { trim: undefined } : {}) })
+  }
+  const clip = clips.find(c => c.id === pivot.clipId)
+  if (changes.trim === null) pivot.trim = undefined
+  else if (changes.trim !== undefined && clip) pivot.trim = cleanTrim(changes.trim, clip.duration) ?? pivot.trim
+  if (changes.volume === null) pivot.volume = undefined
+  else if (typeof changes.volume === 'number' && Number.isFinite(changes.volume)) pivot.volume = Math.round(Math.min(1, Math.max(0, changes.volume)) * 100) / 100
+  beat.pivot = pivot
+  return save(project)
 }
 
 /** "Peça um ajuste": a IA muda as batidas e a montagem busca na web as imagens das cenas novas ou mudadas. */
@@ -231,7 +282,6 @@ export async function adjust(id: string, request: string, openScene?: number) {
   if (out.tierRank && project.tier) project.tier = { ...project.tier, rank: out.tierRank }
 
   const changed = out.beats !== project.beats
-  const stickersChanged = out.settings.stickers !== project.settings.stickers
 
   project.undo = [project.beats, ...project.undo].slice(0, MAX_UNDO)
   project.narration = out.narration
@@ -241,7 +291,7 @@ export async function adjust(id: string, request: string, openScene?: number) {
     // a cena nova, ou com outra busca, chega sem imagem (cleanBeats)
     if (project.beats.some(needsImage)) await fillFromWeb(project)
   }
-  if (changed || stickersChanged) project.beats = await refreshStickers(id, project.beats, project.settings.stickers)
+  if (changed) project.beats = await refreshSfx(id, project.beats)
   project.history = [
     ...project.history,
     { id: generateId('adj'), request: request.trim(), reply: out.reply, at: new Date().toISOString(), ai: out.ai },
@@ -294,7 +344,8 @@ export async function setBeatImage(id: string, beatId: string, imageId: string |
 
 /** Cenas que ainda precisam de imagem: sem imagem, ou com uma parecida que o usuário não aprovou. */
 // a cena do quadro da tier list não tem imagem: o quadro é desenhado no vídeo (ADR 0036)
-const needsImage = (b: Beat) => !b.locked && !b.tier && b.imageStatus !== 'match'
+// nem a cena da virada com clipe: o clipe é o visual dela (ADR 0039)
+const needsImage = (b: Beat) => !b.locked && !b.tier && typeof b.pivot?.clipId !== 'string' && b.imageStatus !== 'match'
 
 /** Fontes cujos personagens vêm das etiquetas (Danbooru) ou do cadastro (AniList), e não de um título qualquer. */
 const trustedSource = (img: WebImage) => (img.source === 'danbooru' || img.source === 'anilist') && !!img.characters?.length
@@ -494,26 +545,6 @@ export async function setBeatSfx(id: string, beatId: string, sfxId: string | nul
   }
   // o volume da cena foi acertado para o som de antes
   if (project.beats[index].sfxId !== beat.sfxId) delete project.beats[index].sfxVolume
-  return save(project)
-}
-
-/**
- * Editor: a figurinha da cena (ADR 0022, 2C). stickerId = uma figurinha da biblioteca (aparece mesmo
- * numa cena sem reação), null = nenhuma, 'auto' = a montagem escolhe de novo. A escolha fica travada.
- */
-export async function setBeatSticker(id: string, beatId: string, stickerId: string | null) {
-  const project = await getProject(id)
-  const index = project.beats.findIndex(b => b.id === beatId)
-  if (index < 0) throw new AppError('Cena não encontrada', 404, 'NOT_FOUND')
-  const beat = project.beats[index]
-  if (stickerId === 'auto') {
-    project.beats[index] = { ...beat, stickerLocked: false, stickerId: undefined }
-  } else {
-    if (stickerId && !(await listStickers()).some(s => s.id === stickerId)) throw new AppError('Essa figurinha não está na biblioteca', 400, 'VALIDATION')
-    project.beats[index] = { ...beat, stickerId: stickerId ?? undefined, stickerLocked: true }
-  }
-  // escolhe de novo o automático e o som que depende da figurinha (o "pop")
-  project.beats = await refreshStickers(id, project.beats, project.settings.stickers)
   return save(project)
 }
 
