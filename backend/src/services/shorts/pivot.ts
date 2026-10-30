@@ -92,10 +92,16 @@ export function pickPhrase(phrases: string[], history: PivotHistory) {
   return best
 }
 
+/** Movimento da cena que vem logo depois da virada, quando a IA a deixou parada (ADR 0039, adendo). */
+const AFTER_PIVOT_MOTION = 'zoom-in' as const
+
 /**
  * Marca a cena da virada: a primeira batida que fala a frase inteira. A frase precisa estar como foi
  * escrita (sem contar caixa, acento e pontuação); se a IA mudou ou não escreveu, nenhuma cena é marcada
  * e o vídeo sai sem virada. Batidas que já eram a virada e não falam mais a frase deixam de ser.
+ *
+ * A cena seguinte não fica parada: depois da dança, uma imagem imóvel parece o vídeo travado.
+ * O que o usuário escolheu na cena (`chosen`) continua valendo.
  */
 export function markPivot(beats: Beat[], phrase?: string): Beat[] {
   const wanted = phrase ? normalizePhrase(phrase) : ''
@@ -103,6 +109,7 @@ export function markPivot(beats: Beat[], phrase?: string): Beat[] {
   return beats.map((b, i) => {
     // a cena nova da virada fica parada: o clipe já se mexe (o usuário pode escolher outro movimento)
     if (i === at) return b.pivot && normalizePhrase(b.pivot.phrase) === wanted ? b : { ...b, pivot: { phrase: phrase! }, motion: 'still' as const }
+    if (i === at + 1 && at >= 0 && b.motion === 'still') return { ...b, motion: AFTER_PIVOT_MOTION }
     return b.pivot ? { ...b, pivot: undefined } : b
   })
 }

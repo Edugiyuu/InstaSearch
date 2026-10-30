@@ -40,8 +40,10 @@ export function ShortVideo({ beats, settings, audioSrc, musicSrc, intro, outro, 
         </Sequence>
       )}
       {beats.map(t => (
-        // cena de vídeo: monta 2 s antes, escondida, para o vídeo já estar carregado no corte (sem tela preta na prévia)
-        <Sequence key={t.beat.id} from={t.from} durationInFrames={t.frames} name={t.beat.text} premountFor={t.image?.clip ? 2 * FPS : undefined}>
+        // monta a cena antes, escondida, para o arquivo já estar pronto no corte: 2 s para o vídeo
+        // (sem tela preta) e 0,5 s para a imagem — decodificar a imagem nova na hora do corte travava
+        // o navegador uns 0,2 s, e o último quadro da cena anterior ficava preso na tela
+        <Sequence key={t.beat.id} from={t.from} durationInFrames={t.frames} name={t.beat.text} premountFor={t.image?.clip ? 2 * FPS : FPS / 2}>
           <BeatScene timed={t} settings={settings} tier={t.beat.tier ? tier : undefined} phase={phase(t)} />
           {/* na revelação, o impacto toca quando o personagem voa para a fileira, e não no corte */}
           {t.sfxSrc && (
@@ -112,6 +114,7 @@ function BeatScene({ timed, settings, tier, phase }: { timed: TimedBeat; setting
       )}
 
       {image && <BeatEffect timed={timed} region={look !== 'full' ? undefined : regionOnScreen(region, image.width, image.height, looseFraming(beat.framing))} />}
+
 
       {settings.caption !== 'sem' && (
         <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} mode={settings.caption} size={settings.captionSize} anim={settings.captionAnim} />
@@ -786,8 +789,10 @@ function FullCaption({
     return start
   })
   const starts = wordStarts?.length === words.length ? wordStarts : estimated
+  // antes da primeira palavra (a cena pode entrar antes da fala, ADR 0039): o bloco aparece apagado
+  const waiting = frame < starts[0]
   let current = starts.findIndex((s, i) => frame >= s && (i === words.length - 1 || frame < starts[i + 1]))
-  if (current < 0) current = words.length - 1
+  if (current < 0) current = waiting ? 0 : words.length - 1
 
   const look = CAPTION_LOOK[size ?? 'media']
   // palavra por palavra: só a falada na tela, e maior; completa: o bloco em que ela está
@@ -827,7 +832,7 @@ function FullCaption({
         <CaptionWord
           key={chunkStart + i}
           word={w}
-          on={chunkStart + i === current}
+          on={!waiting && chunkStart + i === current}
           local={local}
           fps={fps}
           font={font}

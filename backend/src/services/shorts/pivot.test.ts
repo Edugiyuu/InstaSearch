@@ -23,6 +23,17 @@ describe('a frase da virada (ADR 0039)', () => {
     expect(beats.every(b => !b.pivot)).toBe(true)
   })
 
+  it('a cena da virada fica parada, e a seguinte não (o vídeo parecia travado depois da dança)', () => {
+    const parada = (id: string, say: string): Beat => ({ ...beat(id, say), motion: 'still' })
+    const beats = markPivot([beat('1', 'O Toji venceria?'), parada('2', 'Calma, que piora.'), parada('3', 'Ele tinha')], 'Calma, que piora.')
+    expect(beats.map(b => b.motion)).toEqual(['zoom-in', 'still', 'zoom-in'])
+  })
+
+  it('depois da virada, o movimento que não é "parado" fica como a IA escolheu', () => {
+    const beats = markPivot([beat('1', 'Calma, que piora.'), { ...beat('2', 'Ele tinha'), motion: 'pan' }], 'Calma, que piora.')
+    expect(beats[1].motion).toBe('pan')
+  })
+
   it('a cena que já era a virada guarda o clipe escolhido', () => {
     const [b] = markPivot([beat('1', 'Calma, que piora.', { phrase: 'Calma, que piora.', clipId: 'd1', locked: true })], 'Calma, que piora.')
     expect(b.pivot).toEqual({ phrase: 'Calma, que piora.', clipId: 'd1', locked: true })

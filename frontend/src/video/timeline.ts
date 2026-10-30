@@ -225,22 +225,29 @@ export function buildTimeline(
 
   let from = start
   let voicePause: VoicePause | undefined
+  // quadros que a cena da virada devolveu para a seguinte (ADR 0039, adendo): ver `early`
+  let early = 0
   const beats: TimedBeat[] = project.beats.map((beat, index) => {
     const isLast = index === project.beats.length - 1
     // o tempo da voz não conta a pausa da virada
-    const spoken = from - start - (voicePause?.frames ?? 0)
-    const said = starts
-      ? Math.max(MIN_VOICE_FRAMES, (isLast ? total : starts[index + 1]) - starts[index])
-      : isLast
-        ? Math.max(8, total - spoken)
-        : Math.max(8, Math.round((weights[index] / sum) * total))
+    const spoken = from - start - (voicePause?.frames ?? 0) + early
+    const said =
+      (starts
+        ? Math.max(MIN_VOICE_FRAMES, (isLast ? total : starts[index + 1]) - starts[index])
+        : isLast
+          ? Math.max(8, total - spoken)
+          : Math.max(8, Math.round((weights[index] / sum) * total))) + early
+    const begin = early
+    early = 0
     const img = beat.imageId ? images.get(beat.imageId) : undefined
     const sfx = beat.sfxId ? sounds.get(beat.sfxId) : undefined
     const pivot = pivotMedia(beat, catchphrases)
     // trecho da virada mais longo que a fala: a voz para no fim da frase e o clipe vai até o fim
     const clipFrames = pivot?.clip ? Math.floor((pivot.clip.end - pivot.clip.start) * FPS) : 0
     if (clipFrames > said && !voicePause) voicePause = { at: pauseAt(voice, index, spoken + said), frames: clipFrames - said }
-    const frames = voicePause && clipFrames > said ? clipFrames : said
+    // fala mais longa que o trecho: a cena acaba com o clipe e a seguinte já entra (ADR 0039, adendo)
+    if (clipFrames && clipFrames < said && !isLast) early = said - clipFrames
+    const frames = voicePause && clipFrames > said ? clipFrames : said - early
     const timed: TimedBeat = {
       // a composição desenha os efeitos que valem: os escolhidos pelo usuário ou os da IA
       beat: effectiveBeat(beat),
@@ -249,7 +256,8 @@ export function buildTimeline(
       frames,
       image: pivot ?? (img ? libraryMedia(img) : undefined),
       sfxSrc: sfx ? soundUrl(sfx) : undefined,
-      wordStarts: starts && voice ? voice.beats[index].map(w => Math.max(0, Math.round(w.start * FPS) - starts[index])) : undefined,
+      // `begin` desloca as palavras quando a cena entrou mais cedo, no lugar do clipe que acabou
+      wordStarts: starts && voice ? voice.beats[index].map(w => Math.max(0, Math.round(w.start * FPS) - starts[index]) + begin) : undefined,
     }
     if (beat.tier === 'revelacao') timed.revealAt = revealFrame(beat.say, frames, timed.wordStarts)
     from += frames
