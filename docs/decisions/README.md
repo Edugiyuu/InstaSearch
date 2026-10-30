@@ -69,3 +69,4 @@ ADRs marcados como **retroativos** registram decisões tomadas antes de adotarmo
 | [0038](0038-redesign-linha-de-producao.md) | Redesign do frontend: linha de produção | Aceita |
 | [0039](0039-bordao-do-meio.md) | Bordão do meio: um clipe do rodízio na virada do roteiro | Aceita |
 | [0040](0040-legenda-completa-com-estilo.md) | Legenda completa ou palavra por palavra, com tamanho e animação | Aceita |
+| [0041](0041-corte-da-voz-no-silencio-real.md) | O corte da voz na virada cai no silêncio real do áudio | Aceita |

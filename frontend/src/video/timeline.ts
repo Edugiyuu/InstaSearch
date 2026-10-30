@@ -1,4 +1,4 @@
-import type { Beat, ButtonStyle, Transition, Catchphrase, ClickStyle, Entrance, LibraryImage, ProjectSettings, Region, ShortProject, SoundItem, SubscribePart, TextAnim, TextPosition, TierBoard } from '../api/shorts'
+import type { Beat, ButtonStyle, Transition, Catchphrase, ClickStyle, Entrance, LibraryImage, ProjectSettings, Region, ShortProject, Silence, SoundItem, SubscribePart, TextAnim, TextPosition, TierBoard } from '../api/shorts'
 import { afterButtonText, audioUrl, catchphraseFileUrl, catchphraseHasSound, DEFAULT_PIVOT_VOLUME, imageUrl, mediaUrl, pivotTrim, soundUrl } from '../api/shorts'
 import { alignWords, type WordTime } from './align'
 
@@ -123,6 +123,8 @@ export interface VoiceTiming {
   /** Palavras do roteiro que bateram com o que o Whisper ouviu. */
   matched: number
   total: number
+  /** Os silêncios do áudio (ADR 0041); vazio nas transcrições antigas. */
+  silences: Silence[]
 }
 
 /**
@@ -137,7 +139,7 @@ export function voiceTiming(project: ShortProject): VoiceTiming | null {
   if (!times) return null
   let at = 0
   const beats = perBeat.map(list => times.slice(at, (at += list.length)))
-  return { beats, matched: times.filter(w => w.matched).length, total: times.length }
+  return { beats, matched: times.filter(w => w.matched).length, total: times.length, silences: t.silences ?? [] }
 }
 
 /** Menor batida possível com a voz: uma fala muito rápida não some da tela. */
@@ -177,16 +179,25 @@ function voiceStarts(voice: VoiceTiming) {
   return starts
 }
 
+/** Quanto o corte pode procurar silêncio para cada lado: o relógio do Whisper erra umas décimas. */
+const SILENCE_SEARCH = 0.25
+
 /**
- * Onde a voz para na virada (quadros desde o começo da narração): no fim da última palavra da frase,
- * como a transcrição marca. A palavra seguinte começa a soar antes do tempo marcado dela; cortar no
- * começo dela, ou no meio do silêncio, ainda deixava escapar um "n-" ("rolou. N-").
+ * Onde a voz para na virada (quadros desde o começo da narração), ADR 0041: no meio do silêncio
+ * que o ffmpeg achou entre a última palavra da frase e a primeira da seguinte. O relógio do Whisper
+ * não serve sozinho — ele marca o fim da palavra cedo e o começo da próxima tarde, então cortar
+ * no fim marcado partia o "u" de "rolou" e cortar no meio do intervalo deixava escapar um "n-".
+ * Sem silêncio achado (transcrição antiga, ou fala emendada), vale o fim marcado, como antes.
  */
 function pauseAt(voice: VoiceTiming | null, index: number, fallback: number) {
   const said = voice?.beats[index]
-  if (!said?.length || !voice?.beats[index + 1]?.length) return fallback
+  const next = voice?.beats[index + 1]
+  if (!said?.length || !next?.length) return fallback
   const end = Math.max(...said.map(w => w.end))
-  return Math.min(fallback, Math.round(end * FPS))
+  const nextStart = Math.min(...next.map(w => w.start))
+  const quiet = voice!.silences.find(s => s.end > end - SILENCE_SEARCH && s.start < nextStart + SILENCE_SEARCH)
+  const at = quiet ? (quiet.start + quiet.end) / 2 : end
+  return Math.min(fallback, Math.round(at * FPS))
 }
 
 /**

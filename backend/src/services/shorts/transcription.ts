@@ -15,8 +15,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { downloadWhisperModel, installWhisperCpp, transcribe } from '@remotion/install-whisper-cpp'
 import { logger } from '../../utils/logger.js'
-import { toWav16k } from './videoScenes.js'
-import type { TranscriptWord } from './types.js'
+import { detectSilences, toWav16k } from './videoScenes.js'
+import type { Silence, TranscriptWord } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const WHISPER_DIR = path.join(__dirname, '../../../tools/whisper')
@@ -120,11 +120,14 @@ export function tokensToWords(items: WhisperItem[]): TranscriptWord[] {
   return words
 }
 
-/** Transcreve um áudio (qualquer formato que o ffmpeg leia) e devolve as palavras com tempo. */
+/**
+ * Transcreve um áudio (qualquer formato que o ffmpeg leia): as palavras com tempo e os trechos
+ * de silêncio (ADR 0041), que dizem onde dá para cortar a voz sem partir uma palavra.
+ */
 export async function transcribeAudio(
   audioPath: string,
   onStage: (stage: 'baixando' | 'transcrevendo', progress: number) => void,
-): Promise<TranscriptWord[]> {
+): Promise<{ words: TranscriptWord[]; silences: Silence[] }> {
   if (!isReady()) {
     onStage('baixando', 0)
     await ensureWhisper(p => onStage('baixando', p))
@@ -143,7 +146,9 @@ export async function transcribeAudio(
       language: 'pt',
       printOutput: false,
     })
-    return tokensToWords(out.transcription)
+    // o mesmo WAV serve para as duas medidas; o silencedetect leva menos de um segundo
+    const silences = await detectSilences(wav).catch(() => [])
+    return { words: tokensToWords(out.transcription), silences }
   } finally {
     await fs.unlink(wav).catch(() => undefined)
   }

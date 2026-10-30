@@ -312,6 +312,12 @@ export interface TranscriptWord {
   end: number
 }
 
+/** Um trecho de silêncio do áudio, em segundos (ADR 0041). */
+export interface Silence {
+  start: number
+  end: number
+}
+
 export interface Transcript {
   /** O áudio transcrito; se for outro que o do projeto, a transcrição não vale mais. */
   audioFile: string
@@ -319,6 +325,8 @@ export interface Transcript {
   stage?: 'baixando' | 'transcrevendo'
   progress?: number
   words?: TranscriptWord[]
+  /** Os silêncios do áudio (ADR 0041); transcrições antigas não têm. */
+  silences?: Silence[]
   error?: string
   model?: string
   at?: string

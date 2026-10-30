@@ -630,10 +630,12 @@ async function runTranscription(id: string) {
   const started = Date.now()
   try {
     write({ status: 'transcrevendo', stage: undefined, progress: undefined, error: undefined })
-    const words = await transcribeAudio(path.join(AUDIO_DIR, audioFile), (stage, progress) => write({ stage, progress }))
+    const { words, silences } = await transcribeAudio(path.join(AUDIO_DIR, audioFile), (stage, progress) => write({ stage, progress }))
     if (words.length === 0) throw new Error('o Whisper não ouviu nenhuma palavra no áudio')
-    write({ status: 'pronto', stage: undefined, progress: undefined, words, model: WHISPER_MODEL, at: new Date().toISOString() })
-    logger.info(`🎙️ Voz de ${id} transcrita: ${words.length} palavras em ${((Date.now() - started) / 1000).toFixed(1)}s`)
+    write({ status: 'pronto', stage: undefined, progress: undefined, words, silences, model: WHISPER_MODEL, at: new Date().toISOString() })
+    logger.info(
+      `🎙️ Voz de ${id} transcrita: ${words.length} palavras e ${silences.length} silêncios em ${((Date.now() - started) / 1000).toFixed(1)}s`,
+    )
   } catch (error: any) {
     logger.error(`❌ Transcrição de ${id}: ${error.message}`)
     write({ status: 'erro', stage: undefined, progress: undefined, error: String(error.message ?? error).slice(0, 300) })

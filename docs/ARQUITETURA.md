@@ -82,6 +82,8 @@ Depois das imagens, a montagem põe os **efeitos sonoros** (pelo tipo de efeito 
 
 O texto da legenda continua o do roteiro: se o Whisper ouvir "Sucuna", a tela ainda escreve "Sukuna". Na primeira vez, o app baixa o Whisper e o modelo `small` (~490 MB) para `backend/tools/whisper/`.
 
+A transcrição também mede os **silêncios** do áudio (ffmpeg `silencedetect`, guardados em `transcript.silences`): é onde a voz pode ser cortada sem partir uma palavra, usado na pausa da virada ([ADR 0041](decisions/0041-corte-da-voz-no-silencio-real.md)). O relógio do Whisper não serve para isso — ele marca o fim da palavra tarde e o começo da próxima mais tarde ainda.
+
 ## Prévia e MP4 saem do mesmo código
 
 ![Prévia e MP4 do mesmo código](diagramas/11-previa-e-mp4.svg)

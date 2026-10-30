@@ -364,6 +364,29 @@ export async function toWav16k(input: string, output: string) {
 }
 
 /**
+ * Trechos de silêncio do áudio, em segundos (ADR 0041). -45 dB fica abaixo da fala mais baixa
+ * medida nas narrações (o mais fraco ficou em -38 dB), então uma sílaba fraca não vira silêncio;
+ * 60 ms é a menor pausa que separa duas palavras faladas.
+ * O `silencedetect` do ffmpeg escreve o resultado no stderr, uma linha por marca.
+ */
+export async function detectSilences(input: string): Promise<{ start: number; end: number }[]> {
+  let log = ''
+  await run('ffmpeg', ['-v', 'info', '-i', input, '-af', 'silencedetect=noise=-45dB:d=0.06', '-f', 'null', '-'], {
+    onStderr: text => (log += text),
+  })
+  const out: { start: number; end: number }[] = []
+  let start: number | null = null
+  for (const [, kind, value] of log.matchAll(/silence_(start|end): (-?[\d.]+)/g)) {
+    if (kind === 'start') start = Number(value)
+    else if (start !== null) {
+      out.push({ start, end: Number(value) })
+      start = null
+    }
+  }
+  return out
+}
+
+/**
  * Guarda um vídeo curto inteiro (o clipe de um bordão) em `dir/base.mp4`, convertendo se o
  * navegador não tocar o arquivo. Diferente do episódio, não vira cenas e o som é mantido.
  */
