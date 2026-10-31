@@ -46,6 +46,8 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 - [ ] Decidir o destino de `backend/data/virtual_characters/` (sobra de uma funcionalidade abandonada)
 - [ ] Remover as "Ferramentas antigas" (telas, controllers e hooks da primeira versão) ou decidir quais ficam
 
+- [ ] A duração guardada do clipe conta o áudio, que dura mais que a imagem (0,12 a 0,14 s nos quatro clipes de hoje): o recorte deixa escolher um trecho que termina depois do último quadro, e aí ele congela. No clipe do Nezuko o recorte (3,6 → 5,6 s) já passa 1 quadro. Guardar a duração do stream de vídeo ao subir o clipe e corrigir os que já estão lá
+
 ## Feito
 
 - [x] 2026-10-30 · Prévia não trava mais no corte: trocar de cena custava 183 ms de navegador parado (o último quadro da cena anterior ficava preso na tela, bem no fim do clipe da virada); agora toda cena é montada 0,5 s antes, escondida, como já era com o clipe. O MP4 não muda ([ADR 0039](docs/decisions/0039-bordao-do-meio.md), adendo)
