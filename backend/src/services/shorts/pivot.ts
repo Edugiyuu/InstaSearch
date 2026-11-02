@@ -16,11 +16,17 @@ const MAX_PHRASE_LENGTH = 80
 /** Volume do som do clipe do meio por baixo da voz, quando o usuário não escolheu. */
 export const DEFAULT_PIVOT_VOLUME = 0.2
 
-/** Clipe até este tamanho entra inteiro; maior, entra só o trecho (o recorte). */
+/**
+ * Clipe até este tamanho entra inteiro, sem passar pelo recorte; maior, abre o recorte e o usuário
+ * escolhe quantos segundos entram — de 1 s até o clipe inteiro, sem teto (ADR 0039, adendo).
+ */
 export const WHOLE_CLIP_SECONDS = 3
 
 /** Duração do trecho sugerido no recorte. */
 export const DEFAULT_TRIM_SECONDS = 2
+
+/** Trecho mais curto que o recorte aceita; o mais longo é o clipe inteiro. */
+export const MIN_TRIM_SECONDS = 1
 
 export async function getPivotConfig(): Promise<PivotConfig> {
   return { ...DEFAULT_CONFIG, ...(await storage.findById('config')) }

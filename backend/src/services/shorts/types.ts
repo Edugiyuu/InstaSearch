@@ -466,7 +466,7 @@ export interface Catchphrase {
   defaultOutro?: boolean
   /** Onde o bordão entra (ADR 0039); sem o campo, vem da marcação de padrão (ver `catchphraseRole`). */
   role?: CatchphraseRole
-  /** Só no clipe do meio: o trecho que entra no vídeo; sem o campo, o clipe inteiro (até 3 s). */
+  /** Só no clipe do meio: o trecho que entra no vídeo; sem o campo, o clipe inteiro (até WHOLE_CLIP_SECONDS). */
   trim?: ClipTrim
   /** Só no clipe do meio: o volume do som dele por baixo da voz (0 a 1; sem o campo, 0,2). */
   volume?: number

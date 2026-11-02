@@ -14,7 +14,7 @@ import { logger } from '../../utils/logger.js'
 import { instagramGraphService } from '../instagramGraphService.js'
 import { AUDIO_EXTENSIONS } from './sounds.js'
 import { mediaDuration, motionPeak, saveClip } from './videoScenes.js'
-import { catchphraseRole, DEFAULT_TRIM_SECONDS, WHOLE_CLIP_SECONDS } from './pivot.js'
+import { catchphraseRole, DEFAULT_TRIM_SECONDS, MIN_TRIM_SECONDS, WHOLE_CLIP_SECONDS } from './pivot.js'
 import { CATCHPHRASE_ROLES, type ButtonStyle, type Catchphrase, type CatchphraseKind, type CatchphraseRole, type ClickStyle, type ClipTrim, type Entrance, type SubscribePart, type TextAnim, type TextPosition } from './types.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -158,12 +158,17 @@ async function withSuggestedTrim(item: Catchphrase): Promise<Catchphrase> {
   return { ...item, trim: { start, duration: DEFAULT_TRIM_SECONDS } }
 }
 
-/** Trecho que chegou da tela → dentro do clipe, de 1 a 3 s, em décimos de segundo; inválido = undefined. */
+/**
+ * Trecho que chegou da tela → dentro do clipe, de 1 s até o clipe inteiro, em décimos de segundo;
+ * inválido = undefined. Quem escolhe a duração é o usuário (ADR 0039, adendo).
+ */
 export function cleanTrim(value: unknown, clipSeconds: number): ClipTrim | undefined {
   const t = value as Partial<ClipTrim> | null
   if (!t || typeof t.start !== 'number' || typeof t.duration !== 'number' || !Number.isFinite(t.start) || !Number.isFinite(t.duration)) return undefined
-  const duration = Math.round(Math.min(WHOLE_CLIP_SECONDS, Math.max(1, t.duration), clipSeconds) * 10) / 10
-  const start = Math.round(Math.min(Math.max(0, t.start), Math.max(0, clipSeconds - duration)) * 10) / 10
+  // em décimos, sempre para baixo: arredondar para cima deixaria o trecho passar do fim do clipe
+  const tenths = (n: number) => Math.floor(n * 10) / 10
+  const duration = tenths(Math.min(Math.max(MIN_TRIM_SECONDS, t.duration), clipSeconds))
+  const start = tenths(Math.min(Math.max(0, t.start), Math.max(0, clipSeconds - duration)))
   return { start, duration }
 }
 

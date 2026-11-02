@@ -50,6 +50,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-10-31 · O trecho do clipe da virada não tem mais teto de 3 s: você escolhe quantos segundos entram, de 1 s até o clipe inteiro (durações prontas até 8 s e "inteiro"), e o recorte avisa quanto a cena vai durar quando o trecho passa de 3 s, porque a voz espera o clipe acabar ([ADR 0039](docs/decisions/0039-bordao-do-meio.md), adendo)
 - [x] 2026-10-30 · Prévia não trava mais no corte: trocar de cena custava 183 ms de navegador parado (o último quadro da cena anterior ficava preso na tela, bem no fim do clipe da virada); agora toda cena é montada 0,5 s antes, escondida, como já era com o clipe. O MP4 não muda ([ADR 0039](docs/decisions/0039-bordao-do-meio.md), adendo)
 - [x] 2026-10-30 · A cena logo depois da virada não nasce mais parada: a IA marcava "parado" numa cena de prova e, depois da dança, o vídeo parecia travado por ~3 s; agora ela ganha um zoom lento (o "parado" das outras cenas e o que você escolhe continuam) ([ADR 0039](docs/decisions/0039-bordao-do-meio.md), adendo)
 - [x] 2026-10-30 · Clipe da virada não recomeça mais no fim da cena: com a fala mais longa que o trecho, a cena acaba junto com o clipe e a seguinte já entra (a legenda dela aparece apagada até a primeira palavra), em vez de repetir o começo da dança ([ADR 0039](docs/decisions/0039-bordao-do-meio.md), adendo)

@@ -72,3 +72,15 @@ Agora a cena da virada **acaba junto com o trecho** e a cena seguinte entra ali,
 E o navegador não trava mais no corte. O usuário filmou a tela: o clipe andava em todos os quadros e, bem no fim, prendia o último quadro por um instante antes de trocar de cena. Medindo os intervalos do `requestAnimationFrame` na prévia, o corte custava **183 ms** de travada (uns 5 quadros) — o tempo de montar a cena seguinte e decodificar a imagem nova. Agora toda cena é montada 0,5 s antes, escondida (`premountFor`), como já era feito com o clipe: nas medidas depois da mudança, nenhum engasgo acima de 40 ms em três execuções. O MP4 não muda (os dois renders, com e sem, saem pixel a pixel iguais): o render espera cada arquivo carregar, então a travada só existia na prévia.
 
 E a cena logo depois da virada **não nasce mais parada**. Na gravação que o usuário mandou, o clipe se mexia em todos os quadros até o corte, mas a cena seguinte era uma prova (moldura) com `motion: "still"` escolhido pela IA: um cartão imóvel por ~3 s, que depois da dança parece o vídeo travado. Agora, se a IA marcar "parado" nessa cena, o `markPivot` troca por um zoom lento; nas outras cenas o "parado" continua valendo, e o que o usuário escolheu na cena nunca é mexido. Vale para roteiros novos: num projeto já montado, o Movimento se troca na Revisão.
+
+## Adendo (2026-10-31): a duração do trecho é escolhida pelo usuário, sem teto
+
+A decisão original recusou o "Clipe inteiro" no recorte e deixou o trecho **até 3 s** ("um clipe longo inteiro pararia a explicação"). O usuário pediu o contrário: quem escolhe quantos segundos de clipe entram é ele.
+
+Agora o recorte vai de **1 s até o clipe inteiro**. O teto de 3 s sai; os 3 s continuam sendo só o **limiar** que dispensa o recorte (clipe de até 3 s entra inteiro, sem a tela) e o padrão de quem nunca foi recortado. As durações prontas vão a 1,5 · 2 · 2,5 · 3 · 4 · 5 · 8 s mais "inteiro".
+
+- **Por que era 3 s:** na cena da virada a voz **espera o clipe terminar**, então a cena dura o maior entre a fala e o trecho. Um trecho longo é uma pausa na narração logo depois do gancho, justo onde a retenção do Short é mais frágil.
+- **Para a escolha ser informada**, e não um tiro no pé: passando de 3 s, o recorte avisa quanto a cena vai durar ("a voz só volta depois do clipe"). O aviso substitui o limite — o app explica a consequência, o usuário decide (0011).
+- **Nada no render mudou:** a montagem já trata qualquer duração (o `clipFrames` da `timeline.ts` manda a voz esperar, sem máximo). O que existia era a validação.
+- **Décimos para baixo:** o `cleanTrim` arredondava a duração para o décimo mais próximo, o que num clipe de 5,65 s devolvia 5,7 s — um trecho que termina depois do último quadro, o congelado que está no Backlog. Agora arredonda para baixo.
+- **Perdemos:** a garantia de que a virada é sempre um tempero curto. Dá para pôr 10 s de dança no meio do vídeo e matar a retenção; a defesa é o aviso na tela e os números da própria virada.

@@ -664,7 +664,7 @@ export interface Catchphrase {
   defaultOutro?: boolean
   /** onde entra (ADR 0039); sem o campo, vem da marcação de padrão (catchphraseRole) */
   role?: CatchphraseRole
-  /** só no clipe do meio: o trecho que entra; sem o campo, o clipe inteiro (até 3 s) */
+  /** só no clipe do meio: o trecho que entra; sem o campo, o clipe inteiro (até WHOLE_CLIP_SECONDS) */
   trim?: ClipTrim
   /** só no clipe do meio: o som dele por baixo da voz (0 a 1; sem o campo, 0,2) */
   volume?: number
@@ -691,8 +691,10 @@ export function catchphraseRole(c: Pick<Catchphrase, 'role' | 'defaultIntro' | '
 
 /** Volume do clipe do meio por baixo da voz, quando ninguém escolheu. */
 export const DEFAULT_PIVOT_VOLUME = 0.2
-/** Clipe até este tamanho entra inteiro; maior, só o trecho. */
+/** Clipe até este tamanho entra inteiro, sem recorte; maior, o usuário escolhe o trecho (ADR 0039, adendo). */
 export const WHOLE_CLIP_SECONDS = 3
+/** Trecho mais curto que o recorte deixa escolher; o mais longo é o clipe inteiro. */
+export const MIN_TRIM_SECONDS = 1
 
 /** O trecho do clipe do meio que entra: o do vídeo, o do clipe, ou o clipe inteiro. */
 export const pivotTrim = (c: Pick<Catchphrase, 'trim' | 'duration'>, scene?: Pick<PivotScene, 'trim'>): ClipTrim =>

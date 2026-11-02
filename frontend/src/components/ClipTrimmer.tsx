@@ -1,10 +1,12 @@
 import { PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react'
-import { catchphraseFileUrl, WHOLE_CLIP_SECONDS, type Catchphrase, type ClipTrim } from '../api/shorts'
+import { catchphraseFileUrl, MIN_TRIM_SECONDS, WHOLE_CLIP_SECONDS, type Catchphrase, type ClipTrim } from '../api/shorts'
 import './ClipTrimmer.css'
 
-/** Durações prontas do trecho; a janela também estica pelas pontas, de 1 s até 3 s. */
-const DURATIONS = [1.5, 2, 2.5, 3]
-const MIN_SECONDS = 1
+/**
+ * Durações prontas do trecho (as que couberem no clipe); a janela também estica pelas pontas, de 1 s até
+ * o clipe inteiro — quem escolhe quantos segundos entram é o usuário (ADR 0039, adendo).
+ */
+const DURATIONS = [1.5, 2, 2.5, 3, 4, 5, 8]
 /** Miniaturas na linha do tempo. */
 const FRAMES = 12
 
@@ -49,6 +51,7 @@ function useFilmstrip(src: string, duration: number) {
 /**
  * O recorte do clipe do meio (ADR 0039): o trecho que entra no vídeo, com o player tocando só ele em loop e
  * no volume escolhido. Abre ao subir um clipe com mais de 3 s, já com a sugestão (o trecho com mais movimento).
+ * O trecho vai de 1 s até o clipe inteiro; passando de 3 s, a tela avisa que a voz espera o clipe acabar.
  */
 export function ClipTrimmer({
   clip,
@@ -76,7 +79,8 @@ export function ClipTrimmer({
 }) {
   const src = catchphraseFileUrl(clip.file)!
   const total = clip.duration
-  const longest = Math.min(WHOLE_CLIP_SECONDS, total)
+  // o trecho pode ir até o clipe inteiro; o teto de 3 s saiu a pedido do usuário (ADR 0039, adendo)
+  const longest = total
   const [trim, setTrim] = useState<ClipTrim>(initial)
   const [volume, setVolume] = useState(initialVolume)
   const video = useRef<HTMLVideoElement>(null)
@@ -127,7 +131,7 @@ export function ClipTrimmer({
     drag.current = { mode, offset: at(e.clientX) - trim.start }
   }
 
-  /** Arrastar o meio move a janela; as pontas mudam a duração (de 1 a 3 s, dentro do clipe). */
+  /** Arrastar o meio move a janela; as pontas mudam a duração (de 1 s ao clipe inteiro). */
   const onMove = (e: ReactPointerEvent) => {
     const d = drag.current
     if (!d) return
@@ -141,10 +145,10 @@ export function ClipTrimmer({
     if (d.mode === 'move') {
       setTrim({ start: round(Math.min(Math.max(0, t - d.offset), total - trim.duration)), duration: trim.duration })
     } else if (d.mode === 'start') {
-      const start = round(Math.min(Math.max(0, t, end - longest), end - MIN_SECONDS))
+      const start = round(Math.min(Math.max(0, t, end - longest), end - MIN_TRIM_SECONDS))
       setTrim({ start, duration: round(end - start) })
     } else {
-      const next = round(Math.max(Math.min(total, t, trim.start + longest), trim.start + MIN_SECONDS))
+      const next = round(Math.max(Math.min(total, t, trim.start + longest), trim.start + MIN_TRIM_SECONDS))
       setTrim({ start: trim.start, duration: round(next - trim.start) })
     }
   }
@@ -155,6 +159,8 @@ export function ClipTrimmer({
   }
 
   const isSuggested = !!suggested && suggested.start === trim.start && suggested.duration === trim.duration
+  // o clipe inteiro: a janela cobre tudo (a duração não bate exatamente com o total por causa dos décimos)
+  const isWhole = trim.start === 0 && trim.duration >= Math.floor(total * 10) / 10
 
   return (
     <div className="overlay" onClick={onCancel}>
@@ -164,7 +170,10 @@ export function ClipTrimmer({
           <h2>Recortar · {clip.name}</h2>
           {step && <span className="ct-step">{step}</span>}
         </div>
-        <p className="meta">{secs(total)} · só um trecho entra no vídeo. Clipes de até 3 s entram inteiros, sem esta tela.</p>
+        <p className="meta">
+          {secs(total)} · escolha quantos segundos entram no vídeo, de {secs(MIN_TRIM_SECONDS)} ao clipe inteiro. Clipes de até{' '}
+          {secs(WHOLE_CLIP_SECONDS)} entram inteiros, sem esta tela.
+        </p>
 
         <div className="ct-body">
           <video
@@ -181,12 +190,20 @@ export function ClipTrimmer({
           <div className="ct-side">
             <span className="label">Duração do trecho</span>
             <div className="ct-pills">
-              {DURATIONS.filter(d => d <= longest).map(d => (
+              {DURATIONS.filter(d => d < total).map(d => (
                 <button key={d} className={`ct-pill ${trim.duration === d ? 'on' : ''}`} onClick={() => setDuration(d)}>
                   {secs(d)}
                 </button>
               ))}
+              <button className={`ct-pill ${isWhole ? 'on' : ''}`} onClick={() => setDuration(total)}>
+                inteiro · {secs(total)}
+              </button>
             </div>
+            {trim.duration > WHOLE_CLIP_SECONDS && (
+              <p className="ct-warn">
+                ⏸ A voz só volta depois do clipe: a cena vai durar {secs(trim.duration)}, mesmo que a frase seja mais curta.
+              </p>
+            )}
             {suggested && (
               <div className="ct-suggest">
                 <strong>✨ Sugestão: {secs(suggested.start)} a {secs(suggested.start + suggested.duration)}</strong>
@@ -207,7 +224,7 @@ export function ClipTrimmer({
           </div>
         </div>
 
-        <p className="meta ct-hint">Arraste a janela para escolher o trecho; puxe as pontas para mudar a duração.</p>
+        <p className="meta ct-hint">Arraste a janela para escolher o trecho; puxe as pontas para mudar a duração ({secs(MIN_TRIM_SECONDS)} ou mais).</p>
         <div className="ct-track" ref={track} onPointerMove={onMove} onPointerUp={() => (drag.current = null)} onPointerCancel={() => (drag.current = null)}>
           <div className="ct-frames">
             {frames.length ? frames.map((f, i) => <img key={i} src={f} alt="" draggable={false} />) : <span className="meta">Carregando os quadros…</span>}

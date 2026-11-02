@@ -50,7 +50,18 @@
 
 .ct-pills {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+}
+
+/* trecho mais longo que WHOLE_CLIP_SECONDS: a cena vai durar o clipe todo */
+.ct-warn {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  color: var(--warning);
+  font-size: 13px;
 }
 
 .ct-pill {
