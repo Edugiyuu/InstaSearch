@@ -67,6 +67,8 @@ export interface TimedBeat {
   sfxSrc?: string
   /** Com a voz transcrita: em que quadro (desde o início da batida) cada palavra da fala começa. */
   wordStarts?: number[]
+  /** Com a voz transcrita: em que quadro cada palavra acaba. A pausa até a seguinte fecha o bloco da legenda. */
+  wordEnds?: number[]
   /** Na revelação da tier list (ADR 0036): o quadro (desde o início da batida) em que o personagem voa para a fileira. */
   revealAt?: number
 }
@@ -258,6 +260,7 @@ export function buildTimeline(
       sfxSrc: sfx ? soundUrl(sfx) : undefined,
       // `begin` desloca as palavras quando a cena entrou mais cedo, no lugar do clipe que acabou
       wordStarts: starts && voice ? voice.beats[index].map(w => Math.max(0, Math.round(w.start * FPS) - starts[index]) + begin) : undefined,
+      wordEnds: starts && voice ? voice.beats[index].map(w => Math.max(0, Math.round(w.end * FPS) - starts[index]) + begin) : undefined,
     }
     if (beat.tier === 'revelacao') timed.revealAt = revealFrame(beat.say, frames, timed.wordStarts)
     from += frames
@@ -284,6 +287,44 @@ export function revealFrame(say: string, frames: number, wordStarts?: number[]) 
   const at = i < 0 ? frames * 0.4 : wordStarts?.[i] ?? (i / Math.max(1, list.length)) * frames
   // a animação precisa de uns quadros para acontecer antes do corte
   return Math.max(0, Math.min(Math.round(at), frames - 12))
+}
+
+/** Pausa que fecha o bloco da legenda: 0,45 s calado entre duas palavras já é outra frase. */
+const CAPTION_PAUSE = Math.round(0.45 * FPS)
+/** Bloco mais longo que isso fica tempo demais na tela para ser lido de uma vez só. */
+const CAPTION_SPAN = Math.round(1.6 * FPS)
+/** Fim de frase: fecha o bloco mesmo sem pausa medida, e por isso vale nos vídeos sem transcrição. */
+const SENTENCE_END = /[.!?…]$/
+
+/** Um bloco da legenda: as palavras de `from` até `to` (sem incluir o `to`). */
+export interface CaptionGroup {
+  from: number
+  to: number
+}
+
+/**
+ * Em que blocos a legenda "completa" mostra as palavras (ADR 0040). Era a cada `max` palavras
+ * fixas, e o bloco cortava no meio da frase: o fim de uma oração aparecia junto com o começo da
+ * outra. Agora fecha no fim da frase, na pausa da voz ou quando o bloco já passou de 1,6 s;
+ * `max` continua valendo como teto, que é o que o tamanho escolhido da legenda controla.
+ *
+ * A pausa é o intervalo entre o fim de uma palavra e o começo da seguinte, como o Whisper marcou.
+ * O ADR 0041 mostrou que essas marcas erram por algumas dezenas de milissegundos, o que importa
+ * para cortar o áudio, mas não aqui: o corte do bloco é num limite de 450 ms.
+ */
+export function captionGroups(words: string[], max: number, starts?: number[], ends?: number[]): CaptionGroup[] {
+  const groups: CaptionGroup[] = []
+  let from = 0
+  for (let i = 1; i <= words.length; i++) {
+    const last = i === words.length
+    const pause = !!starts && !!ends && starts[i] - ends[i - 1] >= CAPTION_PAUSE
+    const long = !!starts && starts[i] - starts[from] >= CAPTION_SPAN
+    if (last || i - from >= max || SENTENCE_END.test(words[i - 1]) || pause || long) {
+      groups.push({ from, to: i })
+      from = i
+    }
+  }
+  return groups
 }
 
 /** Bordão → props da composição. Sem o arquivo que ele precisa (clipe sem vídeo), não entra. */

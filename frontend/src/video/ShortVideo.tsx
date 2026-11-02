@@ -3,7 +3,7 @@
 import { CSSProperties } from 'react'
 import { AbsoluteFill, Audio, Freeze, Img, interpolate, Loop, OffthreadVideo, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import type { ProjectSettings, Region, TierBoard, Transition } from '../api/shorts'
-import { CatchphraseProps, focusRegion, MediaProps, sceneTransition, sfxVolume, ShortVideoProps, TimedBeat, WIDTH, HEIGHT, FPS } from './timeline'
+import { captionGroups, CatchphraseProps, focusRegion, MediaProps, sceneTransition, sfxVolume, ShortVideoProps, TimedBeat, WIDTH, HEIGHT, FPS } from './timeline'
 import { framing, looseFraming, regionOnScreen, sceneLook } from './framing'
 import { TierListScene, type TierPhase } from './TierListScene'
 
@@ -97,7 +97,7 @@ function BeatScene({ timed, settings, tier, phase }: { timed: TimedBeat; setting
       <AbsoluteFill>
         <TierListScene board={tier} phase={phase} revealAt={timed.revealAt} />
         {settings.caption !== 'sem' && (
-          <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} mode={settings.caption} size={settings.captionSize} anim={settings.captionAnim} />
+          <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} wordEnds={timed.wordEnds} mode={settings.caption} size={settings.captionSize} anim={settings.captionAnim} />
         )}
       </AbsoluteFill>
     )
@@ -117,7 +117,7 @@ function BeatScene({ timed, settings, tier, phase }: { timed: TimedBeat; setting
 
 
       {settings.caption !== 'sem' && (
-        <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} mode={settings.caption} size={settings.captionSize} anim={settings.captionAnim} />
+        <FullCaption say={beat.say} frames={timed.frames} wordStarts={timed.wordStarts} wordEnds={timed.wordEnds} mode={settings.caption} size={settings.captionSize} anim={settings.captionAnim} />
       )}
 
       {(transition === 'flash' || transition === 'flash-black') && (
@@ -759,11 +759,13 @@ const SOLO_FONT = 1.35
  * Legenda do vídeo (ADR 0040). `mode`: 'completa' mostra o bloco de palavras com a falada
  * acendendo (karaokê), 'palavra' mostra uma palavra por vez. Com a voz transcrita, cada palavra
  * acende quando é falada (wordStarts, ADR 0018); sem, o tempo é proporcional ao tamanho dela.
+ * Onde cada bloco começa e acaba é o `captionGroups`, que fecha na frase e na pausa da voz.
  */
 function FullCaption({
   say,
   frames,
   wordStarts,
+  wordEnds,
   mode,
   size = 'media',
   anim = 'destaque',
@@ -771,6 +773,7 @@ function FullCaption({
   say: string
   frames: number
   wordStarts?: number[]
+  wordEnds?: number[]
   mode: 'completa' | 'palavra'
   size?: ProjectSettings['captionSize']
   anim?: ProjectSettings['captionAnim']
@@ -788,7 +791,10 @@ function FullCaption({
     acc += w
     return start
   })
-  const starts = wordStarts?.length === words.length ? wordStarts : estimated
+  // os fins só servem junto com os começos medidos: misturar com o tempo estimado daria pausa falsa
+  const timedWords = wordStarts?.length === words.length
+  const starts = timedWords ? wordStarts! : estimated
+  const ends = timedWords && wordEnds?.length === words.length ? wordEnds : undefined
   // antes da primeira palavra (a cena pode entrar antes da fala, ADR 0039): o bloco aparece apagado
   const waiting = frame < starts[0]
   let current = starts.findIndex((s, i) => frame >= s && (i === words.length - 1 || frame < starts[i + 1]))
@@ -798,8 +804,12 @@ function FullCaption({
   // palavra por palavra: só a falada na tela, e maior; completa: o bloco em que ela está
   const solo = mode === 'palavra'
   const font = Math.round(look.font * (solo ? SOLO_FONT : 1))
-  const chunkStart = solo ? current : Math.floor(current / look.chunk) * look.chunk
-  const chunk = solo ? [words[current]] : words.slice(chunkStart, chunkStart + look.chunk)
+  // o bloco em que a palavra falada está; os blocos cobrem a fala toda, então sempre tem um
+  const group = solo
+    ? { from: current, to: current + 1 }
+    : captionGroups(words, look.chunk, starts, ends).find(g => current < g.to) ?? { from: 0, to: words.length }
+  const chunkStart = group.from
+  const chunk = words.slice(group.from, group.to)
 
   // o contorno e a sombra acompanham a fonte, senão a legenda pequena fica toda preta
   const stroke = Math.round(font * 0.12)

@@ -6,9 +6,14 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
+- [ ] Transições de entrada novas: `glitch` (decalagem RGB e fatias), `rgb-split`, `light-leak` e `zoom-punch` (zoom seco no ritmo), além das 5 de hoje (adendo ao ADR 0037)
 
 ## A fazer
 
+
+- [ ] Ritmo da cena: toda cena termina com um tempo parado (≥0,3 s) e a cena empurrada por uma transição não ganha animação de entrada, só a primeira e as depois de corte seco (adendo aos ADR 0037 e 0039)
+- [ ] Animação da palavra falada por fonte variável (Roboto Flex): o peso e a largura da letra mudam em onda, sem mover a palavra de lugar, para dar para ler desde o primeiro quadro (adendo ao ADR 0040)
+- [ ] Looks de cena (quadrinho, monitor CRT, bicromia, cinema com tarja): precisa de um ADR como Proposta antes, porque pisa nos Estilos
 
 - [ ] Clipes do YouTube nos momentos marcantes: o roteiro marca 1 ou 2 cenas, a montagem busca, baixa e escolhe o trecho com visão (ADR 0029)
 - [ ] Corrigir os 18 erros antigos do `tsc` no backend: variáveis não usadas e funções sem `return` em todos os caminhos (hoje o `npm run build` do backend falha)
@@ -50,6 +55,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-11-02 · O bloco da legenda fecha no fim da frase, na pausa de 0,45 s da voz ou em 1,6 s de fala, em vez de a cada N palavras fixas: "Nami? É só a navegadora." mostrava `NAMI? É SÓ A` e depois `NAVEGADORA.`, e agora a pergunta fica sozinha ([ADR 0040](docs/decisions/0040-legenda-completa-com-estilo.md), adendo)
 - [x] 2026-10-31 · O trecho do clipe da virada não tem mais teto de 3 s: você escolhe quantos segundos entram, de 1 s até o clipe inteiro (durações prontas até 8 s e "inteiro"), e o recorte avisa quanto a cena vai durar quando o trecho passa de 3 s, porque a voz espera o clipe acabar ([ADR 0039](docs/decisions/0039-bordao-do-meio.md), adendo)
 - [x] 2026-10-30 · Prévia não trava mais no corte: trocar de cena custava 183 ms de navegador parado (o último quadro da cena anterior ficava preso na tela, bem no fim do clipe da virada); agora toda cena é montada 0,5 s antes, escondida, como já era com o clipe. O MP4 não muda ([ADR 0039](docs/decisions/0039-bordao-do-meio.md), adendo)
 - [x] 2026-10-30 · A cena logo depois da virada não nasce mais parada: a IA marcava "parado" numa cena de prova e, depois da dança, o vídeo parecia travado por ~3 s; agora ela ganha um zoom lento (o "parado" das outras cenas e o que você escolhe continuam) ([ADR 0039](docs/decisions/0039-bordao-do-meio.md), adendo)

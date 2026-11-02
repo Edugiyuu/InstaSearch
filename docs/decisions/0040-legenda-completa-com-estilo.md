@@ -52,3 +52,22 @@ Os ajustes ficam **só na Revisão**: `ShortStyle` perde o campo `caption`, e to
 - [Bounce caption style — VideoCaptions.AI](https://www.videocaptions.ai/caption-styles/bounce)
 - [How to make Alex Hormozi captions — Submagic](https://submagic.co/blog/how-to-make-alex-hormozi-captions)
 - [Caption Styles for TikTok, Reels and Shorts — Exemplary](https://exemplary.ai/caption-styles)
+
+## Adendo (2026-11-02): o bloco fecha na frase e na pausa, não a cada N palavras
+
+O modo **Completa** quebrava as palavras a cada N fixas (`Math.floor(current / chunk) * chunk`, com N = 5, 4 ou 3 conforme o tamanho). Com uma fala de 5 palavras e N = 4, "Nami? É só a navegadora." virava **"NAMI? É SÓ A"** e depois **"NAVEGADORA."**: a pergunta ficava colada no começo da resposta, e a resposta sozinha no bloco seguinte.
+
+Agora o bloco fecha quando acontece o primeiro destes:
+
+- a palavra termina em `.`, `!`, `?` ou `…` (fim de frase);
+- a pausa até a palavra seguinte chega a **0,45 s**;
+- o bloco já ocupa **1,6 s** de fala;
+- o bloco chegou ao teto de palavras do tamanho escolhido — o N de antes, que continua existindo.
+
+A pausa é o intervalo entre o fim de uma palavra e o começo da seguinte, como o Whisper marcou (`wordStarts` e `wordEnds` novos no `TimedBeat`). O [ADR 0041](0041-corte-da-voz-no-silencio-real.md) mostrou que essas marcas erram por dezenas de milissegundos; lá isso cortava a voz no meio da palavra, aqui não muda nada, porque o limite é 450 ms — dez vezes maior que o erro. Medir o silêncio real com o `silencedetect` daria uma precisão que esta decisão não usa, ao custo de levar os silêncios até o componente.
+
+Os limites de 0,45 s e 1,6 s vêm da [skill AutoMontage-Agent](https://github.com/mcdenil-skills/AutoMontage-Agent) (`docs/STEP-04-captions.md`), que monta Reels com Remotion e agrupa por pausa, duração e número de palavras. O fim de frase é acréscimo nosso: a legenda mostra o texto do roteiro, que tem pontuação, então a regra vale também nos vídeos sem transcrição, onde o tempo das palavras é estimado.
+
+Nas 633 batidas dos projetos de hoje, 343 têm mais de 4 palavras (as únicas que chegam a ter mais de um bloco); dessas, 34 têm fim de frase no meio e 68 têm uma pausa de 0,45 s ou mais. Ou seja, cerca de um quarto das batidas com vários blocos muda de corte; o resto continua igual.
+
+**Alternativa descartada:** quebrar só na pontuação, sem a pausa. Metade dos casos reais ("Mano, a Robin é muito", com 0,55 s antes de "a") não tem pontuação nenhuma no meio — é a entonação, não a escrita, que separa.
