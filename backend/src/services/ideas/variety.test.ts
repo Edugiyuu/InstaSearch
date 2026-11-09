@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
-import { aboveMedian, blockReason, formatReason, freeFormats, mentions, pickCandidates, revisitReason, sameWork, shuffle, varietyLines, type RecentVideo } from './variety.js'
+import { aboveMedian, blockReason, compares, comparisonReason, formatReason, freeFormats, mentions, pickCandidates, revisitReason, sameWork, shuffle, varietyLines, type RecentVideo } from './variety.js'
 import type { Trend } from './types.js'
 import type { VideoFormat } from '../shorts/types.js'
 
@@ -201,7 +201,7 @@ describe('formatos de vídeo e a tier list em série (ADR 0036)', () => {
 
   it('o brainstorm recebe só os formatos que passam (sem o do último nem os desligados)', () => {
     const recent = [opm('Asuka ou Rei'), opm('E se a Rebecca vivesse', 'ese'), opm('Velho', 'versus')]
-    expect(freeFormats(recent)).toEqual(['versus', 'ese', 'mito', 'antesdepois'])
+    expect(freeFormats(recent)).toEqual(['versus', 'ese', 'mito', 'antesdepois', 'curiosidade'])
   })
 
   it('a tier list está desligada por enquanto: o brainstorm não propõe e o código barra', () => {
@@ -209,3 +209,44 @@ describe('formatos de vídeo e a tier list em série (ADR 0036)', () => {
   })
 })
 
+// os vídeos de verdade em 05/11 (ADR 0042): a Reze voltou comparada com a Makima 3 semanas depois
+const older = (n: number) => Array.from({ length: n }, (_, i) => ({ title: `Vídeo ${i}`, theme: `Uma cena de Frieren ${i}` }))
+const reze = { title: 'Reze é melhor que a Makima', theme: 'A Reze é a melhor personagem de Chainsaw Man, e a Makima só ganha destaque por ser a chefe' }
+
+describe('o ângulo sem rival e a dupla (ADR 0042)', () => {
+  it('reconhece a comparação pela rival ou pelas palavras de disputa', () => {
+    expect(compares({ theme: 'Reze vs. Makima: Quem Vence?' })).toBe(true)
+    expect(compares({ theme: 'Rebecca ou Lucy: quem lidera?' })).toBe(true)
+    expect(compares({ theme: 'A Nami humilha a Robin no visual?' })).toBe(true)
+    expect(compares({ theme: 'A Rukia roubou a Yoruichi?', rival: 'Yoruichi' })).toBe(true)
+    expect(compares({ theme: 'Você reparou no que a Mikasa diz no primeiro episódio?' })).toBe(false)
+    // "encontra" tem "contra" dentro, mas não é a palavra
+    expect(compares({ theme: 'O Denji encontra a Reze no café' })).toBe(false)
+  })
+
+  it('1A: a comparação não entra se um dos 2 últimos vídeos comparou', () => {
+    const comparison = { theme: 'Yor contra Mikasa', character: 'Yor Forger', rival: 'Mikasa Ackerman' }
+    expect(comparisonReason(comparison, [{ title: 'Frieren fugiu do luto?' }, { title: 'Himeno contra Makima' }])).toMatch(/acabou de comparar/)
+    // a do 3º vídeo já não conta: 1 a cada 3
+    expect(comparisonReason(comparison, [{ title: 'A' }, { title: 'B' }, { title: 'Himeno contra Makima' }])).toBeNull()
+    // um tema que não compara passa sempre
+    expect(comparisonReason({ theme: 'A cena que explica a Yor' }, [{ title: 'Himeno contra Makima' }])).toBeNull()
+  })
+
+  it('2B: a dupla descansa nos 8 últimos vídeos', () => {
+    const idea = { theme: 'Reze ou Makima: quem amou o Denji?', character: 'Reze', rival: 'Makima' }
+    expect(comparisonReason(idea, [...older(4), reze])).toMatch(/8 últimos/)
+  })
+
+  it('2B: depois dos 8, a dupla já comparada não volta comparando', () => {
+    const idea = { theme: 'Reze vs. Makima: Quem Vence?', character: 'Reze', rival: 'Makima' }
+    expect(comparisonReason(idea, [...older(24), reze])).toMatch(/só volta com outro assunto/)
+    // a Reze sozinha, com outro assunto, passa
+    expect(comparisonReason({ theme: 'O detalhe da Reze no café', character: 'Reze' }, [...older(24), reze])).toBeNull()
+  })
+
+  it('a curiosidade sem fonte é descartada', () => {
+    expect(formatReason({ format: 'curiosidade' }, [])).toMatch(/sem a fonte/)
+    expect(formatReason({ format: 'curiosidade', source: 'episódio 1 de Attack on Titan; capítulo 139' }, [])).toBeNull()
+  })
+})

@@ -138,6 +138,8 @@ async function run(job: AutopilotJob) {
         script,
         format: tier ? 'tierlist' : idea.format,
         tier,
+        rival: idea.rival,
+        source: idea.source,
       })
       job.projectId = project.id
       job.title = project.title
@@ -195,8 +197,9 @@ async function writeReviewed(job: AutopilotJob, idea: Idea) {
   const format = idea.format ?? 'opiniao'
   const tier = format === 'tierlist' ? await tierContext(idea) : undefined
   return reviewLoop({
-    write: revision => generateScript({ ...agreed, toneGuide: tone.guide, duration, style, revision, format, tier, pivotPhrase }),
-    review: (script, version) => reviewScript({ ...agreed, duration, narration: script.narration, version, structure: formatStructure(format, tier), pivotPhrase }),
+    write: revision => generateScript({ ...agreed, toneGuide: tone.guide, duration, style, revision, format, tier, source: idea.source, pivotPhrase }),
+    // a revisora confere a curiosidade contra a mesma fonte que o roteiro recebeu (ADR 0042, 3A)
+    review: (script, version) => reviewScript({ ...agreed, duration, narration: script.narration, version, structure: formatStructure(format, tier, idea.source), pivotPhrase }),
     maxWords: maxWords(duration),
     // na tier list, a narração nunca diz a fileira: quem revela é a animação (ADR 0036, 6)
     checks: tier ? [tierLetterProblem] : [],

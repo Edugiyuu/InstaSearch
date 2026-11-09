@@ -131,7 +131,7 @@ export interface Beat {
 }
 
 /** Os formatos de vídeo (ADR 0036): cada um muda a estrutura do roteiro; a tier list tem cena própria. */
-export const VIDEO_FORMATS = ['opiniao', 'tierlist', 'versus', 'ese', 'mito', 'antesdepois'] as const
+export const VIDEO_FORMATS = ['opiniao', 'tierlist', 'versus', 'ese', 'mito', 'antesdepois', 'curiosidade'] as const
 export type VideoFormat = (typeof VIDEO_FORMATS)[number]
 
 /** As fileiras da tier list, como no TierMaker (ADR 0036, 4A). */
@@ -218,6 +218,12 @@ export interface ShortProject {
   format?: VideoFormat
   /** Só na tier list: o personagem deste vídeo e a fileira dele. */
   tier?: TierEntry
+  /** A rival que o tema põe contra a personagem principal (ADR 0042): a dupla não volta comparando. */
+  rival?: string
+  /** Só na curiosidade (ADR 0042, 3A): onde o detalhe aparece e quem confirma o sentido. */
+  source?: string
+  /** O usuário conferiu a fonte da curiosidade na Revisão (o item do checklist). */
+  sourceChecked?: boolean
   styleId: string
   /** Duração alvo em segundos (15 a 40). */
   duration: number

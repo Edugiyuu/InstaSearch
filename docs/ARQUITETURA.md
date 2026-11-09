@@ -130,7 +130,7 @@ backend/src/
 │   │   ├── projects.ts        criar, montar, ajustar, desfazer, transcrever
 │   │   ├── autopilot.ts       criar sozinho: a fila ideia → roteiro → montagem → imagens (ADR 0026)
 │   │   ├── scriptReview.ts    a revisão do roteiro pelas IAs: escreve, revisa e reescreve até 2 vezes (ADR 0034)
-│   │   ├── formats.ts         os formatos de vídeo e a tier list em série: estrutura, quadro, fileira (ADR 0036)
+│   │   ├── formats.ts         os formatos de vídeo e a tier list em série: estrutura, quadro, fileira (ADR 0036); a curiosidade com fonte (ADR 0042)
 │   │   ├── catchphrases.ts · pivot.ts   bordões; a virada: frases, a cena marcada e o rodízio dos clipes do meio (ADR 0039)
 │   │   ├── library.ts         arquivos baixados e sons de cada cena
 │   │   ├── imageSearch.ts     busca na web (Bing, Danbooru, AniList, Serper)
@@ -140,7 +140,7 @@ backend/src/
 │   │   ├── render.ts · publish.ts   MP4, Instagram e YouTube
 │   │   └── types.ts           ShortProject, Beat… (o modelo de dados)
 │   ├── insights/              coleta e comparação das métricas
-│   ├── ideas/                 brainstorm, banco de ideias, o debate das IAs (debate.ts, ADR 0027; rodadas e veto, ADR 0030) e a variedade dos temas (variety.ts, ADR 0028; a volta de quem deu views, ADR 0033)
+│   ├── ideas/                 brainstorm, banco de ideias, o debate das IAs (debate.ts, ADR 0027; rodadas e veto, ADR 0030) e a variedade dos temas (variety.ts, ADR 0028; a volta de quem deu views, ADR 0033; a comparação e a dupla, ADR 0042)
 │   └── storage/               FileStorage: um JSON por item
 └── middleware/errorHandler.ts AppError + asyncHandler
 

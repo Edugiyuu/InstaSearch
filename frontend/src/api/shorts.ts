@@ -93,8 +93,8 @@ export interface PivotScene {
 /** O clipe da virada ocupa a cena: ela não precisa de imagem. */
 export const hasPivotClip = (b: Pick<Beat, 'pivot'>) => typeof b.pivot?.clipId === 'string'
 
-/** Os formatos de vídeo (ADR 0036). */
-export type VideoFormat = 'opiniao' | 'tierlist' | 'versus' | 'ese' | 'mito' | 'antesdepois'
+/** Os formatos de vídeo (ADR 0036; a curiosidade é do ADR 0042). */
+export type VideoFormat = 'opiniao' | 'tierlist' | 'versus' | 'ese' | 'mito' | 'antesdepois' | 'curiosidade'
 export const FORMAT_NAME: Record<VideoFormat, string> = {
   opiniao: 'opinião com provas',
   tierlist: 'tier list',
@@ -102,6 +102,7 @@ export const FORMAT_NAME: Record<VideoFormat, string> = {
   ese: 'E se…',
   mito: 'mito ou verdade',
   antesdepois: 'antes e depois',
+  curiosidade: 'curiosidade',
 }
 
 /** As fileiras, como no TierMaker (ADR 0036). */
@@ -210,6 +211,12 @@ export interface ShortProject {
   format?: VideoFormat
   /** Só na tier list: o personagem do vídeo e a fileira. */
   tier?: TierEntry
+  /** A rival que o tema põe contra a personagem principal (ADR 0042). */
+  rival?: string
+  /** Só na curiosidade (ADR 0042): onde o detalhe aparece e quem confirma o sentido. */
+  source?: string
+  /** O usuário conferiu a fonte da curiosidade (o item do checklist). */
+  sourceChecked?: boolean
   styleId: string
   duration: number
   tone: string

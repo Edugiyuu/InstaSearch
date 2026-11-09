@@ -35,6 +35,8 @@ export interface Idea {
   /** A obra (nome completo) e a personagem principal: o código confere a variedade com elas (ADR 0028). */
   work?: string
   character?: string
+  /** A outra personagem que o tema põe contra a principal, ou vazio (ADR 0042): marca a comparação. */
+  rival?: string
   trend?: Trend
   /** Aposta: algo bombando no nicho do canal, mesmo numa obra que o canal nunca tratou (ADR 0028). */
   bet?: boolean
@@ -44,6 +46,8 @@ export interface Idea {
   format?: VideoFormat
   /** Na tier list: a série (obra e critério); o personagem ranqueado é o `character`. */
   series?: string
+  /** Só na curiosidade (ADR 0042, 3A): onde o detalhe aparece e quem confirma o sentido. */
+  source?: string
   status: IdeaStatus
   /** Por que o usuário descartou ("já fiz", "não curto"); entra nos próximos brainstorms. */
   discardReason?: string

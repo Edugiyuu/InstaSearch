@@ -111,6 +111,23 @@ describe('cleanIdeas', () => {
     expect(idea.toneId).toBe('polemico')
   })
 
+  it('guarda a rival (nunca a própria personagem) e a fonte só na curiosidade (ADR 0042)', () => {
+    const [versus, same, curiosity, opinion] = cleanIdeas(
+      [
+        { theme: 'Reze vs. Makima: quem vence?', character: 'Reze', rival: 'Makima', format: 'versus' },
+        { theme: 'A cena que explica a Reze', character: 'Reze', rival: 'reze' },
+        { theme: 'Você reparou no que a Mikasa diz?', format: 'curiosidade', source: 'episódio 1; capítulo 139' },
+        { theme: 'A Annie foi desperdiçada', source: 'inventada' },
+      ],
+      refs,
+      options,
+    )
+    expect(versus.rival).toBe('Makima')
+    expect(same.rival).toBeUndefined()
+    expect(curiosity.source).toBe('episódio 1; capítulo 139')
+    expect(opinion.source).toBeUndefined()
+  })
+
   it('ignora tema vazio, curto demais ou repetido', () => {
     const ideas = cleanIdeas([{ theme: '' }, { theme: 'Gojo' }, { theme: 'Tema que é bem específico' }, { theme: 'tema que é bem específico' }], refs, options)
     expect(ideas).toHaveLength(1)

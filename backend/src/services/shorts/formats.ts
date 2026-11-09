@@ -25,6 +25,7 @@ export const FORMAT_NAME: Record<VideoFormat, string> = {
   ese: 'E se…',
   mito: 'mito ou verdade',
   antesdepois: 'antes e depois',
+  curiosidade: 'curiosidade',
 }
 
 /** O formato de um vídeo; os de antes do ADR 0036 eram todos opinião com provas. */
@@ -125,8 +126,11 @@ export function ensureTierScenes(beats: Beat[]): Beat[] {
 /** As palavras que apontam para o quadro na revelação. */
 export const POINTING = /\b(aqui|esse|essa|pra c[aá]|para c[aá]|c[aá])\b/i
 
-/** O formato e a estrutura que o pedido do roteiro manda seguir. */
-export function formatStructure(format: VideoFormat, tier?: { series: string; character: string; part: number; previous: TierEntry[] }) {
+/**
+ * O formato e a estrutura que o pedido do roteiro manda seguir. `source`: na curiosidade, a fonte que o
+ * brainstorm achou (ADR 0042, 3A); o roteiro e a revisão recebem a mesma.
+ */
+export function formatStructure(format: VideoFormat, tier?: { series: string; character: string; part: number; previous: TierEntry[] }, source?: string) {
   switch (format) {
     case 'tierlist':
       return `Formato: TIER LIST, parte ${tier?.part ?? 1} da série "${tier?.series ?? ''}". Este vídeo ranqueia UM personagem: ${tier?.character ?? ''}.${
@@ -144,6 +148,9 @@ export function formatStructure(format: VideoFormat, tier?: { series: string; ch
       return `Formato: E SE… Gancho com a premissa ("e se X tivesse feito Y?") → o que mudaria na história, em 2 consequências concretas, ligadas a fatos reais da obra → o desfecho mais provável → uma pergunta ao público.`
     case 'mito':
       return `Formato: MITO OU VERDADE. Gancho com o que todo mundo acha → 2 ou 3 crenças comuns sobre o tema, cada uma derrubada (ou confirmada) por uma prova concreta → a conclusão → "qual dessas você achava?".`
+    case 'curiosidade':
+      return `Formato: CURIOSIDADE, o detalhe discreto que a obra não deixa explícito (um presságio, um detalhe de fundo, um símbolo, algo que o autor confirmou e o anime deixou no ar). Gancho com o detalhe que ninguém reparou ("você reparou no que…?") → onde ele aparece (episódio, capítulo, a cena) → o que ele quer dizer, e quem confirma (a própria obra mais tarde, o autor, o material oficial) → uma pergunta ao público ("você tinha reparado?").
+- A fonte é esta: ${source || '(nenhuma)'}. Não afirme NADA além dela: nenhum detalhe, número, fala ou capítulo que ela não traz. O que os fãs acham não é fato: não apresente uma teoria como confirmada.`
     case 'antesdepois':
       return `Formato: ANTES E DEPOIS. Gancho com a mudança → como era (com uma prova concreta) → o que mudou e quando (episódio, capítulo, arco) → se ficou melhor ou pior, com uma opinião forte → uma pergunta ao público.`
     default:

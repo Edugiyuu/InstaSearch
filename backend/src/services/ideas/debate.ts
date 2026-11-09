@@ -235,6 +235,7 @@ async function recentVideos(projects: ShortProject[]): Promise<RecentVideo[]> {
         above: above.get(p.id),
         format: p.format,
         tier: p.tier,
+        rival: p.rival,
         createdAt: p.createdAt,
       }
     })
@@ -299,6 +300,8 @@ const tags = (i: Idea) => {
     i.bet ? 'APOSTA: fora das obras do canal, mas do mesmo nicho e bombando agora' : '',
     i.revisit ? `VOLTA: ${i.character ?? 'a personagem'} já deu views no canal, agora com um assunto novo` : '',
     i.format && i.format !== 'opiniao' ? `formato: ${FORMAT_NAME[i.format]}${i.format === 'tierlist' ? ` (série "${i.series}", ranqueia ${i.character})` : ''}` : '',
+    i.rival ? `COMPARA ${i.character ?? 'a personagem'} com ${i.rival}` : '',
+    i.source ? `fonte: ${i.source}` : '',
   ]
   const text = t.filter(Boolean).join(' · ')
   return text ? ` [${text}]` : ''
@@ -348,7 +351,8 @@ ${debate.messages.length ? transcript(debate.messages) : '(ninguém falou ainda)
   }
 - Critique de verdade: um tema só passa se for bom o bastante para gerar comentários, compartilhamentos e retenção neste canal, com este público. Use os números e os comentários acima.
 - O criador quer temas com "tchan": opinião forte e polêmica, de preferência com fanservice de uma personagem mulher. Um tema com cara de notícia ou de resenha ("o episódio X dividiu os fãs") é fraco: recusem, ou ajustem para uma opinião forte sobre o mesmo assunto.
-- Recusem o ângulo repetido: "ela é mais que o visual / o corpo / a beleza" o canal já fez demais, e um tema com o mesmo ângulo de um dos últimos vídeos cansa, mesmo com outra personagem.
+- Recusem o ângulo repetido: "ela é mais que o visual / o corpo / a beleza" o canal já fez demais, e um tema com o mesmo ângulo de um dos últimos vídeos cansa, mesmo com outra personagem. O mesmo vale para "X é a melhor personagem de Y" e para pôr uma personagem contra outra (os temas marcados COMPARA): o app já barra a comparação logo depois de outra, e entre as que passam, prefiram o tema que não compara ninguém. Um tema com personagens que o canal já tratou só passa se a pergunta for outra: confiram a lista dos vídeos já feitos.
+- Um tema de CURIOSIDADE é o detalhe discreto que a obra não deixa explícito. Leiam a fonte: o detalhe precisa estar na obra, e o sentido, confirmado pela própria obra, pelo autor ou por material oficial. Recusem a curiosidade que a cena já explica (quem viu já sabe) e a que é só teoria de fã.
 - Desconfiem do "em alta": ele vale para o tema, não para a obra. Um tema que funcionaria igual há um ano não ganha pontos por ser do momento.
 - Pese a variedade: o canal não deve repetir a obra dos últimos vídeos nem viver só de hype. Um tema marcado como APOSTA é de uma obra que o canal nunca tratou: aceite-o só se o assunto está mesmo bombando e combina com quem segue o canal. Um tema marcado como VOLTA traz de novo uma personagem que deu views no canal (o app já conferiu que ela não está cansada): aceite-o só se o assunto é mesmo novo, com outra pergunta ou outro recorte, e não um vídeo que o canal já fez com outro título.
 - Fale como numa conversa, em 2 a 4 frases, sem listas e sem markdown. Cite os temas pelo número. Pode sugerir um ajuste num tema (outro gancho, outro recorte), desde que continue sendo o mesmo assunto.

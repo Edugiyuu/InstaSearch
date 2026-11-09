@@ -92,7 +92,7 @@ const EFFECTS: Effect[] = ['none', 'circle', 'arrow', 'cross']
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
 /** Os itens do checklist "Antes de publicar" (ADR 0038). */
-type CheckItem = 'imagens' | 'voz' | 'efeitos' | 'som' | 'legenda'
+type CheckItem = 'imagens' | 'voz' | 'efeitos' | 'som' | 'legenda' | 'fonte'
 
 /** Um controle de volume do pop-up do som, em %. Ao soltar, toca o efeito para ouvir como ficou. */
 function VolumeRow({ label, title, value, max, onChange, onRelease }: {
@@ -479,6 +479,10 @@ function Review() {
           ? 'Desligada'
           : `${CAPTION_LABEL[project.settings.caption]} · ${CAPTION_SIZE_LABEL[project.settings.captionSize ?? 'media']} · ${CAPTION_ANIM_LABEL[project.settings.captionAnim ?? 'destaque']}`,
     },
+    // a curiosidade só é verdade se a fonte for (ADR 0042, 3A): a IA pode errar o capítulo, e quem confere é você
+    ...(project.source
+      ? [{ id: 'fonte' as const, title: 'Curiosidade e fonte', ok: !!project.sourceChecked, sub: project.sourceChecked ? 'Conferida' : 'Confira antes de publicar' }]
+      : []),
   ]
   const done = checklist.filter(c => c.ok).length
   const ready = done === checklist.length
@@ -723,6 +727,31 @@ function Review() {
                   title="Busca de novo na web as imagens que a montagem escolheu; as que você escolheu ficam"
                 >
                   ↻ Buscar imagens de novo
+                </button>
+              </div>
+            </>
+          )}
+
+          {active === 'fonte' && project.source && (
+            <>
+              <div className="rv-fix-head">
+                <strong>Curiosidade e fonte</strong>
+                <span>A IA achou esta fonte na pesquisa, e o roteiro não pode dizer nada além dela. Confira se o detalhe está mesmo onde ela diz.</span>
+              </div>
+              <ul className="rv-facts">
+                <li>{project.source}</li>
+              </ul>
+              <div className="rv-fix-acts">
+                <button
+                  className={project.sourceChecked ? 'btn-g' : 'btn-y'}
+                  onClick={() =>
+                    shortsApi
+                      .updateProject(project.id, { sourceChecked: !project.sourceChecked })
+                      .then(setProject)
+                      .catch(e => toast.show(errorMessage(e)))
+                  }
+                >
+                  {project.sourceChecked ? 'Desmarcar' : '✓ Conferi a fonte'}
                 </button>
               </div>
             </>

@@ -95,7 +95,7 @@ export async function brainstorm(input: { seed?: string; request?: string }) {
 }
 
 /** A pesquisa do debate (ADR 0028): o que acontece nas obras do canal e o que está viralizando no nicho. */
-const RESEARCH_DEBATE = `${RESEARCH} Pesquise também o que está viralizando AGORA no nicho do canal (o mesmo tipo de conteúdo dos vídeos dele, por exemplo anime, desenho, games e cultura geek), mesmo fora das obras que o canal já tratou: trends de fãs, memes, versões alternativas de personagens (como a "Malfoid", a versão mulher do Draco Malfoy), polêmicas e estreias de que o público está falando. E o que os fãs estão discutindo sobre personagens mulheres: disputas de quem é a mais bonita ou a melhor, enquetes de popularidade, designs novos, cosplays e fanarts que viralizaram.`
+const RESEARCH_DEBATE = `${RESEARCH} Pesquise também o que está viralizando AGORA no nicho do canal (o mesmo tipo de conteúdo dos vídeos dele, por exemplo anime, desenho, games e cultura geek), mesmo fora das obras que o canal já tratou: trends de fãs, memes, versões alternativas de personagens (como a "Malfoid", a versão mulher do Draco Malfoy), polêmicas e estreias de que o público está falando. E o que os fãs estão discutindo sobre personagens mulheres: enquetes de popularidade, designs novos, cosplays e fanarts que viralizaram. Para a curiosidade, procure detalhes discretos das obras do canal que o autor, um databook, uma nota de volume ou a própria obra mais tarde confirmaram (ADR 0042).`
 
 /** Como o pedido do brainstorm explica cada formato (ADR 0036); só os ligados entram (ACTIVE_FORMATS). */
 const FORMAT_PROMPT: Record<VideoFormat, string> = {
@@ -106,6 +106,8 @@ const FORMAT_PROMPT: Record<VideoFormat, string> = {
   ese: '- "ese": E se… ("E se a Tatsumaki entrasse na Associação dos Monstros?").',
   mito: '- "mito": mito ou verdade ("3 coisas que todo mundo acha da Makima, e estão erradas").',
   antesdepois: '- "antesdepois": antes e depois ("Nami antes e depois do time-skip").',
+  curiosidade:
+    '- "curiosidade": o detalhe DISCRETO que a obra não deixa explícito, e que quase ninguém reparou: um presságio (uma fala do começo que só faz sentido muito depois), um detalhe de fundo, um símbolo (cor, nome, desenho), algo que o autor confirmou e o anime deixou no ar ("Você reparou no que a Mikasa diz no primeiro episódio?"). Não serve o que a própria cena explica (a cicatriz do Luffy: quem viu já sabe), nem teoria de fã. "source" diz onde o detalhe aparece e quem confirma o sentido ("episódio 1 de Attack on Titan; confirmado no capítulo 139"), achados na pesquisa. Sem fonte confirmada, não proponha: o app descarta.',
 }
 
 /**
@@ -147,7 +149,9 @@ export async function brainstormCandidates(
     `Regras de variedade (o app confere e descarta o que não cumprir):
 - Cada ideia é de uma obra diferente.
 - Não use a personagem principal de nenhum dos 3 últimos vídeos, nem uma obra que já tem 2 dos 4 últimos (a ideia de volta, abaixo, é a exceção).
-- A maioria das ideias é do que está em alta agora, mas pelo menos 2 são atemporais: uma análise, comparação ou curiosidade que não depende da notícia da semana.
+- A maioria das ideias é do que está em alta agora, mas pelo menos 2 são atemporais: uma análise ou curiosidade que não depende da notícia da semana.
+- Comparação (uma personagem contra outra, em qualquer formato: "X vs Y", "X é melhor que Y", "X humilha Y", "X no lugar de Y") cabe em no máximo 1 a cada 3 vídeos, e o app descarta a que vier logo depois de outra. Marque "rival" com a outra personagem sempre que o tema comparar. A mesma dupla não volta nos 8 últimos vídeos, e depois só volta com outro assunto, nunca comparando de novo.
+- A maioria das ideias não compara ninguém: fala de UMA personagem ou de uma cena.
 - "Em alta" é o TEMA, não a obra: só marque "alta" se o tema fala de algo que aconteceu nas últimas semanas (um episódio, capítulo, anúncio, design ou trend novo) e a pesquisa confirmou. Teste: se o tema funcionaria igual há um ano, ele é "atemporal", mesmo que a obra esteja em evidência (o passado do Gaara é atemporal, mesmo com Naruto voltando).
 - Fora isso, fique nas obras que o canal já fala. A exceção é UMA ideia de aposta ("bet": true): algo que está bombando agora no mesmo nicho do canal, mesmo numa obra que ele nunca tratou (uma trend de fãs, um meme, uma versão alternativa de personagem). Só se a pesquisa confirmou que está bombando, e nunca de outro nicho (nada de culinária num canal de anime).
 - Até UMA ideia de volta ("revisit": true): uma personagem de um vídeo do canal que ficou acima da mediana de visualizações, com um assunto NOVO (outra pergunta, outro recorte, nunca o mesmo vídeo com outro título). Nessa ideia, a obra e a janela de 3 vídeos não contam, mas a personagem não pode ser a do último vídeo, nem uma que já tem 3 dos últimos 8 vídeos, nem uma cujo vídeo mais recente ficou abaixo da mediana: ela descansa. Voltar é bom de vez em quando; sugar a personagem até a última gota, não.`,
@@ -164,9 +168,9 @@ ${formats.map(f => FORMAT_PROMPT[f]).join('\n')}${
           : '\nO canal ainda não tem nenhuma tier list.'
     }`,
     `Regras de apelo (os temas de antes saíam com cara de notícia, e o criador quer temas com "tchan"):
-- Cada tema é uma OPINIÃO FORTE que toma um lado, em QUALQUER formato (não precisa ser o formato "opiniao": num versus a opinião é quem vence, num mito ou verdade é o que todo mundo acha e está errado), e divide o público, do tipo que dá vontade de comentar para discordar: "A Hinata é a personagem mais desperdiçada de Naruto", "A Nami pós-time-skip é o melhor design de One Piece, e não é por acaso". Nada com cara de notícia ou de resenha: "o episódio X dividiu os fãs", "a recepção de Y no Japão", "a adaptação de Z está boa?". Uma novidade pode ser o gatilho, mas o tema é a opinião sobre ela, não a notícia.
-- Pelo menos metade das ideias tem fanservice, de preferência com uma personagem mulher em destaque: beleza, design, visual novo, cenas marcantes dela, disputa de quem é a mais bonita ou a melhor, ship, versão alternativa. Sempre junto de uma opinião forte, nunca só "olha como ela é bonita". Só personagens adultas; nada sexual explícito.
-- PROIBIDA a fórmula "ela é mais que o visual / o corpo / a beleza / o fanservice" (e "é só beleza?", "não é só visual"): o canal já fez vários vídeos assim e cansou. Varie o ângulo: um ranking ("as 5 mais bonitas de Bleach"), uma comparação ("a Rebecca é melhor que a Lucy"), "quem venceria", um ship, o melhor e o pior design, um visual que a obra estragou, uma cena que a obra desperdiçou. Nunca use o mesmo ângulo de um dos últimos vídeos, mesmo com outra personagem.
+- Cada tema é uma OPINIÃO FORTE que toma um lado, em QUALQUER formato (não precisa ser o formato "opiniao": num versus a opinião é quem vence, num mito ou verdade é o que todo mundo acha e está errado; na curiosidade, o "tchan" é a surpresa do detalhe que ninguém reparou), e divide o público, do tipo que dá vontade de comentar para discordar: "A Hinata é a personagem mais desperdiçada de Naruto", "A Nami pós-time-skip é o melhor design de One Piece, e não é por acaso". Nada com cara de notícia ou de resenha: "o episódio X dividiu os fãs", "a recepção de Y no Japão", "a adaptação de Z está boa?". Uma novidade pode ser o gatilho, mas o tema é a opinião sobre ela, não a notícia.
+- Pelo menos metade das ideias tem fanservice, de preferência com uma personagem mulher em destaque: beleza, design, visual novo, cenas marcantes dela, ship, versão alternativa, um detalhe dela que ninguém reparou. Sempre junto de uma opinião forte, nunca só "olha como ela é bonita". Só personagens adultas; nada sexual explícito.
+- PROIBIDAS as fórmulas "ela é mais que o visual / o corpo / a beleza / o fanservice" (e "é só beleza?", "não é só visual") e "X é a melhor personagem de Y": o canal já fez vários vídeos assim e cansou. Varie o ângulo, de preferência sem rival: o detalhe que ninguém percebeu, a cena que explica a personagem, um ship, o melhor e o pior design, um visual que a obra estragou, uma cena que a obra desperdiçou, o que a adaptação mudou, por que o fandom ama ou odeia alguém. Nunca use o mesmo ângulo de um dos últimos vídeos, mesmo com outra personagem.
 - O "hook" provoca: abre com a opinião ou com uma pergunta que a pessoa quer responder, nunca com o resumo de um fato.`,
   ]
     .filter(Boolean)
@@ -242,11 +246,11 @@ ${
 - "theme" é escrito como o criador escreveria no campo "Sobre o que é o vídeo?": uma pergunta ou afirmação específica (ex.: "Por que o Luffy nunca mata ninguém em One Piece?"). Nada genérico.
 - "hook" é a primeira frase falada do vídeo, com até 15 palavras.
 - "duration": 15, 20, 30 ou 40 (segundos).
-- "work": o nome oficial completo da obra (ex.: "One-Punch Man", nunca "OPM"); "character": a personagem principal do tema (nome e sobrenome, se tiver), ou vazio se não houver uma; "trend": "alta" se o tema depende do que está acontecendo agora, ou "atemporal".${opts.variety ? `\n- "bet": true só na ideia de aposta; "revisit": true só na ideia de volta; nas outras, false. "format": um de ${ACTIVE_FORMATS.join(', ')}${TIER_LIST_ON ? '; "series" só na tierlist' : ''}.` : ''}
+- "work": o nome oficial completo da obra (ex.: "One-Punch Man", nunca "OPM"); "character": a personagem principal do tema (nome e sobrenome, se tiver), ou vazio se não houver uma; "trend": "alta" se o tema depende do que está acontecendo agora, ou "atemporal".${opts.variety ? `\n- "bet": true só na ideia de aposta; "revisit": true só na ideia de volta; nas outras, false. "format": um de ${ACTIVE_FORMATS.join(', ')}${TIER_LIST_ON ? '; "series" só na tierlist' : ''}. "rival": a outra personagem que o tema põe contra a principal, ou vazio. "source": só na curiosidade, a fonte.` : ''}
 - "why": 2 ou 3 frases, citando os números quando houver ("o vídeo do Gojo foi 2,4× a mediana"). No "why", chame os vídeos pelo título e os comentários pelo texto: o criador não vê as etiquetas [V1] e [C1], que servem só para "videos" e "comments".
 
 Responda só com JSON:
-{ "ideas": [ { "theme": "...", "hook": "...", "styleId": "...", "toneId": "...", "duration": 30, "why": "...", "videos": ["V1"], "comments": ["C2"], "web": "o que a pesquisa encontrou, ou vazio", "work": "...", "character": "...", "trend": "alta"${opts.variety ? ', "bet": false, "revisit": false, "format": "opiniao", "series": ""' : ''} } ] }`
+{ "ideas": [ { "theme": "...", "hook": "...", "styleId": "...", "toneId": "...", "duration": 30, "why": "...", "videos": ["V1"], "comments": ["C2"], "web": "o que a pesquisa encontrou, ou vazio", "work": "...", "character": "...", "trend": "alta"${opts.variety ? ', "rival": "", "bet": false, "revisit": false, "format": "opiniao", "series": "", "source": ""' : ''} } ] }`
 
   const { data, ai } = await askJsonMeta<{ ideas?: RawIdea[] }>(prompt, { research: true, researchNote: opts.variety ? RESEARCH_DEBATE : RESEARCH })
   const cleaned = cleanIdeas(Array.isArray(data.ideas) ? data.ideas : [], refs, {

@@ -3,7 +3,8 @@
  *
  * A IA pode ignorar um "varie a obra"; aqui o código confere: tira as ideias cuja personagem acabou de
  * aparecer ou cuja obra já tem vídeos demais, fica com uma ideia por obra e sorteia a ordem. Uma das
- * ideias pode ser a volta de uma personagem que deu views, com as regras dela (ADR 0033).
+ * ideias pode ser a volta de uma personagem que deu views, com as regras dela (ADR 0033). A comparação
+ * entre duas personagens é um ângulo que não pode dominar o canal, e a dupla não volta comparando (ADR 0042).
  */
 
 import { median } from '../insights/compare.js'
@@ -22,6 +23,13 @@ export const REST_WINDOW = 8
 export const REST_LIMIT = 3
 /** Quem fica até 5% abaixo da mediana conta como acima: passa de raspão (ADR 0033). */
 export const MEDIAN_MARGIN = 0.05
+/**
+ * No máximo 1 comparação em 3 vídeos seguidos (ADR 0042, 1A): a ideia que compara não entra enquanto um dos
+ * 2 últimos vídeos comparou.
+ */
+export const COMPARISON_GAP = 2
+/** A dupla personagem + rival descansa nestes últimos vídeos; depois volta só com outro assunto (ADR 0042, 2B). */
+export const PAIR_WINDOW = 8
 
 /** Um vídeo já feito, do mais novo para o mais velho. */
 export interface RecentVideo {
@@ -36,6 +44,8 @@ export interface RecentVideo {
   format?: VideoFormat
   /** Na tier list: a série e quem o vídeo ranqueou. */
   tier?: TierEntry
+  /** A rival do tema (ADR 0042); os vídeos de antes não têm, e aí valem as palavras de disputa. */
+  rival?: string
   createdAt?: string
 }
 
@@ -77,6 +87,33 @@ const isAbout = (v: RecentVideo, character?: string) => mentions(`${v.title} ${v
 function restReason(character: string | undefined, recent: RecentVideo[]) {
   const count = recent.slice(0, REST_WINDOW).filter(v => isAbout(v, character)).length
   return count >= REST_LIMIT ? `${character} descansa: já tem ${count} dos ${REST_WINDOW} últimos vídeos` : null
+}
+
+/**
+ * As palavras de disputa (ADR 0042): pegam a comparação quando a IA não marcou a rival, e nos vídeos de
+ * antes, que não têm a rival guardada. Comparam o texto já normalizado (sem acento, sem pontuação).
+ */
+const DISPUTE = /\b(vs|versus|contra|melhor que|pior que|humilh\w*|no lugar d[aeo]s?)\b|\bou\b.*\bquem\b/
+
+/** O tema põe uma personagem contra outra: tem rival, ou fala como disputa (ADR 0042). */
+export const compares = (v: { title?: string; theme: string; rival?: string }) =>
+  !!v.rival || DISPUTE.test(normalize(`${v.title ?? ''} ${v.theme}`))
+
+/**
+ * Por que a comparação não pode entrar agora, ou null se pode (ADR 0042):
+ * - 1A: um dos 2 últimos vídeos já comparou;
+ * - 2B: a dupla está num dos 8 últimos vídeos, ou já foi comparada antes (ela só volta com outro assunto).
+ */
+export function comparisonReason(idea: Pick<Idea, 'theme' | 'character' | 'rival'>, recent: RecentVideo[]) {
+  if (!compares(idea)) return null
+  const last = recent.slice(0, COMPARISON_GAP).find(v => compares({ ...v, theme: v.theme ?? '' }))
+  if (last) return `comparação: o canal acabou de comparar ("${last.title}"), e só cabe 1 a cada 3 vídeos`
+  if (!idea.character || !idea.rival) return null
+  const pair = recent.findIndex(v => isAbout(v, idea.character) && isAbout(v, idea.rival))
+  if (pair < 0) return null
+  const video = recent[pair]
+  if (pair < PAIR_WINDOW) return `a dupla ${idea.character} e ${idea.rival} está num dos ${PAIR_WINDOW} últimos vídeos ("${video.title}")`
+  return `${idea.character} e ${idea.rival} já foram comparadas ("${video.title}"): a dupla só volta com outro assunto`
 }
 
 /** Por que a ideia não pode entrar agora, ou null se pode. */
@@ -142,13 +179,14 @@ export const freeFormats = (recent: RecentVideo[]) =>
 
 /**
  * O formato não repete o do último vídeo (ADR 0036, 2A e adendo); a tier list precisa da série e de um
- * personagem que ainda não está no quadro dela (3A).
+ * personagem que ainda não está no quadro dela (3A); a curiosidade precisa da fonte (ADR 0042, 3A).
  */
-export function formatReason(idea: Pick<Idea, 'format' | 'series' | 'character'>, recent: RecentVideo[]) {
+export function formatReason(idea: Pick<Idea, 'format' | 'series' | 'character' | 'source'>, recent: RecentVideo[]) {
   const format = formatOf(idea)
   if (!ACTIVE_FORMATS.includes(format)) return `o formato "${FORMAT_NAME[format]}" está desligado por enquanto`
   const same = recent.slice(0, FORMAT_WINDOW).find(v => formatOf(v) === format)
   if (same) return `o formato "${FORMAT_NAME[format]}" foi o do último vídeo ("${same.title}")`
+  if (format === 'curiosidade') return idea.source ? null : 'a curiosidade veio sem a fonte (onde o detalhe aparece e quem confirma o sentido)'
   if (format !== 'tierlist') return null
   if (!idea.series || !idea.character) return 'a tier list precisa da série e do personagem da vez'
   const ranked = alreadyRanked(seriesOf(recent), idea)
@@ -171,13 +209,14 @@ export function shuffle<T>(items: T[], random = Math.random) {
 
 /**
  * Escolhe as `count` candidatas do debate entre as que o brainstorm trouxe (na ordem dele):
- * 1. tira as bloqueadas pela personagem ou pela obra; a volta (`revisit`) segue as regras dela;
+ * 1. tira as bloqueadas pelo formato, pela comparação (ADR 0042), pela personagem ou pela obra; a volta
+ *    (`revisit`) segue as regras dela;
  * 2. fica com uma por obra, no máximo uma aposta e no máximo uma volta (que não conta na obra);
  * 3. a volta, se passou, sempre entra: é a vaga dela;
  * 4. se todas as escolhidas forem "em alta" e sobrar uma atemporal, ela entra no lugar da última;
  * 5. sorteia a ordem (contra o viés de posição).
  */
-export function pickCandidates<T extends Pick<Idea, 'theme' | 'work' | 'character' | 'trend' | 'bet' | 'revisit' | 'format' | 'series'>>(
+export function pickCandidates<T extends Pick<Idea, 'theme' | 'work' | 'character' | 'rival' | 'trend' | 'bet' | 'revisit' | 'format' | 'series' | 'source'>>(
   ideas: T[],
   recent: RecentVideo[],
   count: number,
@@ -188,6 +227,7 @@ export function pickCandidates<T extends Pick<Idea, 'theme' | 'work' | 'characte
   for (const idea of ideas) {
     const reason =
       formatReason(idea, recent) ??
+      comparisonReason(idea, recent) ??
       (idea.revisit
         ? (revisitReason(idea, recent) ?? (allowed.some(a => a.revisit) ? 'já há uma volta' : null))
         : (blockReason(idea, recent) ??

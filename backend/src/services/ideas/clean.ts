@@ -92,14 +92,16 @@ export interface RawIdea {
   web?: unknown
   work?: unknown
   character?: unknown
+  rival?: unknown
   trend?: unknown
   bet?: unknown
   revisit?: unknown
   format?: unknown
   series?: unknown
+  source?: unknown
 }
 
-export type CleanIdea = Pick<Idea, 'theme' | 'hook' | 'styleId' | 'toneId' | 'duration' | 'why' | 'evidence' | 'work' | 'character' | 'trend' | 'bet' | 'revisit' | 'format' | 'series'>
+export type CleanIdea = Pick<Idea, 'theme' | 'hook' | 'styleId' | 'toneId' | 'duration' | 'why' | 'evidence' | 'work' | 'character' | 'rival' | 'trend' | 'bet' | 'revisit' | 'format' | 'series' | 'source'>
 
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '')
 const list = (v: unknown) => (Array.isArray(v) ? v.map(x => String(x).replace(/[[\]\s]/g, '').toUpperCase()) : [])
@@ -139,6 +141,10 @@ export function cleanIdeas(
     }
     const web = text(r.web, 400)
     if (web) evidence.push({ kind: 'web', text: web })
+    // a rival não pode ser a própria personagem (a IA às vezes repete o nome)
+    const character = text(r.character, 80)
+    const rivalName = text(r.rival, 80)
+    const rival = rivalName && rivalName.toLowerCase() !== character.toLowerCase() ? rivalName : undefined
 
     out.push({
       theme,
@@ -149,13 +155,16 @@ export function cleanIdeas(
       why: text(r.why, 600),
       evidence,
       work: text(r.work, 80) || undefined,
-      character: text(r.character, 80) || undefined,
+      character: character || undefined,
+      rival,
       trend: r.trend === 'alta' || r.trend === 'atemporal' ? r.trend : undefined,
       bet: r.bet === true || undefined,
       revisit: r.revisit === true || undefined,
       format: isFormat(r.format) && r.format !== 'opiniao' ? r.format : undefined,
       // a série só vale na tier list, e precisa do personagem que ela ranqueia
       series: r.format === 'tierlist' ? text(r.series, 100) || undefined : undefined,
+      // a fonte só vale na curiosidade; sem ela, o filtro descarta a ideia (ADR 0042, 3A)
+      source: r.format === 'curiosidade' ? text(r.source, 300) || undefined : undefined,
     })
     if (out.length >= MAX_IDEAS) break
   }

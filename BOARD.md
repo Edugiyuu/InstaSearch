@@ -6,10 +6,10 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Fazendo
 
-- [ ] Transições de entrada novas: `glitch` (decalagem RGB e fatias), `rgb-split`, `light-leak` e `zoom-punch` (zoom seco no ritmo), além das 5 de hoje (adendo ao ADR 0037)
 
 ## A fazer
 
+- [ ] Transições de entrada novas: `glitch` (decalagem RGB e fatias), `rgb-split`, `light-leak` e `zoom-punch` (zoom seco no ritmo), além das 5 de hoje (adendo ao ADR 0037) (pausada: as mudanças estão no `git stash`, "transicoes de entrada")
 
 - [ ] Ritmo da cena: toda cena termina com um tempo parado (≥0,3 s) e a cena empurrada por uma transição não ganha animação de entrada, só a primeira e as depois de corte seco (adendo aos ADR 0037 e 0039)
 - [ ] Animação da palavra falada por fonte variável (Roboto Flex): o peso e a largura da letra mudam em onda, sem mover a palavra de lugar, para dar para ler desde o primeiro quadro (adendo ao ADR 0040)
@@ -55,6 +55,7 @@ O que está sendo feito, o que vem depois e o que já foi entregue. Como funcion
 
 ## Feito
 
+- [x] 2026-11-05 · Temas sem "X é melhor que Y": 9 dos últimos 15 vídeos punham uma personagem contra outra, e "Reze vs. Makima" repetiu a tese de 15/10. Agora a comparação cabe em 1 a cada 3 vídeos, a dupla descansa 8 vídeos e só volta com outro assunto, e entra o formato **Curiosidade**, o detalhe discreto que a obra não deixa explícito, só com fonte, conferida por você na Revisão ([ADR 0042](docs/decisions/0042-angulo-sem-rival-e-curiosidades.md))
 - [x] 2026-11-02 · O bloco da legenda fecha no fim da frase, na pausa de 0,45 s da voz ou em 1,6 s de fala, em vez de a cada N palavras fixas: "Nami? É só a navegadora." mostrava `NAMI? É SÓ A` e depois `NAVEGADORA.`, e agora a pergunta fica sozinha ([ADR 0040](docs/decisions/0040-legenda-completa-com-estilo.md), adendo)
 - [x] 2026-10-31 · O trecho do clipe da virada não tem mais teto de 3 s: você escolhe quantos segundos entram, de 1 s até o clipe inteiro (durações prontas até 8 s e "inteiro"), e o recorte avisa quanto a cena vai durar quando o trecho passa de 3 s, porque a voz espera o clipe acabar ([ADR 0039](docs/decisions/0039-bordao-do-meio.md), adendo)
 - [x] 2026-10-30 · Prévia não trava mais no corte: trocar de cena custava 183 ms de navegador parado (o último quadro da cena anterior ficava preso na tela, bem no fim do clipe da virada); agora toda cena é montada 0,5 s antes, escondida, como já era com o clipe. O MP4 não muda ([ADR 0039](docs/decisions/0039-bordao-do-meio.md), adendo)

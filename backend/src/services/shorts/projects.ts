@@ -111,9 +111,9 @@ async function nextPivotPhrase() {
 /**
  * `script`: um roteiro já escrito e revisado pelas IAs (ADR 0034); sem ele, o gerador escreve agora.
  * `format` e `tier`: o formato do vídeo e, na tier list, a série e o personagem (ADR 0036); a fileira
- * vem do roteiro.
+ * vem do roteiro. `rival` e `source`: a rival do tema e, na curiosidade, a fonte (ADR 0042).
  */
-export async function createProject(input: ProjectInput & { script?: Script; format?: VideoFormat; tier?: Omit<TierEntry, 'rank'> }) {
+export async function createProject(input: ProjectInput & { script?: Script; format?: VideoFormat; tier?: Omit<TierEntry, 'rank'>; rival?: string; source?: string }) {
   const { theme, duration, style, tone, pivotPhrase } = await scriptInputs(input)
 
   const script =
@@ -135,6 +135,8 @@ export async function createProject(input: ProjectInput & { script?: Script; for
     subject: script.subject,
     ...(input.format && input.format !== 'opiniao' ? { format: input.format } : {}),
     ...(input.format === 'tierlist' && input.tier ? { tier: { ...input.tier, rank: script.tierRank ?? 'B' } } : {}),
+    ...(input.rival ? { rival: input.rival } : {}),
+    ...(input.format === 'curiosidade' && input.source ? { source: input.source } : {}),
     styleId: style.id,
     duration,
     tone: tone.name,
@@ -170,6 +172,8 @@ export async function updateProject(id: string, changes: Partial<ShortProject>) 
   if (typeof changes.audioDuration === 'number') next.audioDuration = changes.audioDuration
   if (changes.musicId !== undefined) next.musicId = changes.musicId
   if (changes.status) next.status = changes.status
+  // o item "Curiosidade e fonte" do checklist (ADR 0042): só existe no vídeo que tem a fonte
+  if (typeof changes.sourceChecked === 'boolean' && project.source) next.sourceChecked = changes.sourceChecked
   if (changes.settings) {
     next.settings = { ...project.settings, ...changes.settings }
     const volume = next.settings.sfxVolume

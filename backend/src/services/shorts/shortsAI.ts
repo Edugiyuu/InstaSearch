@@ -188,10 +188,12 @@ export async function generateScript(input: {
   format?: VideoFormat
   /** Na tier list: a série, o personagem da vez, a parte e quem já está no quadro. */
   tier?: { series: string; character: string; part: number; previous: TierEntry[] }
+  /** Na curiosidade (ADR 0042, 3A): a fonte que o brainstorm achou; o roteiro não afirma nada além dela. */
+  source?: string
   /** A frase da virada da vez (ADR 0039); sem ela, o roteiro não tem virada. */
   pivotPhrase?: string
 }): Promise<{ title: string; subject: string; narration: string; beats: Beat[]; tierRank?: TierRank; ai: AiCredit }> {
-  const { theme, toneGuide, duration, style, narration, hook, brief, revision, tier, pivotPhrase } = input
+  const { theme, toneGuide, duration, style, narration, hook, brief, revision, tier, source, pivotPhrase } = input
   const format = input.format ?? 'opiniao'
   const tierList = format === 'tierlist' && !!tier
   const beatCount = Math.round(duration / PACE_SECONDS[style.pace])
@@ -213,7 +215,7 @@ export async function generateScript(input: {
 - Comece com um gancho forte nos primeiros 2 segundos.${pivotPhrase ? `
 ${pivotRule(pivotPhrase)}` : ''}
 - Tom: ${toneGuide}.
-- ${formatStructure(tierList || format !== 'tierlist' ? format : 'opiniao', tier)}
+- ${formatStructure(tierList || format !== 'tierlist' ? format : 'opiniao', tier, source)}
 - Cada prova é específica e dá para conferir. Nada de frase genérica ("ele é muito forte", "todo mundo sabe").${agreed}${rewrite}`
 
   const prompt = `Você é roteirista e editor de Shorts verticais (YouTube Shorts, Reels, TikTok) em português do Brasil.
